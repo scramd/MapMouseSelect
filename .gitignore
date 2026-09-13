@@ -1,0 +1,12 @@
+# Build output
+bin/
+obj/
+.nuget/
+
+# Local build overrides (machine-specific game paths)
+Directory.Build.user.props
+
+# IDE
+.vs/
+.idea/
+*.user
