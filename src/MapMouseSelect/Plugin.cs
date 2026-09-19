@@ -28,6 +28,7 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> RequireModifier { get; private set; }
         internal static ConfigEntry<MapPanButton> PanButton { get; private set; }
         internal static ConfigEntry<bool> ShiftAddsToSelection { get; private set; }
+        internal static ConfigEntry<bool> ControlRemovesFromSelection { get; private set; }
         internal static ConfigEntry<bool> SuppressModifierBindings { get; private set; }
         internal static ConfigEntry<string> ModifierKeys { get; private set; }
         internal static ConfigEntry<bool> BatchTargetListWhileFlying { get; private set; }
@@ -40,6 +41,7 @@ namespace MapMouseSelect
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColor { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
+        internal static ConfigEntry<string> BoxOutlineColorRemove { get; private set; }
 
         private Harmony _harmony;
 
@@ -62,6 +64,10 @@ namespace MapMouseSelect
 
             ShiftAddsToSelection = Config.Bind("Behavior", "ShiftAddsToSelection", true,
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
+
+            ControlRemovesFromSelection = Config.Bind("Behavior", "ControlRemovesFromSelection", true,
+                "Hold Control while dragging to take the boxed units out of the selection instead of adding "
+                + "them. Takes precedence over Shift when both are held.");
 
             SuppressModifierBindings = Config.Bind("Behavior", "SuppressModifierBindings", true,
                 "While the map is maximized, disable any keyboard binding that sits directly on one of "
@@ -106,6 +112,8 @@ namespace MapMouseSelect
                 "Outline color for a replacing selection, as #RRGGBB or #RRGGBBAA.");
             BoxOutlineColorAdditive = Config.Bind("Visual", "BoxOutlineColorAdditive", "#7CE38BCC",
                 "Outline color for an additive selection (Shift held).");
+            BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", "#FF5A5ACC",
+                "Outline color for a deselecting marquee (Control held).");
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);

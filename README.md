@@ -13,7 +13,9 @@ A left click means different things in the two map modes, and the marquee follow
 | Flying | You have a live aircraft | `CombatHUD.SelectUnit` adds a weapon/sensor target to your aircraft's target list | Adds every boxed unit with a HUD marker to that same target list |
 | Commander | No live aircraft (ejected, dead, or observing) | `DynamicMap.SelectIcon` selects the unit so right-click move orders apply to it | Selects every boxed unit, so a follow-up right-click orders the whole group |
 
-Shift while dragging adds to the current selection instead of replacing it.
+Shift while dragging adds to the current selection instead of replacing it, and Ctrl while dragging takes the
+boxed units back out of it, with the border colour showing which of the three is in force. Control wins over
+Shift when both are held.
 
 ## Install
 
@@ -29,6 +31,7 @@ Requires BepInEx 5 x64 in the game directory.
 |---|---|
 | Left drag on the map | Marquee select |
 | Shift + left drag | Add to selection instead of replacing |
+| Ctrl + left drag | Take the boxed units out of the selection |
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
 | Double left click on the map | Move the camera there, which vanilla puts on the middle button |
@@ -85,6 +88,7 @@ EventSystem one.
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
+| Behavior | `ControlRemovesFromSelection` | `true` | Ctrl takes the boxed units out of the selection |
 | Behavior | `SuppressModifierBindings` | `true` | While the map is open, disable keyboard bindings that sit directly on `ModifierKeys` |
 | Behavior | `ModifierKeys` | Shift, Control | Keys that act only as map modifiers while the map is open |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
@@ -95,6 +99,7 @@ EventSystem one.
 | Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
 | Visual | `BoxOutlineColor` | blue | Outline color for a replacing selection |
 | Visual | `BoxOutlineColorAdditive` | green | Outline color for an additive selection (Shift held) |
+| Visual | `BoxOutlineColorRemove` | red | Outline color for a deselecting marquee (Ctrl held) |
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
 
 ## Build

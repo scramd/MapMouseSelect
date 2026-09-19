@@ -83,16 +83,13 @@ namespace MapMouseSelect
             rect.sizeDelta = new Vector2(Mathf.Max(0f, width), Mathf.Max(0f, height));
         }
 
-        internal void Show(Rect screenRect, bool additive)
+        internal void Show(Rect screenRect, Color color)
         {
             EnsureCreated();
             if (_canvas == null)
             {
                 return;
             }
-
-            var color = Plugin.ParseColor(
-                additive ? Plugin.BoxOutlineColorAdditive : Plugin.BoxOutlineColor);
 
             foreach (var image in _edgeImages)
             {

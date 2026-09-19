@@ -109,39 +109,9 @@ namespace MapMouseSelect
                 return true;
             }
 
-            if (!IsSelected(map, __instance))
-            {
-                return true;
-            }
-
-            Deselect(map, hud, __instance.unit);
-            return false;
-        }
-
-        /// <summary>
-        /// Reads the selection through the public list rather than the icon's protected isSelected flag,
-        /// since the list is what a deselect can actually take the unit out of.
-        /// </summary>
-        private static bool IsSelected(DynamicMap map, UnitMapIcon icon)
-        {
-            var selected = map.selectedIcons;
-            return selected != null && selected.Contains(icon);
-        }
-
-        private static void Deselect(DynamicMap map, CombatHUD hud, Unit unit)
-        {
-            var aircraft = SelectionApplier.GetLiveAircraft();
-            var weapons = aircraft != null ? aircraft.weaponManager : null;
-            var targets = weapons != null ? weapons.GetTargetList() : null;
-
-            // A weapon target has to leave the target list too, or the weapon stays locked to it.
-            if (targets != null && targets.Contains(unit))
-            {
-                hud.DeSelectUnit(unit);
-                return;
-            }
-
-            map.DeselectIcon(unit);
+            // Removing reports whether the unit was selected, which is the condition this patch is here
+            // for. Anything else is left to vanilla, selecting included.
+            return !SelectionApplier.Remove(map, __instance.unit);
         }
     }
 

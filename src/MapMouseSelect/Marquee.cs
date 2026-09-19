@@ -23,7 +23,7 @@ namespace MapMouseSelect
 
         private static bool _pending;
         private static bool _dragging;
-        private static bool _additive;
+        private static MarqueeMode _mode;
         private static bool _hookReported;
         private static Vector2 _startScreen;
 
@@ -129,6 +129,44 @@ namespace MapMouseSelect
             return VanillaCalls.ShiftHeld();
         }
 
+        private static bool ControlHeld()
+        {
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        }
+
+        /// <summary>
+        /// What this drag will do when it ends. Control wins over Shift when both are held: taking units out
+        /// is the more deliberate of the two, and the border shows which one is in force.
+        /// </summary>
+        private static MarqueeMode CurrentMode()
+        {
+            if (Plugin.ControlRemovesFromSelection.Value && ControlHeld())
+            {
+                return MarqueeMode.Remove;
+            }
+
+            if (Plugin.ShiftAddsToSelection.Value && ShiftHeld())
+            {
+                return MarqueeMode.Add;
+            }
+
+            return MarqueeMode.Replace;
+        }
+
+        /// <summary>One colour per mode, so the border says what the release is going to do.</summary>
+        private static Color BoxColor(MarqueeMode mode)
+        {
+            switch (mode)
+            {
+                case MarqueeMode.Add:
+                    return Plugin.ParseColor(Plugin.BoxOutlineColorAdditive);
+                case MarqueeMode.Remove:
+                    return Plugin.ParseColor(Plugin.BoxOutlineColorRemove);
+                default:
+                    return Plugin.ParseColor(Plugin.BoxOutlineColor);
+            }
+        }
+
         private static Rect ScreenRect()
         {
             var current = (Vector2)Input.mousePosition;
@@ -141,7 +179,7 @@ namespace MapMouseSelect
 
         private static void UpdateOverlay()
         {
-            _additive = Plugin.ShiftAddsToSelection.Value && ShiftHeld();
+            _mode = CurrentMode();
 
             if (!Plugin.ShowSelectionBox.Value)
             {
@@ -149,7 +187,7 @@ namespace MapMouseSelect
                 return;
             }
 
-            Overlay.Show(ScreenRect(), _additive);
+            Overlay.Show(ScreenRect(), BoxColor(_mode));
         }
 
         private static void Commit(DynamicMap map)
@@ -157,8 +195,8 @@ namespace MapMouseSelect
             var box = ScreenRect();
             CollectUnits(map, box, Picked);
             Plugin.Verbose(
-                "Marquee released. box=" + box + ", boxed units=" + Picked.Count + ", additive=" + _additive);
-            SelectionApplier.Apply(map, Picked, _additive);
+                "Marquee released. box=" + box + ", boxed units=" + Picked.Count + ", mode=" + _mode);
+            SelectionApplier.Apply(map, Picked, _mode);
         }
 
         private static void CollectUnits(DynamicMap map, Rect screenRect, List<Unit> results)
