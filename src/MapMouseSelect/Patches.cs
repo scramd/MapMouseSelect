@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using Rewired;
 using UnityEngine;
 
 namespace MapMouseSelect
@@ -20,6 +21,32 @@ namespace MapMouseSelect
         private static void Prefix(DynamicMap __instance)
         {
             Marquee.Tick(__instance);
+        }
+    }
+
+    /// <summary>
+    /// Adds the mod's actions to Rewired while it is still loading the game's input data.
+    /// </summary>
+    [HarmonyPatch(typeof(InputManager_Base), "Awake")]
+    internal static class RewiredInputManagerAwakePatch
+    {
+        [HarmonyPrefix]
+        private static void Prefix(InputManager_Base __instance)
+        {
+            ModActions.Register(__instance);
+        }
+    }
+
+    /// <summary>
+    /// ExtraUiInput is where vanilla reads the target-cancel action, so the mod reads its own actions in
+    /// the same place and inherits the same frame timing and the same scene context.
+    /// </summary>
+    [HarmonyPatch(typeof(ExtraUiInput), "Update")]
+    internal static class ExtraUiInputUpdatePatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix()
+        {
             TargetKeys.Tick();
         }
     }

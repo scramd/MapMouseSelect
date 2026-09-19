@@ -1,4 +1,3 @@
-using NuclearOption.MissionEditorScripts;
 using UnityEngine;
 
 namespace MapMouseSelect
@@ -6,21 +5,21 @@ namespace MapMouseSelect
     /// <summary>
     /// Keyboard actions that operate on the current target selection.
     ///
-    /// Ticked from the same DynamicMap.Update prefix as the marquee. That method runs every frame the
-    /// map object is alive, maximized or not, so the cockpit path gets a tick with the map closed too.
+    /// The keys are real Rewired actions registered by ModActions, so they are read with the same calls
+    /// vanilla's own target handling uses and are rebindable in the Controls menu. Tick runs from a
+    /// postfix on ExtraUiInput.Update, which is where vanilla reads Cancel, so the timing and the scene
+    /// context are the same as the game's own.
     ///
     /// Both map modes are covered because they keep the selection in different places: a live aircraft
     /// uses CombatHUD's weapon target list, anything else uses DynamicMap's selected map icons.
     /// </summary>
     internal static class TargetKeys
     {
-        private static bool _held;
         private static bool _longFired;
-        private static float _pressedAt;
 
         internal static void Tick()
         {
-            if (InputFieldChecker.InsideInputField)
+            if (!ModActions.Registered)
             {
                 return;
             }
@@ -30,49 +29,31 @@ namespace MapMouseSelect
                 return;
             }
 
-            if (Plugin.SelectOnlyKey.Value.IsDown())
+            var player = GameManager.playerInput;
+            if (player == null)
+            {
+                return;
+            }
+
+            if (player.GetButtonDown(ModActions.SelectOnlyName))
             {
                 SelectOnly();
             }
 
-            HandleDeselectOldest();
-        }
-
-        /// <summary>
-        /// Tap drops the oldest selection, hold keeps only the newest. The timings are the game's own:
-        /// ExtraUiInput does the same thing for Cancel, reading GetButtonTimedPressUp(clickDelay) for
-        /// the tap and GetButtonTimedPressDown(pressDelay) for the hold, so a hold has to trigger once
-        /// the threshold passes rather than on release.
-        /// </summary>
-        private static void HandleDeselectOldest()
-        {
-            var key = Plugin.DeselectOldestKey.Value;
-
-            if (!_held)
-            {
-                if (key.IsDown())
-                {
-                    _held = true;
-                    _longFired = false;
-                    _pressedAt = Time.unscaledTime;
-                }
-                return;
-            }
-
-            var heldFor = Time.unscaledTime - _pressedAt;
-
-            if (!_longFired && heldFor >= PlayerSettings.pressDelay)
+            // The same thresholds ExtraUiInput uses for Cancel: the hold fires as soon as pressDelay has
+            // elapsed, and a release within clickDelay is a tap.
+            if (player.GetButtonTimedPressDown(ModActions.DeselectOldestName, PlayerSettings.pressDelay))
             {
                 _longFired = true;
                 KeepOnlyNewest();
             }
 
-            if (key.IsUp())
+            if (player.GetButtonUp(ModActions.DeselectOldestName))
             {
-                _held = false;
-
-                // Vanilla fires nothing at all for a hold between clickDelay and pressDelay.
-                if (!_longFired && heldFor <= PlayerSettings.clickDelay)
+                // Vanilla fires both branches for a hold of between clickDelay and pressDelay, because
+                // clearing everything and then dropping the newest of nothing happens to compose. These
+                // two do not compose, so the tap is skipped once the hold has already run.
+                if (!_longFired)
                 {
                     DropOldest();
                 }

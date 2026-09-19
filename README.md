@@ -33,6 +33,11 @@ Requires BepInEx 5 x64 in the game directory.
 | `\` | Drop the selection, then select under the cursor, or the HUD designator while flying |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
+Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
+show up in the game's own Controls menu, can be rebound to a gamepad or stick button, and are read with
+the same timed-press calls the game uses for its target keys. They join the action category that
+`Cancel` belongs to, which is why the menu lists them without any prefab changes.
+
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
 progress.
@@ -47,8 +52,6 @@ EventSystem icon-click path is untouched, so ordinary clicking still works.
 | Hotkeys | `PanButton` | `Middle` | Mouse button that drags to pan the map |
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
-| Hotkeys | `SelectOnlyTargetKey` | `\` | Clear the selection, then select under the cursor (map) or the HUD designator (flying, map closed) |
-| Hotkeys | `DeselectOldestTargetKey` | `Delete` | Tap drops the oldest target, hold keeps only the newest |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
 | Behavior | `FlyingHostilesOnly` | `false` | While flying, only box hostiles. Vanilla clicks allow any unit with a HUD marker |

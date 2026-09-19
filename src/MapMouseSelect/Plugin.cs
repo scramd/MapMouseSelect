@@ -24,8 +24,6 @@ namespace MapMouseSelect
         internal static ManualLogSource Log { get; private set; }
 
         internal static ConfigEntry<KeyboardShortcut> MarqueeModifier { get; private set; }
-        internal static ConfigEntry<KeyboardShortcut> SelectOnlyKey { get; private set; }
-        internal static ConfigEntry<KeyboardShortcut> DeselectOldestKey { get; private set; }
         internal static ConfigEntry<bool> RequireModifier { get; private set; }
         internal static ConfigEntry<MapPanButton> PanButton { get; private set; }
         internal static ConfigEntry<bool> ShiftAddsToSelection { get; private set; }
@@ -54,16 +52,6 @@ namespace MapMouseSelect
 
             RequireModifier = Config.Bind("Hotkeys", "RequireModifier", false,
                 "Require MarqueeModifier to start a marquee. Off by default, so a plain left drag selects.");
-
-            SelectOnlyKey = Config.Bind("Hotkeys", "SelectOnlyTargetKey",
-                new KeyboardShortcut(KeyCode.Backslash),
-                "Clear the current selection and select the unit under the map cursor, or the target under "
-                + "the HUD designator while flying with the map closed.");
-
-            DeselectOldestKey = Config.Bind("Hotkeys", "DeselectOldestTargetKey",
-                new KeyboardShortcut(KeyCode.Delete),
-                "Tap to drop the target you selected first. Hold to keep only the most recent one. Cancel "
-                + "(Backspace) does the same thing for the newest target.");
 
             PanButton = Config.Bind("Hotkeys", "PanButton", MapPanButton.Middle,
                 "Mouse button that drags to pan the map. The game hardcodes the left button, which collides "

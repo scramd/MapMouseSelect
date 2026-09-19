@@ -54,6 +54,12 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- Registers the mod's keys as Rewired actions, the way the game's own controls are defined. -->
+    <Reference Include="Rewired_Core">
+      <HintPath>$(ManagedDir)\Rewired_Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <!-- BepInEx 5 + HarmonyX, both shipped with the loader. -->
     <Reference Include="BepInEx">
       <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>
