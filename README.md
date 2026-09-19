@@ -23,9 +23,11 @@ the same way the game's own multi-select does, rather than once per boxed unit; 
 silent, as vanilla's icon clicks are there.
 
 A box that ends up empty (a release over clear map) clears what was selected, in either mode, when the drag
-was a plain one. That is a mod choice rather than vanilla behaviour: a click on empty map space does nothing
-in this game, because the map's own controls only ever act on an icon under the cursor. Shift and Ctrl drags
-leave an empty box alone, since there is nothing to add or take out.
+was a plain one. In flight it plays vanilla's deselect-all sound, the one its Cancel-hold uses; in commander
+view it is silent, as vanilla's own selection changes there are. That is a mod choice rather than vanilla
+behaviour: a click on empty map space does nothing in this game, because the map's own controls only ever act
+on an icon under the cursor. Shift and Ctrl drags leave an empty box alone, since there is nothing to add or
+take out.
 
 ## Install
 
@@ -182,10 +184,10 @@ the map icon, then calls `WeaponManager.TargetListChanged()` once, and removing 
 `CombatHUD.DeSelectUnit`'s per-unit effects the same way. That list is networked through
 `SetStationTargets`, so a 20 unit marquee costs one message instead of twenty, and the HUD's own
 select or deselect sound plays once for the gesture, the way `CombatHUD.TargetSelect` plays it once
-for its whole batch. An empty box while flying drops the target list with a single
-`CombatHUD.DeselectAll`, the same clear a replace box used to start with. Each of the keys that change
-targets sounds like what it did: dropping one target plays the deselect sound, and a drop that ends on a
-new selection instead plays the select sound once rather than both.
+for its whole batch. An empty box while flying drops the target list in one `CombatHUD.DeselectAll` call, with
+its deselect-all sound. Each of the keys that change targets sounds like what it did: dropping targets plays
+the deselect sound, and a drop that ends on a new selection instead plays the select sound once rather than
+both.
 
 ## Limitations
 

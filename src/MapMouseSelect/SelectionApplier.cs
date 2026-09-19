@@ -64,16 +64,20 @@ namespace MapMouseSelect
                 {
                     if (aircraft != null)
                     {
-                        // Same clear a replace box does before it adds anything, so an empty one leaves the
-                        // weapon with its targets dropped rather than keeping the previous box's picks.
+                        // One clear for the whole box, which is what this gesture is. DeselectAll's argument is
+                        // its withAudio flag, and this one asks for vanilla's own deselect-all clip, the one its
+                        // Cancel-hold plays: dropping every target is the loudest thing the target list can do,
+                        // and doing it in silence is what made an empty box feel like nothing had happened.
                         var hud = SceneSingleton<CombatHUD>.i;
                         if (hud != null)
                         {
-                            hud.DeselectAll(false);
+                            hud.DeselectAll(true);
                         }
                     }
                     else
                     {
+                        // Vanilla has no clip for clearing the map selection: UnselectAll is what its own
+                        // Cancel runs, and it is silent.
                         map.UnselectAll();
                     }
                 }
