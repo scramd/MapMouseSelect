@@ -75,10 +75,10 @@ namespace MapMouseSelect
             EnableInMissionEditor = Config.Bind("Behavior", "EnableInMissionEditor", false,
                 "Allow the marquee in the mission editor, which has its own drag box select.");
 
-            MaxTargets = Config.Bind("Behavior", "MaxTargets", 128,
+            MaxTargets = Config.Bind("Behavior", "MaxTargets", Unit.MAX_STATION_TARGETS,
                 new ConfigDescription(
                     "Cap on targets one marquee may add. The game refuses more than 128 per station.",
-                    new AcceptableValueRange<int>(1, 128)));
+                    new AcceptableValueRange<int>(1, Unit.MAX_STATION_TARGETS)));
 
             ShowSelectionBox = Config.Bind("Visual", "ShowSelectionBox", true,
                 "Draw the drag rectangle.");

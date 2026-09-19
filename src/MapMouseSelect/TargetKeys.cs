@@ -1,5 +1,3 @@
-using System.Reflection;
-using HarmonyLib;
 using NuclearOption.MissionEditorScripts;
 using UnityEngine;
 
@@ -18,9 +16,6 @@ namespace MapMouseSelect
     {
         private const float FallbackPressDelay = 0.15f;
         private const float FallbackClickDelay = 0.25f;
-
-        private static MethodInfo _targetSelect;
-        private static bool _targetSelectLookupFailed;
 
         private static bool _held;
         private static bool _longFired;
@@ -236,7 +231,7 @@ namespace MapMouseSelect
                     map.UnselectAll();
                 }
 
-                Marquee.ClickNearestIcon(map);
+                VanillaCalls.SelectFromMap(map);
                 return;
             }
 
@@ -247,31 +242,7 @@ namespace MapMouseSelect
 
             // Map closed: the only thing on screen to select is whatever the designator is pointing at.
             hud.DeselectAll(false);
-            InvokeTargetSelect(hud);
-        }
-
-        /// <summary>
-        /// TargetSelect is private, and it owns the marker priority ranking and the 100px designator
-        /// range, so it is called rather than reimplemented.
-        /// </summary>
-        private static void InvokeTargetSelect(CombatHUD hud)
-        {
-            if (_targetSelect == null && !_targetSelectLookupFailed)
-            {
-                _targetSelect = AccessTools.Method(typeof(CombatHUD), "TargetSelect", new[] { typeof(bool) });
-                if (_targetSelect == null)
-                {
-                    _targetSelectLookupFailed = true;
-                    Plugin.Log.LogWarning(
-                        "CombatHUD.TargetSelect was not found, so the select-only key cannot designate from "
-                        + "the cockpit. Selecting on the map still works.");
-                }
-            }
-
-            if (_targetSelect != null)
-            {
-                _targetSelect.Invoke(hud, new object[] { false });
-            }
+            VanillaCalls.TargetSelect(hud, false);
         }
     }
 }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using NuclearOption.MissionEditorScripts;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace MapMouseSelect
 {
@@ -18,8 +18,6 @@ namespace MapMouseSelect
     /// </summary>
     internal static class Marquee
     {
-        private const float VanillaNearestIconSquaredRange = 10000f;
-
         private static readonly MarqueeOverlay Overlay = new MarqueeOverlay();
         private static readonly List<Unit> Picked = new List<Unit>();
 
@@ -97,11 +95,11 @@ namespace MapMouseSelect
                     // suppressed, so replay that here.
                     _pending = false;
                     Plugin.Verbose("Marquee released without dragging, replaying the vanilla click.");
-                    ClickNearestIcon(map);
+                    VanillaCalls.SelectFromMap(map);
                     return;
                 }
 
-                if (DragThresholdPassed(_startScreen))
+                if (UnitSelection.DragThresholdPassed(_startScreen))
                 {
                     _dragging = true;
                     Plugin.Verbose("Marquee drag started.");
@@ -130,12 +128,6 @@ namespace MapMouseSelect
         {
             Cancel();
             Overlay.Destroy();
-        }
-
-        private static bool DragThresholdPassed(Vector2 startScreen)
-        {
-            var threshold = EventSystem.current != null ? EventSystem.current.pixelDragThreshold : 5;
-            return ((Vector2)Input.mousePosition - startScreen).sqrMagnitude >= threshold * threshold;
         }
 
         private static bool ShiftHeld()
@@ -221,54 +213,6 @@ namespace MapMouseSelect
                 }
 
                 results.Add(unit);
-            }
-        }
-
-        /// <summary>
-        /// Reproduces DynamicMap.SelectFromMap: pick the nearest icon to the cursor within vanilla's
-        /// range and hand it to ClickIcon as if the controller had done it.
-        /// </summary>
-        internal static void ClickNearestIcon(DynamicMap map)
-        {
-            var icons = map.mapIcons;
-            if (icons == null)
-            {
-                return;
-            }
-
-            var mouse = (Vector2)Input.mousePosition;
-            var bestDistance = VanillaNearestIconSquaredRange;
-            UnitMapIcon best = null;
-
-            var selector = SceneSingleton<TargetListSelector>.i;
-
-            for (var i = 0; i < icons.Count; i++)
-            {
-                var unitIcon = icons[i] as UnitMapIcon;
-                if (unitIcon == null || unitIcon.iconImage == null || !unitIcon.iconImage.raycastTarget)
-                {
-                    continue;
-                }
-
-                var unit = unitIcon.unit;
-                if (unit == null || (selector != null && selector.CheckExclusions(unit)))
-                {
-                    continue;
-                }
-
-                var distance = ((Vector2)unitIcon.transform.position - mouse).sqrMagnitude;
-                if (distance >= bestDistance)
-                {
-                    continue;
-                }
-
-                bestDistance = distance;
-                best = unitIcon;
-            }
-
-            if (best != null && best.gameObject.activeSelf)
-            {
-                best.ClickIcon(MapIcon.ClickSource.Controller);
             }
         }
     }

@@ -12,8 +12,6 @@ namespace MapMouseSelect
     /// </summary>
     internal static class SelectionApplier
     {
-        private const int GameMaxTargets = 128;
-
         internal static void Apply(DynamicMap map, List<Unit> units, bool additive)
         {
             var aircraft = GetLiveAircraft();
@@ -72,7 +70,7 @@ namespace MapMouseSelect
                 return;
             }
 
-            var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, GameMaxTargets);
+            var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);
 
             var added = 0;
             var alreadySelected = 0;
