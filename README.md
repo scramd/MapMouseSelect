@@ -46,13 +46,17 @@ Vanilla has the branch but routes it to the wrong call in both modes: with no li
 the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselect` and
 `TargetListSelector_UnitItem.ToggleSelect`, route the other way round and are what this follows.
 
-While the map is maximized, the bindings that put the throttle on Shift and Control are disabled. The game
-binds them to the two directions of its `Throttle` axis and also uses Shift as the map's additive modifier,
-so without this, adding to a selection spools the engine. Vanilla freezes the aircraft's axes, the camera
-and the trigger while the map is open, and this is the same idea applied to those two bindings. It is
-done per binding rather than per key: other keys bound to the throttle, a throttle lever, and Shift or
-Control rebound to something else are all untouched, and so is a joystick. `BlockModifierThrottle` turns it
-off if you would rather have vanilla's behavior.
+While the map is maximized, any keyboard binding that sits directly on a key listed in `ModifierKeys` is
+disabled, whatever action it belongs to. By default that is Shift and Control, which is what stops the
+throttle: the game hangs its two directions on those keys and also uses Shift as the map's additive
+modifier, so adding to a selection would otherwise spool the engine. Vanilla freezes the aircraft's axes,
+the camera and the trigger while the map is open, and this is the same idea applied to those keys.
+
+It is done per binding rather than per key, so nothing about your layout is assumed: a binding such as
+`Control+Shift+E`, where those keys are declared modifiers, is left alone; other keys bound to the same
+action keep working, as does a lever, since only the keyboard is scanned; and a binding this turned off is
+the only thing it turns back on. Nothing is written to Rewired's saved user data. Set `ModifierKeys` to
+whatever your layout uses, or turn off `SuppressModifierBindings` to get vanilla behavior back.
 
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
@@ -69,7 +73,8 @@ EventSystem icon-click path is untouched, so ordinary clicking still works.
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
-| Behavior | `BlockModifierThrottle` | `true` | While the map is open, disable the throttle bindings on Shift and Control |
+| Behavior | `SuppressModifierBindings` | `true` | While the map is open, disable keyboard bindings that sit directly on `ModifierKeys` |
+| Behavior | `ModifierKeys` | Shift, Control | Keys that act only as map modifiers while the map is open |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
 | Behavior | `FlyingHostilesOnly` | `false` | While flying, only box hostiles. Vanilla clicks allow any unit with a HUD marker |
 | Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |

@@ -27,7 +27,8 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> RequireModifier { get; private set; }
         internal static ConfigEntry<MapPanButton> PanButton { get; private set; }
         internal static ConfigEntry<bool> ShiftAddsToSelection { get; private set; }
-        internal static ConfigEntry<bool> BlockModifierThrottle { get; private set; }
+        internal static ConfigEntry<bool> SuppressModifierBindings { get; private set; }
+        internal static ConfigEntry<string> ModifierKeys { get; private set; }
         internal static ConfigEntry<bool> BatchTargetListWhileFlying { get; private set; }
         internal static ConfigEntry<bool> FlyingHostilesOnly { get; private set; }
         internal static ConfigEntry<bool> FollowFirstUnit { get; private set; }
@@ -61,11 +62,17 @@ namespace MapMouseSelect
             ShiftAddsToSelection = Config.Bind("Behavior", "ShiftAddsToSelection", true,
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
 
-            BlockModifierThrottle = Config.Bind("Behavior", "BlockModifierThrottle", true,
-                "While the map is maximized, disable the bindings that put the throttle on Shift and "
-                + "Control. Shift is the map's additive modifier, so without this, adding to a selection "
-                + "spools the engine. Only those bindings are touched, so other throttle keys, a lever, "
-                + "and Shift or Control rebound to something else are unaffected.");
+            SuppressModifierBindings = Config.Bind("Behavior", "SuppressModifierBindings", true,
+                "While the map is maximized, disable any keyboard binding that sits directly on one of "
+                + "ModifierKeys. Without this, Shift both adds to a selection and works the throttle.");
+
+            ModifierKeys = Config.Bind("Behavior", "ModifierKeys",
+                "LeftShift, RightShift, LeftControl, RightControl",
+                "Keys that act only as map modifiers while the map is maximized. Any keyboard binding "
+                + "placed directly on one of them is disabled for that time, whatever action it belongs "
+                + "to. A binding that uses them as declared modifiers, such as Control+Shift+E, is left "
+                + "alone. Unity KeyCode names, comma separated. The marquee modifier is added on its own "
+                + "when RequireModifier is on.");
 
             BatchTargetListWhileFlying = Config.Bind("Behavior", "BatchTargetListWhileFlying", true,
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "
