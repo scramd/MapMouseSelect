@@ -116,14 +116,18 @@ namespace MapMouseSelect
             {
                 // A plain mouse click means "this one", the same as a plain marquee drag, and vanilla's
                 // flying branch only ever adds: it calls UnselectAll only when there is no live aircraft.
-                // Clearing first is also what lets vanilla take the unit when it is already a target, since
-                // the selection it tests against is empty by then. Shift is the additive click and the
-                // Select key is left as vanilla wrote it, so only the mouse is patched here.
-                if (clickSource == MapIcon.ClickSource.Mouse
-                    && SelectionApplier.GetLiveAircraft() != null
-                    && !Excluded(__instance.unit))
+                // Everything but the clicked unit goes, which is also what lets vanilla take a unit that is not
+                // a target yet; the unit the click is about is never dropped and put back, so its icon and its HUD
+                // entry stay lit through the click. Shift is the additive click and the Select key is left as
+                // vanilla wrote it, so only the mouse is patched here.
+                if (clickSource == MapIcon.ClickSource.Mouse && !Excluded(__instance.unit))
                 {
-                    hud.DeselectAll(false);
+                    var aircraft = SelectionApplier.GetLiveAircraft();
+
+                    // The drop is the gesture when the clicked unit stays selected, and the click's own select
+                    // sound is the gesture when it is new: one sound either way.
+                    SelectionApplier.RemoveAllExcept(
+                        aircraft, __instance.unit, SelectionApplier.IsTarget(aircraft, __instance.unit));
                 }
 
                 return true;

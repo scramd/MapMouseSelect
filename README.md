@@ -64,9 +64,9 @@ the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselec
 
 A plain mouse click also replaces the target list while flying. Vanilla's branch only ever adds when an
 aircraft is live, because the `UnselectAll` it runs in commander view sits behind a test for exactly that, so
-clicking unit after unit quietly accumulates targets and nothing about the click says so. The mod clears the
-list first, which makes a plain click mean the same thing as a plain drag, and leaves Shift as the additive
-click. The `Select` key keeps vanilla's behaviour.
+clicking unit after unit quietly accumulates targets and nothing about the click says so. The mod drops every
+target except the clicked unit instead, which makes a plain click mean the same thing as a plain drag, and
+leaves Shift as the additive click. The `Select` key keeps vanilla's behaviour.
 
 `\` prunes the target list down to whatever is being pointed at: the map icon nearest the cursor with the map
 up (`DynamicMap.SelectFromMap`'s 100 pixel pick), or the HUD marker nearest the target designator with it closed
@@ -75,6 +75,15 @@ vanilla picks skip a unit that is already selected, and a target that is already
 key is asked to keep; pruning directly also means a press that lands on empty sky changes nothing, instead of
 losing the selection to a pick that never came. Pointing at a unit that is not a target replaces the list with
 it, the same as a plain click does in commander view.
+
+Nothing the mod does deselects a target that is meant to stay in the selection, at any point in the call. There
+is no clear-then-re-add anywhere in the flying target list: a replace box drops only the targets the box leaves
+out, `\` drops only what is not the unit being pointed at, the `` Delete `` hold drops only what is not the newest
+target, and a plain click drops only what is not the unit clicked. That keeps the kept targets' markers, map
+icons and HUD entries from blinking out and back, and keeps the server from being sent an empty list and then a
+refill. Vanilla's own clears, `CombatHUD.DeselectAll` and `DynamicMap.UnselectAll`, are left to the two places
+where nothing is meant to survive: an empty replace box, and commander view, where `UnselectAll` is what also
+cancels a half-built waypoint and is what vanilla's own click does.
 
 Clicking a map icon also has to stay a click: the release has to land within the game's drag threshold of
 the press. uGUI only cancels a click when the pressed object has somewhere to hand the drag to, and
@@ -174,9 +183,9 @@ the map icon, then calls `WeaponManager.TargetListChanged()` once, and removing 
 `SetStationTargets`, so a 20 unit marquee costs one message instead of twenty, and the HUD's own
 select or deselect sound plays once for the gesture, the way `CombatHUD.TargetSelect` plays it once
 for its whole batch. An empty box while flying drops the target list with a single
-`CombatHUD.DeselectAll`, the same clear a replace box starts with. Each of the keys that change targets
-sounds like what it did: dropping one target plays the deselect sound, keeping only the newest plays the
-deselect-all sound vanilla's own Cancel-hold uses rather than a select chime.
+`CombatHUD.DeselectAll`, the same clear a replace box used to start with. Each of the keys that change
+targets sounds like what it did: dropping one target plays the deselect sound, and a drop that ends on a
+new selection instead plays the select sound once rather than both.
 
 ## Limitations
 

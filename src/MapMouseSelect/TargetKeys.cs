@@ -21,9 +21,6 @@ namespace MapMouseSelect
         /// <summary>Scratch for the single unit a key hands to the batched target list writers.</summary>
         private static readonly List<Unit> One = new List<Unit>(1);
 
-        /// <summary>Scratch for the targets a prune is about to drop.</summary>
-        private static readonly List<Unit> Others = new List<Unit>();
-
         internal static void Tick()
         {
             if (!ModActions.Registered)
@@ -130,23 +127,14 @@ namespace MapMouseSelect
                     return;
                 }
 
-                // Read it before clearing: DeselectAll empties the very list this came from.
+                // Read it before anything changes: this is the one that stays.
                 var newest = targets[0];
                 Plugin.Verbose("Keeping only " + (newest != null ? newest.name : "<null>") + ".");
 
-                // The mass clear is the gesture here, so it takes the HUD's deselect-all sound, the one
-                // vanilla's own Cancel-hold plays. The single unit going back in is silent, so the key does not
-                // end on a select chime after dropping everything else.
-                hud.DeselectAll(true);
-
-                if (newest != null)
-                {
-                    // Two refreshes for the whole key press, rather than one per dropped target.
-                    One.Clear();
-                    One.Add(newest);
-                    SelectionApplier.AddToTargetList(aircraft, One, false);
-                    One.Clear();
-                }
+                // The kept target is never handed to the writer, so it never leaves the list: its marker, its map
+                // icon and its place in the HUD all stay put, and the server is sent the drop rather than a clear
+                // followed by a target. One refresh for the whole hold.
+                SelectionApplier.RemoveAllExcept(aircraft, newest);
                 return;
             }
 
@@ -235,46 +223,25 @@ namespace MapMouseSelect
                 return;
             }
 
-            Others.Clear();
-            var isTarget = false;
-
-            for (var i = 0; i < targets.Count; i++)
+            if (SelectionApplier.IsTarget(aircraft, keep))
             {
-                if (targets[i] == keep)
-                {
-                    isTarget = true;
-                }
-                else
-                {
-                    Others.Add(targets[i]);
-                }
+                // The kept target is never handed to the writer, so it stays selected throughout: one refresh,
+                // one deselect sound, and its marker and map icon never blink.
+                SelectionApplier.RemoveAllExcept(aircraft, keep);
+                Plugin.Verbose("Select-only kept " + keep.name + " and dropped the other target(s).");
+                return;
             }
 
-            if (isTarget)
-            {
-                // The kept target never leaves the list, so its marker and map icon stay lit while the rest go,
-                // all in one refresh and one deselect sound.
-                SelectionApplier.RemoveFromTargetList(aircraft, Others);
-                Plugin.Verbose(
-                    "Select-only kept " + keep.name + ", dropped " + Others.Count + " other target(s).");
-            }
-            else
-            {
-                // Pointing at something that is not a target means "only this one", the same as a plain click
-                // does in commander view.
-                if (hud != null)
-                {
-                    hud.DeselectAll(false);
-                }
+            // Pointing at something that is not a target yet means "only this one", the same as a plain click
+            // does in commander view. The drops go in silently, so the press ends on the select sound rather
+            // than on both.
+            SelectionApplier.RemoveAllExcept(aircraft, keep, false);
 
-                One.Clear();
-                One.Add(keep);
-                SelectionApplier.AddToTargetList(aircraft, One);
-                One.Clear();
-                Plugin.Verbose("Select-only replaced the target list with " + keep.name + ".");
-            }
-
-            Others.Clear();
+            One.Clear();
+            One.Add(keep);
+            SelectionApplier.AddToTargetList(aircraft, One);
+            One.Clear();
+            Plugin.Verbose("Select-only replaced the target list with " + keep.name + ".");
         }
 
         /// <summary>

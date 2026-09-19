@@ -36,11 +36,12 @@ namespace MapMouseSelect
     /// </summary>
     internal static class SelectionApplier
     {
-        /// <summary>
-        /// Scratch for the units a batched write is about to apply. The paths that use it are all reached from
-        /// a key press or a released mouse button, one at a time, and none of them nests.
-        /// </summary>
+        /// <summary>Scratch for the units a batched write is about to apply. The paths that use it are all reached from
+        /// a key press or a released mouse button, one at a time, and none of them nests.</summary>
         private static readonly List<Unit> Pending = new List<Unit>();
+
+        /// <summary>Scratch for the targets a change is about to take away.</summary>
+        private static readonly List<Unit> Others = new List<Unit>();
 
         internal static void Apply(DynamicMap map, List<Unit> units, MarqueeMode mode)
         {
@@ -254,11 +255,117 @@ namespace MapMouseSelect
             return true;
         }
 
+        /// <summary>
+        /// Drops every target except one, in a single batched remove.
+        ///
+        /// The kept unit is never handed to the writer, which is the point of the helper: nothing that has to
+        /// stay selected is deselected, not even for the length of a call, so its marker, its map icon and the
+        /// HUD's target list entry are untouched and the server is sent the drop alone rather than a clear and a
+        /// re-add. A unit that is not in the list at all means every target goes, which is the click that means
+        /// "this one" when the one it means is not a target yet.
+        /// </summary>
+        internal static void RemoveAllExcept(Aircraft aircraft, Unit keep, bool playSound = true)
+        {
+            var targets = TargetList(aircraft);
+            if (targets == null)
+            {
+                return;
+            }
+
+            Others.Clear();
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target != null && target != keep)
+                {
+                    Others.Add(target);
+                }
+            }
+
+            var total = targets.Count;
+            var dropped = Others.Count;
+
+            RemoveFromTargetList(aircraft, Others, playSound);
+            Others.Clear();
+
+            if (dropped > 0)
+            {
+                Plugin.Verbose("[keep-one] dropped " + dropped + " of " + total + " target(s).");
+            }
+        }
+
+        /// <summary>Whether a unit is one of the current targets, which decides whose sound a gesture takes.</summary>
+        internal static bool IsTarget(Aircraft aircraft, Unit unit)
+        {
+            var targets = TargetList(aircraft);
+            return targets != null && unit != null && targets.Contains(unit);
+        }
+
         /// <summary>The target list of the current weapon station, or null when nothing is flying.</summary>
         private static List<Unit> TargetList(Aircraft aircraft)
         {
             var weapons = aircraft != null ? aircraft.weaponManager : null;
             return weapons != null ? weapons.GetTargetList() : null;
+        }
+
+        /// <summary>How many of the boxed units are targets already, which a replace box keeps where they are.</summary>
+        private static int CountInBox(List<Unit> targets, List<Unit> units)
+        {
+            var count = 0;
+
+            for (var i = 0; i < units.Count; i++)
+            {
+                if (units[i] != null && targets.Contains(units[i]))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Drops the targets the box left out, in one batched remove. The units inside the box are never passed
+        /// here, so nothing that has to stay selected is deselected even for a frame.
+        /// </summary>
+        private static void RemoveTargetsOutsideBox(
+            Aircraft aircraft, List<Unit> targets, List<Unit> units, bool playSound)
+        {
+            Others.Clear();
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target == null)
+                {
+                    continue;
+                }
+
+                var boxed = false;
+                for (var j = 0; j < units.Count; j++)
+                {
+                    if (units[j] == target)
+                    {
+                        boxed = true;
+                        break;
+                    }
+                }
+
+                if (!boxed)
+                {
+                    Others.Add(target);
+                }
+            }
+
+            var dropped = Others.Count;
+            RemoveFromTargetList(aircraft, Others, playSound);
+            Others.Clear();
+
+            if (dropped > 0)
+            {
+                Plugin.Verbose("[replace] dropped " + dropped + " target(s) the box left out.");
+            }
         }
 
         private static void ApplyFlying(Aircraft aircraft, List<Unit> units, bool replace)
@@ -272,12 +379,18 @@ namespace MapMouseSelect
 
             if (replace)
             {
-                // One clear for the whole box. DeselectAll drops the target list, the HUD markers and the map
-                // icons together, and every unit added below puts its own marker and icon back.
-                hud.DeselectAll(false);
+                // A replace box means the boxed units, so the targets it keeps are the boxed ones and they stay
+                // where they are. Clearing the list and adding them back would deselect them on the way: their
+                // markers and map icons would blink out and back, and the server would be sent an empty list in
+                // between. Only the targets the box leaves out are dropped, below.
+                RemoveTargetsOutsideBox(aircraft, targets, units, false);
             }
 
             var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);
+
+            // Only the units that will be added are new, whenever the box keeps some of what it covers. The
+            // rest of the list is either already there or on its way out, so it does not count against the cap.
+            var baseCount = replace ? CountInBox(targets, units) : targets.Count;
 
             Pending.Clear();
 
@@ -304,7 +417,7 @@ namespace MapMouseSelect
                     continue;
                 }
 
-                if (targets.Count + Pending.Count >= limit)
+                if (baseCount + Pending.Count >= limit)
                 {
                     capped++;
                     continue;
@@ -314,6 +427,15 @@ namespace MapMouseSelect
             }
 
             var added = Pending.Count;
+
+            if (replace)
+            {
+                // Silent when something is coming in, because the gesture then ends on a selection and should
+                // end on the select sound rather than on both. When the box only takes targets away, the drop is
+                // the gesture and keeps its own sound.
+                RemoveTargetsOutsideBox(aircraft, targets, units, added == 0);
+            }
+
             AddToTargetList(aircraft, Pending);
             Pending.Clear();
 
