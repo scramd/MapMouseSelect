@@ -20,6 +20,7 @@ namespace MapMouseSelect
         private static void Prefix(DynamicMap __instance)
         {
             Marquee.Tick(__instance);
+            TargetKeys.Tick();
         }
     }
 

@@ -39,7 +39,7 @@ namespace MapMouseSelect
             }
         }
 
-        private static Aircraft GetLiveAircraft()
+        internal static Aircraft GetLiveAircraft()
         {
             var hud = SceneSingleton<CombatHUD>.i;
             if (hud == null)

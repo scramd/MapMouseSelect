@@ -30,6 +30,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Left drag on the map | Marquee select |
 | Shift + left drag | Add to selection instead of replacing |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
+| `\` | Drop the selection, then select under the cursor, or the HUD designator while flying |
 
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
@@ -45,6 +46,7 @@ EventSystem icon-click path is untouched, so ordinary clicking still works.
 | Hotkeys | `PanButton` | `Middle` | Mouse button that drags to pan the map |
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
+| Hotkeys | `SelectOnlyTargetKey` | `\` | Clear the selection, then select under the cursor (map) or the HUD designator (flying, map closed) |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
 | Behavior | `FlyingHostilesOnly` | `false` | While flying, only box hostiles. Vanilla clicks allow any unit with a HUD marker |

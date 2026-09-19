@@ -228,7 +228,7 @@ namespace MapMouseSelect
         /// Reproduces DynamicMap.SelectFromMap: pick the nearest icon to the cursor within vanilla's
         /// range and hand it to ClickIcon as if the controller had done it.
         /// </summary>
-        private static void ClickNearestIcon(DynamicMap map)
+        internal static void ClickNearestIcon(DynamicMap map)
         {
             var icons = map.mapIcons;
             if (icons == null)
