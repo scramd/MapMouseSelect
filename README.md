@@ -45,7 +45,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
 | Double left click on the map | Move the camera there, which vanilla puts on the middle button |
-| `\` | Select only the unit under the cursor, dropping the rest of the target list |
+| `\` | Select only the unit being pointed at, dropping the rest of the target list |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
 Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
@@ -67,6 +67,14 @@ aircraft is live, because the `UnselectAll` it runs in commander view sits behin
 clicking unit after unit quietly accumulates targets and nothing about the click says so. The mod clears the
 list first, which makes a plain click mean the same thing as a plain drag, and leaves Shift as the additive
 click. The `Select` key keeps vanilla's behaviour.
+
+`\` prunes the target list down to whatever is being pointed at: the map icon nearest the cursor with the map
+up (`DynamicMap.SelectFromMap`'s 100 pixel pick), or the HUD marker nearest the target designator with it closed
+(`CombatHUD.TargetSelect`'s pick). It applies the prune itself rather than delegating, because both of those
+vanilla picks skip a unit that is already selected, and a target that is already selected is exactly what the
+key is asked to keep; pruning directly also means a press that lands on empty sky changes nothing, instead of
+losing the selection to a pick that never came. Pointing at a unit that is not a target replaces the list with
+it, the same as a plain click does in commander view.
 
 Clicking a map icon also has to stay a click: the release has to land within the game's drag threshold of
 the press. uGUI only cancels a click when the pressed object has somewhere to hand the drag to, and
@@ -166,7 +174,9 @@ the map icon, then calls `WeaponManager.TargetListChanged()` once, and removing 
 `SetStationTargets`, so a 20 unit marquee costs one message instead of twenty, and the HUD's own
 select or deselect sound plays once for the gesture, the way `CombatHUD.TargetSelect` plays it once
 for its whole batch. An empty box while flying drops the target list with a single
-`CombatHUD.DeselectAll`, the same clear a replace box starts with.
+`CombatHUD.DeselectAll`, the same clear a replace box starts with. Each of the keys that change targets
+sounds like what it did: dropping one target plays the deselect sound, keeping only the newest plays the
+deselect-all sound vanilla's own Cancel-hold uses rather than a select chime.
 
 ## Limitations
 

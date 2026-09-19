@@ -66,3 +66,25 @@ Dump-Method 'HUDUnitMarker' 'UpdateVisibility'
 Write-Output '--- CombatHUD.SetAircraft / GetTargetList'
 Dump-Method 'CombatHUD' 'SetAircraft'
 Dump-Method 'CombatHUD' 'GetTargetList'
+
+Write-Output '--- public fields the pick needs'
+foreach ($name in @('CombatHUD', 'DynamicMap', 'HUDUnitMarker')) {
+    $t = $asm.MainModule.GetType($name)
+    Write-Output ("  [{0}]" -f $name)
+    $t.Fields | Where-Object { $_.IsPublic } | ForEach-Object { Write-Output ("    {0} : {1}" -f $_.Name, $_.FieldType.FullName) }
+}
+
+Write-Output '--- DynamicMap.SelectFromMap'
+Dump-Method 'DynamicMap' 'SelectFromMap'
+
+Write-Output '--- callers of DynamicMap.SelectFromMap'
+foreach ($t in $asm.MainModule.GetTypes()) {
+    foreach ($m in @($t.Methods)) {
+        if (-not $m.HasBody) { continue }
+        foreach ($i in $m.Body.Instructions) {
+            if ($i.Operand -is [Mono.Cecil.MethodReference] -and $i.Operand.Name -eq 'SelectFromMap') {
+                Write-Output ("  {0}.{1}" -f $t.FullName, $m.Name)
+            }
+        }
+    }
+}

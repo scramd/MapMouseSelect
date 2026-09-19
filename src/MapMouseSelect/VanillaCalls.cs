@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -10,9 +11,8 @@ namespace MapMouseSelect
     ///
     /// They own rules that would otherwise have to be copied here and kept in step with the game:
     /// DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with the
-    /// smallest squared distance to the cursor among those its own filters allow; CombatHUD.TargetSelect
-    /// ranks the HUD markers around the target designator; and DynamicMap.JumpCameraTo is the commander's
-    /// camera jump. Each is resolved once and cached.
+    /// smallest squared distance to the cursor among those its own filters allow, and DynamicMap.JumpCameraTo
+    /// is the commander's camera jump. Each is resolved once and cached.
     ///
     /// Select is the keyboard and gamepad action, not the mouse: a mouse click reaches a map icon through
     /// its EventSystem handler instead, so this is not the call that reproduces one.
@@ -23,15 +23,15 @@ namespace MapMouseSelect
     internal static class VanillaCalls
     {
         private static MethodInfo _selectFromMap;
-        private static MethodInfo _targetSelect;
         private static MethodInfo _jumpCameraTo;
         private static FieldInfo _selectSound;
         private static FieldInfo _deselectSound;
+        private static FieldInfo _markers;
         private static bool _selectFromMapResolved;
-        private static bool _targetSelectResolved;
         private static bool _jumpCameraToResolved;
         private static bool _selectSoundResolved;
         private static bool _deselectSoundResolved;
+        private static bool _markersResolved;
 
         /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
         internal static bool ShiftHeld()
@@ -51,16 +51,31 @@ namespace MapMouseSelect
             Invoke(_selectFromMap, map);
         }
 
-        /// <summary>Vanilla's "select what the designator is pointing at". paint adds every marker in range.</summary>
-        internal static void TargetSelect(CombatHUD hud, bool paint)
+        /// <summary>
+        /// Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this is the
+        /// one thing here that reads state rather than calling vanilla: the target designator's pick needs to
+        /// walk them to find what the player is pointing at when the map is closed.
+        /// </summary>
+        internal static List<HUDUnitMarker> Markers(CombatHUD hud)
         {
-            if (!_targetSelectResolved)
+            if (hud == null)
             {
-                _targetSelectResolved = true;
-                _targetSelect = Resolve(typeof(CombatHUD), "TargetSelect", new[] { typeof(bool) });
+                return null;
             }
 
-            Invoke(_targetSelect, hud, paint);
+            if (!_markersResolved)
+            {
+                _markersResolved = true;
+                _markers = AccessTools.Field(typeof(CombatHUD), "markers");
+                if (_markers == null)
+                {
+                    Plugin.Log.LogWarning(
+                        "Could not find CombatHUD.markers, so the select-only key will not see the target "
+                        + "designator. The game may have changed.");
+                }
+            }
+
+            return _markers != null ? _markers.GetValue(hud) as List<HUDUnitMarker> : null;
         }
 
         /// <summary>Vanilla's commander camera jump, the call its own Jump Map branch makes.</summary>

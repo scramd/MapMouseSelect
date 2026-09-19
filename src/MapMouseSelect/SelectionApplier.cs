@@ -115,8 +115,12 @@ namespace MapMouseSelect
         /// up first, which is the newest target, and the HUD marker's SelectMarker is what selects the map icon
         /// as well. A unit already in the list is skipped, which is what vanilla's callers check for before
         /// calling SelectUnit.
+        ///
+        /// The caller decides the sound, because the sound belongs to the gesture rather than to the write: a
+        /// mass deselect that keeps one unit still reads as a deselect, and ending it on a select chime would
+        /// say the opposite of what happened.
         /// </summary>
-        internal static void AddToTargetList(Aircraft aircraft, List<Unit> units)
+        internal static void AddToTargetList(Aircraft aircraft, List<Unit> units, bool playSound = true)
         {
             var hud = SceneSingleton<CombatHUD>.i;
             var targets = TargetList(aircraft);
@@ -150,7 +154,11 @@ namespace MapMouseSelect
             }
 
             aircraft.weaponManager.TargetListChanged();
-            VanillaCalls.PlaySelectSound(hud);
+            if (playSound)
+            {
+                VanillaCalls.PlaySelectSound(hud);
+            }
+
             Plugin.Verbose("[targets] added " + added + " unit(s) with one refresh.");
         }
 
@@ -161,7 +169,7 @@ namespace MapMouseSelect
         /// list removal. DeselectMarker already ends in DynamicMap.DeselectIcon, and the direct call is here
         /// for the unit that has no marker at all, whose icon would otherwise stay selected on the map.
         /// </summary>
-        internal static void RemoveFromTargetList(Aircraft aircraft, List<Unit> units)
+        internal static void RemoveFromTargetList(Aircraft aircraft, List<Unit> units, bool playSound = true)
         {
             var hud = SceneSingleton<CombatHUD>.i;
             var targets = TargetList(aircraft);
@@ -201,7 +209,11 @@ namespace MapMouseSelect
             }
 
             aircraft.weaponManager.TargetListChanged();
-            VanillaCalls.PlayDeselectSound(hud);
+            if (playSound)
+            {
+                VanillaCalls.PlayDeselectSound(hud);
+            }
+
             Plugin.Verbose("[targets] removed " + removed + " unit(s) with one refresh.");
         }
 
