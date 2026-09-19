@@ -41,6 +41,7 @@ namespace MapMouseSelect
         private void Update()
         {
             TargetKeys.Tick();
+            ModifierThrottle.Sync();
 
             // One line a session answering whether this object outlived the boot, which is exactly what
             // the plugin's own object did not.

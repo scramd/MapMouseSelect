@@ -62,8 +62,10 @@ namespace MapMouseSelect
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
 
             BlockModifierThrottle = Config.Bind("Behavior", "BlockModifierThrottle", true,
-                "While the map is maximized, keep Shift and Control from also working the throttle. Shift "
-                + "is the map's additive modifier, so without this, adding to a selection spools the engine.");
+                "While the map is maximized, disable the bindings that put the throttle on Shift and "
+                + "Control. Shift is the map's additive modifier, so without this, adding to a selection "
+                + "spools the engine. Only those bindings are touched, so other throttle keys, a lever, "
+                + "and Shift or Control rebound to something else are unaffected.");
 
             BatchTargetListWhileFlying = Config.Bind("Behavior", "BatchTargetListWhileFlying", true,
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "

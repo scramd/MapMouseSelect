@@ -46,10 +46,12 @@ Vanilla has the branch but routes it to the wrong call in both modes: with no li
 the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselect` and
 `TargetListSelector_UnitItem.ToggleSelect`, route the other way round and are what this follows.
 
-While the map is maximized, Shift and Control no longer work the throttle. The game binds them to the two
-directions of its `Throttle` axis and also uses Shift as the map's additive modifier, so without this,
-adding to a selection spools the engine. Vanilla freezes the aircraft's axes, the camera and the trigger
-while the map is open, and this is the same idea applied to the throttle. `BlockModifierThrottle` turns it
+While the map is maximized, the bindings that put the throttle on Shift and Control are disabled. The game
+binds them to the two directions of its `Throttle` axis and also uses Shift as the map's additive modifier,
+so without this, adding to a selection spools the engine. Vanilla freezes the aircraft's axes, the camera
+and the trigger while the map is open, and this is the same idea applied to those two bindings. It is
+done per binding rather than per key: other keys bound to the throttle, a throttle lever, and Shift or
+Control rebound to something else are all untouched, and so is a joystick. `BlockModifierThrottle` turns it
 off if you would rather have vanilla's behavior.
 
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
@@ -67,7 +69,7 @@ EventSystem icon-click path is untouched, so ordinary clicking still works.
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
-| Behavior | `BlockModifierThrottle` | `true` | While the map is open, stop Shift and Control from working the throttle |
+| Behavior | `BlockModifierThrottle` | `true` | While the map is open, disable the throttle bindings on Shift and Control |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
 | Behavior | `FlyingHostilesOnly` | `false` | While flying, only box hostiles. Vanilla clicks allow any unit with a HUD marker |
 | Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |
