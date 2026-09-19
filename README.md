@@ -51,9 +51,9 @@ EventSystem icon-click path is untouched, so ordinary clicking still works.
 | Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |
 | Behavior | `EnableInMissionEditor` | `false` | Allow the marquee in the mission editor, which has its own box select |
 | Behavior | `MaxTargets` | `128` | Cap on targets a marquee may add. The game itself refuses more than 128 |
-| Visual | `ShowSelectionBox` | `true` | Draw the drag rectangle |
-| Visual | `BoxFillColor` / `BoxOutlineColor` | blue | Rectangle colors for a replacing selection |
-| Visual | `BoxFillColorAdditive` / `BoxOutlineColorAdditive` | green | Rectangle colors for an additive selection |
+| Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
+| Visual | `BoxOutlineColor` | blue | Outline color for a replacing selection |
+| Visual | `BoxOutlineColorAdditive` | green | Outline color for an additive selection (Shift held) |
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
 
 ## Build

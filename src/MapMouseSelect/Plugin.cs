@@ -27,9 +27,7 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> ShowSelectionBox { get; private set; }
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
-        internal static ConfigEntry<string> BoxFillColor { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColor { get; private set; }
-        internal static ConfigEntry<string> BoxFillColorAdditive { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
 
         private Harmony _harmony;
@@ -79,12 +77,8 @@ namespace MapMouseSelect
             OverlaySortingOrder = Config.Bind("Visual", "OverlaySortingOrder", 32000,
                 "Sorting order of this mod's overlay canvas. Raise it if the rectangle renders under the map UI.");
 
-            BoxFillColor = Config.Bind("Visual", "BoxFillColor", "#3CB4FF26",
-                "Fill color for a replacing selection, as #RRGGBB or #RRGGBBAA.");
             BoxOutlineColor = Config.Bind("Visual", "BoxOutlineColor", "#3CB4FFCC",
-                "Outline color for a replacing selection.");
-            BoxFillColorAdditive = Config.Bind("Visual", "BoxFillColorAdditive", "#7CE38B26",
-                "Fill color for an additive selection (Shift held).");
+                "Outline color for a replacing selection, as #RRGGBB or #RRGGBBAA.");
             BoxOutlineColorAdditive = Config.Bind("Visual", "BoxOutlineColorAdditive", "#7CE38BCC",
                 "Outline color for an additive selection (Shift held).");
 

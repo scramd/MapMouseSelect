@@ -13,15 +13,18 @@ namespace MapMouseSelect
     /// </summary>
     internal sealed class MarqueeOverlay
     {
-        private const float OutlineThickness = 1.5f;
+        private const float OutlineThickness = 1f;
+
+        private const int Top = 0;
+        private const int Bottom = 1;
+        private const int Left = 2;
+        private const int Right = 3;
 
         private static Sprite _whiteSprite;
 
         private Canvas _canvas;
-        private RectTransform _outline;
-        private RectTransform _fill;
-        private Image _outlineImage;
-        private Image _fillImage;
+        private readonly RectTransform[] _edges = new RectTransform[4];
+        private readonly Image[] _edgeImages = new Image[4];
 
         internal bool IsCreated => _canvas != null;
 
@@ -60,10 +63,18 @@ namespace MapMouseSelect
 
             // No GraphicRaycaster on purpose: the overlay must never consume pointer input.
 
-            _outline = CreateQuad(root.transform, "Outline", out _outlineImage);
-            _fill = CreateQuad(root.transform, "Fill", out _fillImage);
+            CreateEdge(root.transform, "Top", Top);
+            CreateEdge(root.transform, "Bottom", Bottom);
+            CreateEdge(root.transform, "Left", Left);
+            CreateEdge(root.transform, "Right", Right);
 
             root.SetActive(false);
+        }
+
+        private void CreateEdge(Transform parent, string name, int index)
+        {
+            _edges[index] = CreateQuad(parent, name, out var image);
+            _edgeImages[index] = image;
         }
 
         private static RectTransform CreateQuad(Transform parent, string name, out Image image)
@@ -100,21 +111,28 @@ namespace MapMouseSelect
                 return;
             }
 
-            var fillFallback = additive ? new Color(0.49f, 0.89f, 0.55f, 0.15f) : new Color(0.24f, 0.71f, 1f, 0.15f);
-            var outlineFallback = additive ? new Color(0.49f, 0.89f, 0.55f, 0.8f) : new Color(0.24f, 0.71f, 1f, 0.8f);
+            var fallback = additive ? new Color(0.49f, 0.89f, 0.55f, 0.8f) : new Color(0.24f, 0.71f, 1f, 0.8f);
+            var color = Plugin.ParseColor(
+                additive ? Plugin.BoxOutlineColorAdditive : Plugin.BoxOutlineColor, fallback);
 
-            _fillImage.color = additive
-                ? Plugin.ParseColor(Plugin.BoxFillColorAdditive, fillFallback)
-                : Plugin.ParseColor(Plugin.BoxFillColor, fillFallback);
-            _outlineImage.color = additive
-                ? Plugin.ParseColor(Plugin.BoxOutlineColorAdditive, outlineFallback)
-                : Plugin.ParseColor(Plugin.BoxOutlineColor, outlineFallback);
+            foreach (var image in _edgeImages)
+            {
+                image.color = color;
+            }
 
             _canvas.gameObject.SetActive(true);
 
+            // Four bars rather than one quad with a translucent center, so the box stays hollow.
             const float b = OutlineThickness;
-            SetQuad(_outline, screenRect.xMin - b, screenRect.yMin - b, screenRect.width + 2f * b, screenRect.height + 2f * b);
-            SetQuad(_fill, screenRect.xMin, screenRect.yMin, screenRect.width, screenRect.height);
+            var xMin = screenRect.xMin;
+            var yMin = screenRect.yMin;
+            var width = screenRect.width;
+            var height = screenRect.height;
+
+            SetQuad(_edges[Top], xMin - b, yMin + height, width + 2f * b, b);
+            SetQuad(_edges[Bottom], xMin - b, yMin - b, width + 2f * b, b);
+            SetQuad(_edges[Left], xMin - b, yMin, b, height);
+            SetQuad(_edges[Right], xMin + width, yMin, b, height);
         }
 
         internal void Hide()
@@ -131,10 +149,11 @@ namespace MapMouseSelect
             {
                 Object.Destroy(_canvas.gameObject);
                 _canvas = null;
-                _outline = null;
-                _fill = null;
-                _outlineImage = null;
-                _fillImage = null;
+                for (var i = 0; i < _edges.Length; i++)
+                {
+                    _edges[i] = null;
+                    _edgeImages[i] = null;
+                }
             }
         }
     }
