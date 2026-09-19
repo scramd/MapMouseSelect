@@ -6,26 +6,28 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Wrappers over the two private vanilla methods the mod needs verbatim.
+    /// Wrappers over the private vanilla methods the mod needs verbatim.
     ///
-    /// Both own selection rules that would otherwise have to be copied here and kept in step with the
-    /// game: DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with
-    /// the smallest squared distance to the cursor among those its own filters allow, and
-    /// CombatHUD.TargetSelect ranks the HUD markers around the target designator. Each is resolved once and
-    /// cached.
+    /// They own rules that would otherwise have to be copied here and kept in step with the game:
+    /// DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with the
+    /// smallest squared distance to the cursor among those its own filters allow; CombatHUD.TargetSelect
+    /// ranks the HUD markers around the target designator; and DynamicMap.JumpCameraTo is the commander's
+    /// camera jump. Each is resolved once and cached.
     ///
     /// Select is the keyboard and gamepad action, not the mouse: a mouse click reaches a map icon through
     /// its EventSystem handler instead, so this is not the call that reproduces one.
     ///
     /// AccessTools returns null instead of throwing when a member is missing, so a game update that
-    /// renames either method costs a logged warning rather than a crash.
+    /// renames any of them costs a logged warning rather than a crash.
     /// </summary>
     internal static class VanillaCalls
     {
         private static MethodInfo _selectFromMap;
         private static MethodInfo _targetSelect;
+        private static MethodInfo _jumpCameraTo;
         private static bool _selectFromMapResolved;
         private static bool _targetSelectResolved;
+        private static bool _jumpCameraToResolved;
 
         /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
         internal static bool ShiftHeld()
@@ -55,6 +57,24 @@ namespace MapMouseSelect
             }
 
             Invoke(_targetSelect, hud, paint);
+        }
+
+        /// <summary>Vanilla's commander camera jump, the call its own Jump Map branch makes.</summary>
+        internal static bool JumpCameraTo(DynamicMap map, GlobalPosition position)
+        {
+            if (!_jumpCameraToResolved)
+            {
+                _jumpCameraToResolved = true;
+                _jumpCameraTo = Resolve(typeof(DynamicMap), "JumpCameraTo", new[] { typeof(GlobalPosition) });
+            }
+
+            if (_jumpCameraTo == null)
+            {
+                return false;
+            }
+
+            Invoke(_jumpCameraTo, map, position);
+            return true;
         }
 
         private static MethodInfo Resolve(Type type, string name, Type[] parameters)

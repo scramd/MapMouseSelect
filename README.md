@@ -31,6 +31,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Shift + left drag | Add to selection instead of replacing |
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
+| Double left click on the map | Move the camera there, which vanilla puts on the middle button |
 | `\` | Select only the unit under the cursor, dropping the rest of the target list |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
@@ -66,7 +67,9 @@ whatever your layout uses, or turn off `SuppressModifierBindings` to get vanilla
 
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
-progress.
+progress. Vanilla's camera jump sits on the middle button too, and is moved to a double left click, counted
+the way uGUI counts one: a second press within 0.3s of the previous press, close enough that the game's
+drag threshold says the pointer did not travel.
 
 A left press that never passes the drag threshold is left entirely to vanilla: the marquee only acts once
 the gesture is a drag, and it never takes anything away from the mouse click path, which is the
