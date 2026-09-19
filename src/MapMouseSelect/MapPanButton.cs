@@ -29,5 +29,15 @@ namespace MapMouseSelect
             var button = Plugin.PanButton != null ? (int)Plugin.PanButton.Value : vanillaButtonIndex;
             return Input.GetMouseButton(button);
         }
+
+        /// <summary>
+        /// The same button, freshly pressed. Used to stand vanilla's camera jump down for the button the mod
+        /// took, and only for that button: the Jump Map action keeps its other bindings, so a gamepad button
+        /// or another mouse button bound to it still jumps.
+        /// </summary>
+        internal static bool GetMouseButtonDown()
+        {
+            return Plugin.PanButton != null && Input.GetMouseButtonDown((int)Plugin.PanButton.Value);
+        }
     }
 }

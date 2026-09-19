@@ -29,11 +29,15 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Keeps vanilla's own camera jump out of the middle mouse button, which is this mod's map pan now.
+    /// Stands vanilla's camera jump down for the button this mod uses as the map pan, and only that one.
     ///
-    /// The jump is not gone: CameraJump makes the same call from a double left click, and that is the only
-    /// thing this lets through. Vanilla reaches this method from one place, the Jump Map branch in
-    /// MapControls, which requires the map to be maximized and the commander to have no aircraft.
+    /// Vanilla jumps the commander's camera to the cursor when the Jump Map action goes down, and by default
+    /// that action is on the middle mouse button, which the mod took for panning, so one press did both. A
+    /// press of the pan button is refused here; every other binding the action has, a gamepad button
+    /// included, still jumps. The mod's own jump, from a double left click, always gets through.
+    ///
+    /// Vanilla reaches this method from one place, the Jump Map branch in MapControls, which requires the
+    /// map to be maximized and the commander to have no aircraft.
     /// </summary>
     [HarmonyPatch(typeof(DynamicMap), "JumpCameraTo")]
     internal static class DynamicMapJumpCameraToPatch
@@ -41,7 +45,7 @@ namespace MapMouseSelect
         [HarmonyPrefix]
         private static bool Prefix()
         {
-            return CameraJump.Requested;
+            return CameraJump.Requested || !PanButtonCompat.GetMouseButtonDown();
         }
     }
 

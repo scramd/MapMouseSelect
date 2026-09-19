@@ -8,8 +8,9 @@ namespace MapMouseSelect
     ///
     /// Vanilla jumps the commander's camera to the cursor when the Jump Map action goes down, and that
     /// action is on the middle mouse button by default, which this mod took for panning. Rather than let
-    /// the two fight over the same press, the jump is answered here and the prefix on DynamicMap.JumpCameraTo
-    /// stops vanilla's own branch from doing it as well.
+    /// the two fight over the same press, the jump is answered here as well, and the prefix on
+    /// DynamicMap.JumpCameraTo refuses the pan button so that one press does not do both. The action's
+    /// other bindings are left alone and still jump.
     ///
     /// A double click is the game's idea of one: uGUI counts a second press as a further click when it
     /// arrives within 0.3s of the previous press, and the two have to land on the same object, which is
