@@ -41,6 +41,10 @@ namespace MapMouseSelect
         internal static ConfigEntry<string> BoxOutlineColor { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorRemove { get; private set; }
+        internal static ConfigEntry<bool> ShowDestroyedBuildings { get; private set; }
+        internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
+        internal static ConfigEntry<bool> FilterWrecks { get; private set; }
+        internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
         private Harmony _harmony;
 
@@ -111,6 +115,20 @@ namespace MapMouseSelect
             BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", "#FF5A5ACC",
                 "Outline color for a deselecting marquee (Control held).");
 
+            ShowDestroyedBuildings = Config.Bind("Wrecks", "ShowDestroyedBuildings", true,
+                "Keep a destroyed building's map icon instead of letting the game drop it, drawn darker.");
+
+            DestroyedBuildingTint = Config.Bind("Wrecks", "DestroyedBuildingTint", 0.45f,
+                new ConfigDescription(
+                    "How much of its usual colour a wrecked building's icon keeps. 1 leaves it unchanged.",
+                    new AcceptableValueRange<float>(0.1f, 1f)));
+
+            FilterWrecks = Config.Bind("Target list", "FilterWrecks", true,
+                "Add a WRECK button to the Target List pane, which filters destroyed buildings out when unlit.");
+
+            FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
+                "Add a NEUTRAL button to the Target List pane, for units that are neither friendly nor hostile.");
+
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
             ModHost.Ensure();
@@ -149,12 +167,22 @@ namespace MapMouseSelect
                 new[] { typeof(PointerEventData) });
             var iconClickInfo = iconClickTarget != null ? PatchProcessor.GetPatchInfo(iconClickTarget) : null;
 
+            var wreckTarget = AccessTools.Method(typeof(UnitMapIcon), "UnitMapIcon_OnUnitDisabled");
+            var wreckInfo = wreckTarget != null ? PatchProcessor.GetPatchInfo(wreckTarget) : null;
+            var exclusionsTarget = AccessTools.Method(
+                typeof(TargetListSelector), nameof(TargetListSelector.CheckExclusions));
+            var exclusionsInfo =
+                exclusionsTarget != null ? PatchProcessor.GetPatchInfo(exclusionsTarget) : null;
+
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
+                + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
+                + " | target filter postfixes="
+                + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value);

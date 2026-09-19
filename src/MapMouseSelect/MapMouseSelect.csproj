@@ -53,6 +53,12 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The Target List filter buttons carry their labels in TextMeshPro. -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ManagedDir)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <!-- Unit derives from Mirage's NetworkBehaviour, so the base type must be resolvable. -->
     <Reference Include="Mirage">
       <HintPath>$(ManagedDir)\Mirage.dll</HintPath>
