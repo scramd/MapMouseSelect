@@ -40,6 +40,7 @@ namespace MapMouseSelect
 
         private void Update()
         {
+            ModActions.EnsureDefaultBindings();
             TargetKeys.Tick();
             ModifierGuard.Tick();
             CameraJump.Tick();

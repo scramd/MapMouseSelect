@@ -102,10 +102,10 @@ namespace MapMouseSelect
         /// action has, a gamepad button included, is left exactly as it was. Nothing has to infer where a
         /// press came from, and the binding goes back the moment the map closes.
         ///
-        /// The button is matched by its element identifier, which is what Rewired keys element maps on. The
-        /// ordering of those ids on the mouse is not written down anywhere readable in this build, so the
-        /// action's mouse bindings are logged once: if the id is not the one assumed here, the log says so
-        /// and the button simply keeps its vanilla binding.
+        /// The button is matched by the name Rewired gives its mouse elements, which is the HID numbering:
+        /// the middle button is element 5, "Mouse Button 3". That came out of the log rather than out of any
+        /// documentation, so what the action is bound to on the mouse is logged once: if the name is not the
+        /// one expected here, the log says what it actually is and the button simply keeps its binding.
         /// </summary>
         private static void HoldJumpButtonOff(bool open)
         {
@@ -132,7 +132,7 @@ namespace MapMouseSelect
                 return;
             }
 
-            var button = (int)Plugin.PanButton.Value;
+            var button = PanButtonName();
 
             MouseMaps.Clear();
             player.controllers.maps.GetAllMaps(ControllerType.Mouse, MouseMaps);
@@ -158,10 +158,10 @@ namespace MapMouseSelect
                     {
                         Plugin.Verbose(
                             ActionName + " is bound on the mouse to element " + element.elementIdentifierId
-                            + " ('" + element.elementIdentifierName + "').");
+                            + " (index " + element.elementIndex + ", '" + element.elementIdentifierName + "').");
                     }
 
-                    if (element.elementIdentifierId != button)
+                    if (element.elementIdentifierName != button)
                     {
                         continue;
                     }
@@ -175,6 +175,25 @@ namespace MapMouseSelect
             }
 
             _reportedBindings = true;
+        }
+
+        /// <summary>
+        /// The name Rewired gives the mouse button this mod pans with, in HID numbering: the middle button,
+        /// which is what the Jump Map binding turned out to be (element 5), is "Mouse Button 3", so left is
+        /// 1 and right is 2. The middle one was read off this install; left and right follow the same
+        /// numbering rather than being observed.
+        /// </summary>
+        private static string PanButtonName()
+        {
+            switch (Plugin.PanButton.Value)
+            {
+                case MapPanButton.Left:
+                    return "Mouse Button 1";
+                case MapPanButton.Right:
+                    return "Mouse Button 2";
+                default:
+                    return "Mouse Button 3";
+            }
         }
 
         private static void ReleaseJumpButton()

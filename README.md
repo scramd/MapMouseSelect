@@ -44,7 +44,9 @@ Requires BepInEx 5 x64 in the game directory.
 Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
 show up in the game's own Controls menu, can be rebound to a gamepad or stick button, and are read with
 the same timed-press calls the game uses for its target keys. They join the action category that
-`Cancel` belongs to, which is why the menu lists them without any prefab changes.
+`Cancel` belongs to, which is why the menu lists them without any prefab changes. The mod binds them to
+their default keys once Rewired is up, which is also what puts a default in front of anyone whose saved
+controls layout predates them, as long as nothing is bound to either action already.
 
 Shift + click on a unit that is already selected is meant to deselect it, and this mod makes that work.
 Vanilla has the branch but routes it to the wrong call in both modes: with no live aircraft it asks

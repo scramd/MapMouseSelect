@@ -18,8 +18,11 @@ namespace MapMouseSelect
     /// InputManager_Base.Awake is for:
     ///
     /// - the actions are appended to the action list and registered in the category map
-    /// - default bindings are written into the keyboard map that already binds the action they sit
-    ///   beside, so they work before the player has opened any menu
+    ///
+    /// Their default keys are not written here. An ActionElementMap cannot be built before Rewired has a
+    /// keyboard to build it against, which is what the first attempt at this got wrong: it threw inside
+    /// Rewired and took the whole registration with it. EnsureDefaultBindings does it once Rewired is
+    /// running instead, through the same call the game's own Controls menu binds with.
     ///
     /// They join an existing vanilla action's category rather than getting a category of their own. The
     /// Controls menu lists actions per category from mapping sets baked into its prefab, so joining a
@@ -85,9 +88,6 @@ namespace MapMouseSelect
             EnsureAction(actions, categoryMap, anchor.categoryId, SelectOnlyId, SelectOnlyName, "Select Target Only");
             EnsureAction(actions, categoryMap, anchor.categoryId, DeselectOldestId, DeselectOldestName, "Deselect Oldest Target");
 
-            AddDefaultBinding(userData, anchor.id, SelectOnlyId, KeyCode.Backslash);
-            AddDefaultBinding(userData, anchor.id, DeselectOldestId, KeyCode.Delete);
-
             Plugin.Log.LogInfo(
                 "Registered " + SelectOnlyName + " and " + DeselectOldestName + " in the Rewired '"
                 + CategoryName(userData, anchor.categoryId) + "' category, matching the '" + AnchorActionName
@@ -122,47 +122,118 @@ namespace MapMouseSelect
             categoryMap.AddAction(categoryId, id);
         }
 
+        private static readonly List<ControllerMap> KeyboardMaps = new List<ControllerMap>();
+
+        private static bool _bindingsApplied;
+
         /// <summary>
-        /// Writes a default binding into the same keyboard map entries that bind the anchor action, so
-        /// the key works out of the box and the Controls menu offers "reset to defaults" for it.
+        /// Gives each of the mod's actions its default key, once, on the first frame Rewired can answer.
+        ///
+        /// An action that already has a binding on any controller is left alone, so a player who rebound
+        /// either key keeps their layout. The binding goes onto every enabled keyboard map that already
+        /// binds the anchor action, which is the same reach the editor data would have had, with
+        /// ControllerMap.ReplaceOrCreateElementMap doing the work, the call the Controls menu itself uses.
+        ///
+        /// A player who deliberately clears one of these keys gets it back on the next launch. That is the
+        /// price of the mod's own keys working out of the box.
         /// </summary>
-        private static void AddDefaultBinding(object userData, int anchorActionId, int actionId, KeyCode key)
+        internal static void EnsureDefaultBindings()
         {
-            var maps = Field<List<ControllerMap_Editor>>(userData, "keyboardMaps");
-            if (maps == null)
+            if (_bindingsApplied || !Registered)
             {
                 return;
             }
 
-            var added = 0;
-            for (var i = 0; i < maps.Count; i++)
+            var player = GameManager.playerInput;
+            var keyboard = ReInput.controllers != null ? ReInput.controllers.Keyboard : null;
+            if (player == null || keyboard == null)
             {
-                var map = maps[i];
-                if (map == null || map.actionElementMaps == null)
+                return;
+            }
+
+            var anchorActionId = ReInput.mapping.GetActionId(AnchorActionName);
+            if (anchorActionId < 0)
+            {
+                return;
+            }
+
+            KeyboardMaps.Clear();
+            player.controllers.maps.GetAllMaps(ControllerType.Keyboard, KeyboardMaps);
+
+            // The player's maps are not assigned yet on the first frames, so this stays unlatched until
+            // there is something to bind into.
+            if (KeyboardMaps.Count == 0)
+            {
+                return;
+            }
+
+            BindIfUnbound(player, keyboard, anchorActionId, SelectOnlyId, KeyCode.Backslash, SelectOnlyName);
+            BindIfUnbound(player, keyboard, anchorActionId, DeselectOldestId, KeyCode.Delete, DeselectOldestName);
+
+            _bindingsApplied = true;
+        }
+
+        private static void BindIfUnbound(
+            Player player,
+            Keyboard keyboard,
+            int anchorActionId,
+            int actionId,
+            KeyCode key,
+            string name)
+        {
+            if (player.controllers.maps.GetFirstElementMapWithAction(actionId, false) != null)
+            {
+                return;
+            }
+
+            var identifier = keyboard.GetElementIdentifierByKeyCode(key);
+            if (identifier == null)
+            {
+                Plugin.Log.LogWarning(
+                    "Rewired could not resolve the " + key + " key, so " + name + " has no default binding.");
+                return;
+            }
+
+            var assignment = ElementAssignment.CompleteAssignment(
+                ControllerType.Keyboard,
+                ControllerElementType.Button,
+                identifier.id,
+                AxisRange.Full,
+                key,
+                ModifierKeyFlags.None,
+                actionId,
+                Pole.Positive,
+                false);
+
+            var added = 0;
+            for (var i = 0; i < KeyboardMaps.Count; i++)
+            {
+                var map = KeyboardMaps[i];
+                if (map == null || !map.enabled || !BindsAction(map, anchorActionId))
                 {
                     continue;
                 }
 
-                if (!BindsAction(map.actionElementMaps, anchorActionId)
-                    || BindsAction(map.actionElementMaps, actionId))
+                if (map.ReplaceOrCreateElementMap(assignment))
                 {
-                    continue;
+                    added++;
                 }
-
-                map.actionElementMaps.Add(CreateKeyboardElement(actionId, key));
-                added++;
             }
 
             if (added == 0)
             {
                 Plugin.Log.LogWarning(
-                    "No default " + key + " binding was written for " + actionId
+                    "No keyboard map took a default " + key + " binding for " + name
                     + ", so it has to be bound in the Controls menu. The game may have changed.");
+                return;
             }
+
+            Plugin.Verbose("Bound " + name + " to " + key + " on " + added + " keyboard map(s).");
         }
 
-        private static bool BindsAction(List<ActionElementMap> elements, int actionId)
+        private static bool BindsAction(ControllerMap map, int actionId)
         {
+            var elements = map.AllMaps;
             for (var i = 0; i < elements.Count; i++)
             {
                 if (elements[i] != null && elements[i].actionId == actionId)
@@ -172,25 +243,6 @@ namespace MapMouseSelect
             }
 
             return false;
-        }
-
-        private static ActionElementMap CreateKeyboardElement(int actionId, KeyCode key)
-        {
-            var keyboardKey = (KeyboardKeyCode)(int)key;
-            var element = new ActionElementMap(
-                actionId,
-                ControllerElementType.Button,
-                Pole.Positive,
-                keyboardKey,
-                ModifierKey.None,
-                ModifierKey.None,
-                ModifierKey.None);
-
-            // The identifier and axis fields are internal, and Rewired expects them populated.
-            SetField(element, "_elementIdentifierId", (int)keyboardKey);
-            SetField(element, "_axisRange", AxisRange.Full);
-            SetField(element, "_invert", false);
-            return element;
         }
 
         private static void SetField(object instance, string name, object value)
