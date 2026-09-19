@@ -69,9 +69,9 @@ whatever your layout uses, or turn off `SuppressModifierBindings` to get vanilla
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
 progress. Vanilla's camera jump is on the middle button, which makes it collide with `PanButton`, so a
 double left click does it instead, counted the way uGUI counts one: a second press within 0.3s of the
-previous press, close enough that the game's drag threshold says the pointer did not travel. Only a press of
-`PanButton` is stood down for the jump; the `Jump Map` action keeps its other bindings, so a gamepad button
-bound to it still moves the camera.
+previous press, close enough that the game's drag threshold says the pointer did not travel. The `Jump Map`
+action loses only its binding on `PanButton`, and only while the map is open, so anything else bound to it, a
+gamepad button included, still moves the camera.
 
 A left press that never passes the drag threshold is left entirely to vanilla: the marquee only acts once
 the gesture is a drag, and it never takes anything away from the mouse click path, which is the

@@ -144,8 +144,6 @@ namespace MapMouseSelect
                 "UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick",
                 new[] { typeof(PointerEventData) });
             var iconClickInfo = iconClickTarget != null ? PatchProcessor.GetPatchInfo(iconClickTarget) : null;
-            var jumpTarget = AccessTools.Method(typeof(DynamicMap), "JumpCameraTo");
-            var jumpInfo = jumpTarget != null ? PatchProcessor.GetPatchInfo(jumpTarget) : null;
 
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
@@ -153,7 +151,6 @@ namespace MapMouseSelect
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
-                + " | jump prefixes=" + (jumpInfo != null ? jumpInfo.Prefixes.Count : -1)
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value);
