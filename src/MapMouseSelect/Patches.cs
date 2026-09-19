@@ -20,6 +20,8 @@ namespace MapMouseSelect
         [HarmonyPrefix]
         private static void Prefix(DynamicMap __instance)
         {
+            // Cheap guard against the host object having been lost during the game's boot.
+            ModHost.Ensure();
             Marquee.Tick(__instance);
         }
     }
@@ -34,20 +36,6 @@ namespace MapMouseSelect
         private static void Prefix(InputManager_Base __instance)
         {
             ModActions.Register(__instance);
-        }
-    }
-
-    /// <summary>
-    /// ExtraUiInput is where vanilla reads the target-cancel action, so the mod reads its own actions in
-    /// the same place and inherits the same frame timing and the same scene context.
-    /// </summary>
-    [HarmonyPatch(typeof(ExtraUiInput), "Update")]
-    internal static class ExtraUiInputUpdatePatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix()
-        {
-            TargetKeys.Tick();
         }
     }
 
@@ -66,7 +54,6 @@ namespace MapMouseSelect
         {
             return !Marquee.OwnsMouse;
         }
-
         /// <summary>
         /// Moves map panning off the hardcoded left mouse button. Gameplay-independent: the pan gate is
         /// the only plain Input.GetMouseButton call in MapControls, so exactly one site must match.

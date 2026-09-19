@@ -3,12 +3,12 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Keyboard actions that operate on the current target selection.
+    /// Key handling for the current target selection.
     ///
     /// The keys are real Rewired actions registered by ModActions, so they are read with the same calls
-    /// vanilla's own target handling uses and are rebindable in the Controls menu. Tick runs from a
-    /// postfix on ExtraUiInput.Update, which is where vanilla reads Cancel, so the timing and the scene
-    /// context are the same as the game's own.
+    /// vanilla's own target handling uses and are rebindable in the Controls menu. Tick runs from the
+    /// mod's own host object (ModHost), which is a GameObject this mod owns and marks DontDestroyOnLoad
+    /// because the plugin's own object does not outlive this game's boot.
     ///
     /// Both map modes are covered because they keep the selection in different places: a live aircraft
     /// uses CombatHUD's weapon target list, anything else uses DynamicMap's selected map icons.

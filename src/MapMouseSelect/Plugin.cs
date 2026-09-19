@@ -94,6 +94,7 @@ namespace MapMouseSelect
 
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll(typeof(Plugin).Assembly);
+            ModHost.Ensure();
             ReportPatchState();
 
             try
