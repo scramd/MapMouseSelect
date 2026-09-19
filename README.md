@@ -44,6 +44,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Left drag on the map | Marquee select |
 | Shift + left drag | Add to selection instead of replacing |
 | Ctrl + left drag | Take the boxed units out of the selection |
+| Left click a unit | Leave only that unit selected |
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
 | Double left click on the map | Move the camera there, which vanilla puts on the middle button |
@@ -69,6 +70,14 @@ aircraft is live, because the `UnselectAll` it runs in commander view sits behin
 clicking unit after unit quietly accumulates targets and nothing about the click says so. The mod drops every
 target except the clicked unit instead, which makes a plain click mean the same thing as a plain drag, and
 leaves Shift as the additive click. The `Select` key keeps vanilla's behaviour.
+
+That works for a unit that is already selected too, which it did not before. `MapIcon.SelectIcon` clears the
+icon's raycast target and vanilla only puts it back when the icon is deselected, and a uGUI graphic that is not
+a raycast target gets no pointer events at all: the click landed on the map behind the icon. Vanilla's own
+shift-click deselect branch inside `UnitMapIcon.ClickIcon` was unreachable for the same reason, so the mod puts
+the raycast target back on unit icons while they are selected. A side effect worth knowing is that a selected
+unit can be hovered for its tooltip again, which vanilla also could not do. Airbase and own-aircraft icons are
+left as vanilla clears them.
 
 `\` prunes the target list down to whatever is being pointed at: the map icon nearest the cursor with the map
 up (`DynamicMap.SelectFromMap`'s 100 pixel pick), or the HUD marker nearest the target designator with it closed

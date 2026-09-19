@@ -150,6 +150,32 @@ namespace MapMouseSelect
     }
 
     /// <summary>
+    /// Keeps a selected unit's map icon clickable.
+    ///
+    /// MapIcon.SelectIcon clears the icon's raycast target and nothing puts it back until the icon is
+    /// deselected again. A uGUI graphic that is not a raycast target receives no pointer events at all, so a
+    /// selected unit could not be hovered for its tooltip and could not be clicked: vanilla's own shift-click
+    /// deselect branch inside ClickIcon was unreachable, and so were this mod's replacement for it and its
+    /// click replace. Nothing about that shows up as an error, the click simply lands on the map behind the
+    /// icon, which is why a click on something already selected appeared to do nothing.
+    ///
+    /// Only unit icons are restored. AirbaseMapIcon.ClickIcon clears its own target on purpose once an airbase
+    /// is selected, and the local aircraft's icon is cleared by HighlightIcon every time its colour is rebuilt.
+    /// </summary>
+    [HarmonyPatch(typeof(MapIcon), nameof(MapIcon.SelectIcon))]
+    internal static class MapIconSelectIconPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(MapIcon __instance)
+        {
+            if (__instance is UnitMapIcon icon && icon.iconImage != null)
+            {
+                icon.iconImage.raycastTarget = true;
+            }
+        }
+    }
+
+    /// <summary>
     /// Adds the mod's actions to Rewired while it is still loading the game's input data.
     /// </summary>
     [HarmonyPatch(typeof(InputManager_Base), "Awake")]
