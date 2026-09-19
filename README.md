@@ -34,21 +34,23 @@ take out.
 A destroyed building keeps its map icon, drawn darker, instead of vanishing from the map. Vanilla drops the
 icon in `UnitMapIcon.UnitMapIcon_OnUnitDisabled`, and that building is not gone: `Building.UnitDisabled` spawns
 the wreckage model and leaves the unit in place, disabled and repairable. Blocking the icon removal is the whole
-change, so the wreck keeps its position, its scaling and its theme colour, and the tracer tint is applied
-afterwards by multiplying the colour, defaulting to 45% of it.
+change, so the wreck keeps its position, its scaling and its theme colour, and the tint is applied afterwards by
+multiplying the colour, defaulting to 45% of it. Repairing the building puts the normal colour back.
 
-A wreck is not a target. Its icon has no raycast target, so it cannot be clicked or picked by the `Select`
-action, and the marquee skips disabled units anyway. Repairing the building puts the normal colour back.
+Whether a wreck can be selected is the `WRECK` filter's business, not the icon's. Vanilla's clicks, the `Select`
+action and the marquee all pass through `TargetListSelector.CheckExclusions`, so an unlit filter is what makes a
+wreck unselectable, and the icon is left alone otherwise: it still hovers for its tooltip, which a cleared
+raycast target would have taken away.
 
 Two extra groups join the game's Target List filter pane, because neither fits what vanilla models there: the
 faction buttons carry a same-faction flag rather than a faction, so neutral units can never be filtered, and
 nothing at all knows about destroyed buildings. They are copies of the pane's own faction buttons, added to the
 row when the pane starts:
 
-| Button | Lit means | Unlit means |
-|---|---|---|
-| `NEUTRAL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out |
-| `WRECK` | Destroyed buildings are shown | Destroyed buildings are filtered out |
+| Button | Lit means | Unlit means | Starts |
+|---|---|---|---|
+| `NEUTRAL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out | Lit, as vanilla behaves |
+| `WRECK` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default |
 
 They behave like the pane's own filters: clicking toggles them, `Reset` turns them back on, and changing one
 re-checks the icons the way a vanilla filter does. Filtering a wreck out also deselects it, if it was selected.

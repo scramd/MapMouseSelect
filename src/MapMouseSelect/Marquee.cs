@@ -222,7 +222,15 @@ namespace MapMouseSelect
                 }
 
                 var unit = unitIcon.unit;
-                if (unit == null || unit.disabled)
+                if (unit == null)
+                {
+                    continue;
+                }
+
+                // A disabled unit has no icon left to box, except for a wrecked building, which this mod keeps on
+                // the map. Whether that one can be boxed is the Target List pane's WRECK filter to say, so it is
+                // left to the CheckExclusions gate below rather than skipped here.
+                if (unit.disabled && !DestroyedBuildings.IsWreck(unit))
                 {
                     continue;
                 }

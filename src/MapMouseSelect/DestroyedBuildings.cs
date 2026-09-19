@@ -11,10 +11,11 @@ namespace MapMouseSelect
     /// UnitMapIcon.UnitMapIcon_OnUnitDisabled, which detaches the icon and destroys its object. Blocking that
     /// for a disabled Building is all it takes for the wreck to keep its icon, its position and its scaling.
     ///
-    /// The icon is then darkened, so a wreck reads as a wreck rather than as a live building, and its raycast
-    /// target is cleared, so it cannot be clicked or picked by the Select action. Nothing else about the wreck
-    /// changes: it is still dimmed by the Target List filters, still hoverable for its tooltip, and repairing it
-    /// puts the normal colour back, because every colour rebuild goes through the same patch.
+    /// The icon is then darkened, so a wreck reads as a wreck rather than as a live building. Nothing else about
+    /// it changes: it stays hoverable for its tooltip, and whether it can be selected at all is the Target List
+    /// pane's business, through the WRECK filter this mod adds, which is off by default. That filter is the same
+    /// gate vanilla's own clicks, the Select action and the marquee all pass through, so an unlit WRECK button
+    /// makes wrecks unselectable without any click handling of this mod's own.
     /// </summary>
     internal static class DestroyedBuildings
     {
@@ -39,9 +40,6 @@ namespace MapMouseSelect
             var tint = Mathf.Clamp(Plugin.DestroyedBuildingTint.Value, 0.1f, 1f);
             var color = unitIcon.iconImage.color;
             unitIcon.iconImage.color = new Color(color.r * tint, color.g * tint, color.b * tint, color.a);
-
-            // A wreck is not a target: no click, no Select action pick, and no tooltip flicker from the pointer.
-            unitIcon.iconImage.raycastTarget = false;
         }
 
         /// <summary>

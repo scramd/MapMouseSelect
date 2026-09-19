@@ -36,12 +36,15 @@ namespace MapMouseSelect
             // Destroyed objects compare equal to null, so a scene change clears these by itself.
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
-                _neutral = Clone(selector.toggleFactionItems[0], "NEUTRAL");
+                _neutral = Clone(selector.toggleFactionItems[0], "NEUTRAL", true);
             }
 
+            // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit
+            // filter is exactly what stops it being selectable, through the same gate every vanilla selection
+            // path already uses. Lighting the button is how a player asks to select wrecks on purpose.
             if (Plugin.FilterWrecks.Value && _wreck == null)
             {
-                _wreck = Clone(selector.toggleFactionItems[0], "WRECK");
+                _wreck = Clone(selector.toggleFactionItems[0], "WRECK", false);
             }
         }
 
@@ -49,7 +52,8 @@ namespace MapMouseSelect
         /// Copies one of the pane's own faction buttons. Copying keeps the sizing, the label and the theme
         /// colours the pane already uses, so the two new buttons sit in the row looking like the rest of it.
         /// </summary>
-        private static TargetListSelector_ToggleButton Clone(TargetListSelector_ToggleButton template, string text)
+        private static TargetListSelector_ToggleButton Clone(
+            TargetListSelector_ToggleButton template, string text, bool lit)
         {
             var copy = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
             copy.name = "MapMouseSelect_" + text;
@@ -67,7 +71,7 @@ namespace MapMouseSelect
                 button.label.text = text;
             }
 
-            button.Set(true);
+            button.Set(lit);
             return button;
         }
 
