@@ -8,10 +8,14 @@ namespace MapMouseSelect
     /// <summary>
     /// Wrappers over the two private vanilla methods the mod needs verbatim.
     ///
-    /// Both of them own selection rules that would otherwise have to be copied here and kept in step
-    /// with the game: DynamicMap.SelectFromMap picks the nearest unit icon to the cursor, and
-    /// CombatHUD.TargetSelect ranks the HUD markers around the target designator. Each is resolved
-    /// once and cached.
+    /// Both own selection rules that would otherwise have to be copied here and kept in step with the
+    /// game: DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with
+    /// the smallest squared distance to the cursor among those its own filters allow, and
+    /// CombatHUD.TargetSelect ranks the HUD markers around the target designator. Each is resolved once and
+    /// cached.
+    ///
+    /// Select is the keyboard and gamepad action, not the mouse: a mouse click reaches a map icon through
+    /// its EventSystem handler instead, so this is not the call that reproduces one.
     ///
     /// AccessTools returns null instead of throwing when a member is missing, so a game update that
     /// renames either method costs a logged warning rather than a crash.
@@ -29,7 +33,7 @@ namespace MapMouseSelect
             return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         }
 
-        /// <summary>Vanilla's "select the unit the cursor is over", including the click it issues.</summary>
+        /// <summary>Vanilla's map selection for the Select action, including the click it issues.</summary>
         internal static void SelectFromMap(DynamicMap map)
         {
             if (!_selectFromMapResolved)

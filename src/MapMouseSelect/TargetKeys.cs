@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MapMouseSelect
@@ -173,8 +174,14 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Drops the whole selection, then selects what the cursor is on. Vanilla's Select action only
-        /// ever adds, so replacing the list needs a clear first.
+        /// Vanilla's Select, then a cut back to whatever it picked up.
+        ///
+        /// Select is exactly what the Select key and the gamepad button run, so it is called rather than
+        /// reproduced, and it needs no clear first: it replaces the map selection on its own when nothing
+        /// is flying, and adds to the weapon target list while flying. The adding is where the second half
+        /// comes in, since the point of this key is to end up with the one unit being pointed at. So when
+        /// the call did take something, the list is cut back to it, the same way the Delete hold does. When
+        /// it took nothing, the list is left alone: pointing at empty sky should not throw away targets.
         /// </summary>
         private static void SelectOnly()
         {
@@ -185,32 +192,47 @@ namespace MapMouseSelect
             }
 
             var hud = SceneSingleton<CombatHUD>.i;
-            var flying = hud != null && SelectionApplier.GetLiveAircraft() != null;
+            var targets = TargetList(hud);
 
             if (DynamicMap.mapMaximized)
             {
-                if (flying)
-                {
-                    // Clears the weapon target list, the HUD markers and the map icons together.
-                    hud.DeselectAll(false);
-                }
-                else
-                {
-                    map.UnselectAll();
-                }
-
+                var before = targets != null ? targets.Count : 0;
                 VanillaCalls.SelectFromMap(map);
+                KeepOnlyPick(targets, before);
                 return;
             }
 
-            if (!flying)
+            if (targets == null)
             {
                 return;
             }
 
             // Map closed: the only thing on screen to select is whatever the designator is pointing at.
-            hud.DeselectAll(false);
+            var designatorBefore = targets.Count;
             VanillaCalls.TargetSelect(hud, false);
+            KeepOnlyPick(targets, designatorBefore);
+        }
+
+        /// <summary>
+        /// The weapon target list, or null when nothing is flying. CombatHUD's own list is this same
+        /// instance, so what the select call just added is visible immediately.
+        /// </summary>
+        private static List<Unit> TargetList(CombatHUD hud)
+        {
+            var aircraft = hud != null ? SelectionApplier.GetLiveAircraft() : null;
+            var weapons = aircraft != null ? aircraft.weaponManager : null;
+            return weapons != null ? weapons.GetTargetList() : null;
+        }
+
+        /// <summary>
+        /// Cuts the target list back to the newest entry when the select call added one.
+        /// </summary>
+        private static void KeepOnlyPick(List<Unit> targets, int before)
+        {
+            if (targets != null && targets.Count > before)
+            {
+                KeepOnlyNewest();
+            }
         }
     }
 }

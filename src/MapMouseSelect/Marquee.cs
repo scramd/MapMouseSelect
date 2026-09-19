@@ -91,11 +91,11 @@ namespace MapMouseSelect
             {
                 if (!Input.GetMouseButton(0))
                 {
-                    // A click, not a drag. Vanilla would have selected on the press frame that we
-                    // suppressed, so replay that here.
-                    _pending = false;
-                    Plugin.Verbose("Marquee released without dragging, replaying the vanilla click.");
-                    VanillaCalls.SelectFromMap(map);
+                    // A click, not a drag, and nothing to replay: a mouse click reaches the icons
+                    // through their EventSystem handlers, which this mod never suppresses. All that
+                    // suppressing MapControls took out was the pan and the Select action.
+                    Plugin.Verbose("Marquee released without dragging; the click is vanilla's.");
+                    Cancel();
                     return;
                 }
 

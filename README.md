@@ -31,7 +31,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Shift + left drag | Add to selection instead of replacing |
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
-| `\` | Drop the selection, then select under the cursor, or the HUD designator while flying |
+| `\` | The game's own Select, then drop everything except what it picked |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
 Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
@@ -68,8 +68,9 @@ whatever your layout uses, or turn off `SuppressModifierBindings` to get vanilla
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in
 progress.
 
-A left click that never passes the drag threshold is replayed as the vanilla single click, and the
-EventSystem icon-click path is untouched, so ordinary clicking still works.
+A left press that never passes the drag threshold is left entirely to vanilla: the marquee only acts once
+the gesture is a drag, and it never takes anything away from the mouse click path, which is the
+EventSystem one.
 
 ## Configuration
 
