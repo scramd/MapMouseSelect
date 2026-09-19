@@ -150,11 +150,16 @@ comparison works in raw `Input.mousePosition` pixels because the game's canvases
 overlay canvas with a scale factor of 1.
 
 Both modes filter through `TargetListSelector.CheckExclusions`, the player's own Target List panel
-filters, exactly like vanilla clicks do.
+filters, exactly like vanilla clicks do. An icon the player has switched off in Map Options is left
+out as well: those icons are inactive objects, and vanilla cannot select one either, since a click
+needs a raycast hit and the range select needs the HUD marker's image enabled.
 
-While flying, the batch is applied with a single `WeaponManager.TargetListChanged()` rather than one
-per unit. That list is networked through `SetStationTargets`, so a 20 unit marquee costs one message
-instead of twenty.
+While flying, both directions are batched: adding writes the target list, each unit's HUD marker and
+the map icon, then calls `WeaponManager.TargetListChanged()` once, and removing applies
+`CombatHUD.DeSelectUnit`'s per-unit effects the same way. That list is networked through
+`SetStationTargets`, so a 20 unit marquee costs one message instead of twenty, and the HUD's own
+select or deselect sound plays once for the gesture, the way `CombatHUD.TargetSelect` plays it once
+for its whole batch.
 
 ## Limitations
 

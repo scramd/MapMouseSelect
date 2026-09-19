@@ -227,6 +227,14 @@ namespace MapMouseSelect
                     continue;
                 }
 
+                // An icon the player has switched off in Map Options is an inactive object, and vanilla has no
+                // way to select one either: clicking needs a raycast hit, and the range select needs the HUD
+                // marker's image to be enabled. Boxing one would be reaching through the map's own filters.
+                if (!unitIcon.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
                 // Vanilla map clicks ignore your own aircraft, so the marquee does too.
                 if (unit == localAircraft)
                 {

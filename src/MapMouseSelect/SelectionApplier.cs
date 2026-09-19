@@ -17,15 +17,31 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Routes a marquee result to whichever selection system the current mode uses.
+    /// Routes a selection change to whichever system owns it, and owns the weapon target list writes itself.
     ///
-    /// Flying a live aircraft, a map click adds a weapon target (CombatHUD.SelectUnit). With no live
-    /// aircraft, a map click select a unit for commanding (DynamicMap.SelectIcon) and that selection
-    /// is what right-click move orders are issued to. Dropping a unit has the same split, and lives in
-    /// Remove so that the click path and the marquee cannot disagree about it.
+    /// Flying, the selection is the target list of the current weapon station, and that list is networked:
+    /// every change is a server call, and the RPC behind it has no rate limit. CombatHUD.SelectUnit and
+    /// DeSelectUnit handle one unit each and refresh the list each time, so a gesture over thirty units through
+    /// them is thirty messages. Vanilla's own multi-select does not work that way: TargetSelect marks every
+    /// unit, inserts into the list and calls TargetListChanged once, then plays one sound. That is the shape of
+    /// AddToTargetList and RemoveFromTargetList below, and every path in the mod that writes the list goes
+    /// through them.
+    ///
+    /// The clear is the one thing still left to vanilla: CombatHUD.DeselectAll is already a single refresh, and
+    /// it also puts the HUD's target arrow and text away, which are private fields, so writing it again here
+    /// would buy nothing.
+    ///
+    /// With no live aircraft there is no target list at all. The selection is DynamicMap's selected icons, a
+    /// local HUD thing with no network behind it, and it goes through the same calls vanilla's clicks use.
     /// </summary>
     internal static class SelectionApplier
     {
+        /// <summary>
+        /// Scratch for the units a batched write is about to apply. The paths that use it are all reached from
+        /// a key press or a released mouse button, one at a time, and none of them nests.
+        /// </summary>
+        private static readonly List<Unit> Pending = new List<Unit>();
+
         internal static void Apply(DynamicMap map, List<Unit> units, MarqueeMode mode)
         {
             var aircraft = GetLiveAircraft();
@@ -42,7 +58,7 @@ namespace MapMouseSelect
                 // An empty box clears the commander selection, which is the usual marquee meaning. Note
                 // this is a mod choice, not vanilla: a click on empty map space does nothing at all in
                 // this game, because MapControls only ever acts on an icon found under the cursor. An
-                // empty box that removes or adds has nothing to do either way.
+                // empty box that adds or removes has nothing to do either way.
                 if (aircraft == null && mode == MarqueeMode.Replace)
                 {
                     map.UnselectAll();
@@ -52,13 +68,10 @@ namespace MapMouseSelect
 
             if (mode == MarqueeMode.Remove)
             {
-                ApplyRemove(map, units);
+                ApplyRemove(map, aircraft, units);
                 return;
             }
 
-            // Vanilla map clicks only ever add a weapon target, so there is nothing to copy from them here:
-            // the mode says what the box does, and a replacing box empties the target list before filling
-            // it. Adding is what the Shift drag is for.
             if (aircraft != null)
             {
                 ApplyFlying(aircraft, units, mode == MarqueeMode.Replace);
@@ -81,33 +94,168 @@ namespace MapMouseSelect
             return aircraft != null && !aircraft.disabled ? aircraft : null;
         }
 
-        private static void ApplyFlying(Aircraft aircraft, List<Unit> units, bool replace)
+        /// <summary>
+        /// Adds units to the target list of the current weapon station, then refreshes it and plays the select
+        /// sound once for the whole set.
+        ///
+        /// The per-unit effects are vanilla's: AddTargetList inserts at the front, so the last unit added ends
+        /// up first, which is the newest target, and the HUD marker's SelectMarker is what selects the map icon
+        /// as well. A unit already in the list is skipped, which is what vanilla's callers check for before
+        /// calling SelectUnit.
+        /// </summary>
+        internal static void AddToTargetList(Aircraft aircraft, List<Unit> units)
         {
             var hud = SceneSingleton<CombatHUD>.i;
-            var weapons = aircraft.weaponManager;
-            if (hud == null || weapons == null)
+            var targets = TargetList(aircraft);
+            if (hud == null || targets == null || units == null || units.Count == 0)
             {
                 return;
             }
 
-            // This is the live list, shared with CombatHUD. GetTargetList() returns the field itself.
-            var targets = weapons.GetTargetList();
-            if (targets == null)
+            var added = 0;
+            for (var i = 0; i < units.Count; i++)
+            {
+                var unit = units[i];
+                if (unit == null || targets.Contains(unit))
+                {
+                    continue;
+                }
+
+                targets.Insert(0, unit);
+
+                if (hud.TryGetMarker(unit, out var marker))
+                {
+                    marker.SelectMarker();
+                }
+
+                added++;
+            }
+
+            if (added == 0)
+            {
+                return;
+            }
+
+            aircraft.weaponManager.TargetListChanged();
+            VanillaCalls.PlaySelectSound(hud);
+            Plugin.Verbose("[targets] added " + added + " unit(s) with one refresh.");
+        }
+
+        /// <summary>
+        /// Takes units out of the target list and refreshes it once, the mirror of AddToTargetList.
+        ///
+        /// CombatHUD.DeSelectUnit is what this reproduces: the HUD marker's DeselectMarker, the map icon, the
+        /// list removal. DeselectMarker already ends in DynamicMap.DeselectIcon, and the direct call is here
+        /// for the unit that has no marker at all, whose icon would otherwise stay selected on the map.
+        /// </summary>
+        internal static void RemoveFromTargetList(Aircraft aircraft, List<Unit> units)
+        {
+            var hud = SceneSingleton<CombatHUD>.i;
+            var targets = TargetList(aircraft);
+            if (hud == null || targets == null || units == null || units.Count == 0)
+            {
+                return;
+            }
+
+            var map = SceneSingleton<DynamicMap>.i;
+
+            var removed = 0;
+            for (var i = 0; i < units.Count; i++)
+            {
+                var unit = units[i];
+                if (unit == null || !targets.Contains(unit))
+                {
+                    continue;
+                }
+
+                if (hud.TryGetMarker(unit, out var marker))
+                {
+                    marker.DeselectMarker();
+                }
+
+                if (map != null)
+                {
+                    map.DeselectIcon(unit);
+                }
+
+                targets.Remove(unit);
+                removed++;
+            }
+
+            if (removed == 0)
+            {
+                return;
+            }
+
+            aircraft.weaponManager.TargetListChanged();
+            VanillaCalls.PlayDeselectSound(hud);
+            Plugin.Verbose("[targets] removed " + removed + " unit(s) with one refresh.");
+        }
+
+        /// <summary>
+        /// Takes one unit out of the selection by whichever system owns it, and says whether it was in there at
+        /// all. A weapon target has to leave the target list too, or the weapon stays locked to a unit the
+        /// player just dropped; the commander's selection only lives on the map.
+        /// </summary>
+        internal static bool Remove(DynamicMap map, Unit unit)
+        {
+            if (map == null || unit == null)
+            {
+                return false;
+            }
+
+            var aircraft = GetLiveAircraft();
+            var targets = TargetList(aircraft);
+            if (targets != null)
+            {
+                if (!targets.Contains(unit))
+                {
+                    return false;
+                }
+
+                Pending.Clear();
+                Pending.Add(unit);
+                RemoveFromTargetList(aircraft, Pending);
+                Pending.Clear();
+                return true;
+            }
+
+            if (!IsSelected(map, unit))
+            {
+                return false;
+            }
+
+            map.DeselectIcon(unit);
+            return true;
+        }
+
+        /// <summary>The target list of the current weapon station, or null when nothing is flying.</summary>
+        private static List<Unit> TargetList(Aircraft aircraft)
+        {
+            var weapons = aircraft != null ? aircraft.weaponManager : null;
+            return weapons != null ? weapons.GetTargetList() : null;
+        }
+
+        private static void ApplyFlying(Aircraft aircraft, List<Unit> units, bool replace)
+        {
+            var hud = SceneSingleton<CombatHUD>.i;
+            var targets = TargetList(aircraft);
+            if (hud == null || targets == null)
             {
                 return;
             }
 
             if (replace)
             {
-                // One clear for the whole box rather than a clear before every unit: DeselectAll drops the
-                // target list, the HUD markers and the map icons together, and each unit added below puts
-                // its own marker and icon back.
+                // One clear for the whole box. DeselectAll drops the target list, the HUD markers and the map
+                // icons together, and every unit added below puts its own marker and icon back.
                 hud.DeselectAll(false);
             }
 
             var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);
 
-            var added = 0;
+            Pending.Clear();
+
             var alreadySelected = 0;
             var capped = 0;
             var noMarker = 0;
@@ -116,9 +264,9 @@ namespace MapMouseSelect
             {
                 var unit = units[i];
 
-                // Vanilla map clicks only add a unit that has a HUD marker to select on. Nothing here
-                // looks at the unit's faction: the map's own filters are the player's tool for that, and
-                // the marquee is deliberately dumb about it.
+                // Vanilla map clicks only add a unit that has a HUD marker to select on. Nothing here looks at
+                // the unit's faction: the map's own filters are the player's tool for that, and the marquee is
+                // deliberately dumb about it.
                 if (!hud.MarkerExists(unit))
                 {
                     noMarker++;
@@ -131,29 +279,18 @@ namespace MapMouseSelect
                     continue;
                 }
 
-                if (targets.Count >= limit)
+                if (targets.Count + Pending.Count >= limit)
                 {
                     capped++;
                     continue;
                 }
 
-                targets.Insert(0, unit);
-
-                if (hud.TryGetMarker(unit, out var marker))
-                {
-                    marker.SelectMarker();
-                }
-                added++;
+                Pending.Add(unit);
             }
 
-            if (added > 0)
-            {
-                // One refresh for the whole batch, and one sound with it, which is what CombatHUD's own
-                // multi-select does: the list is networked (SetStationTargets), so the alternative is a
-                // message and a sound per unit.
-                weapons.TargetListChanged();
-                VanillaCalls.PlaySelectSound(hud);
-            }
+            var added = Pending.Count;
+            AddToTargetList(aircraft, Pending);
+            Pending.Clear();
 
             if (capped > 0)
             {
@@ -179,7 +316,9 @@ namespace MapMouseSelect
             {
                 var unit = units[i];
 
-                // DynamicMap.SelectIcon logs an error for a unit that is already selected, so filter.
+                // DynamicMap.SelectIcon logs an error for a unit that is already selected, so filter. It also
+                // skips a unit the Target List filters exclude, silently and before it does anything, which is
+                // the same gate vanilla's own clicks run into.
                 if (IsSelected(map, unit))
                 {
                     alreadySelected++;
@@ -208,58 +347,45 @@ namespace MapMouseSelect
             Report("commander", added, alreadySelected, 0);
         }
 
-        /// <summary>Takes every boxed unit that is selected out of the selection.</summary>
-        private static void ApplyRemove(DynamicMap map, List<Unit> units)
+        /// <summary>Takes every boxed unit that is selected out of the selection, in one refresh while flying.</summary>
+        private static void ApplyRemove(DynamicMap map, Aircraft aircraft, List<Unit> units)
         {
+            var targets = TargetList(aircraft);
+            if (targets != null)
+            {
+                Pending.Clear();
+
+                for (var i = 0; i < units.Count; i++)
+                {
+                    if (units[i] != null && targets.Contains(units[i]))
+                    {
+                        Pending.Add(units[i]);
+                    }
+                }
+
+                var dropped = Pending.Count;
+                RemoveFromTargetList(aircraft, Pending);
+                Pending.Clear();
+
+                Plugin.Verbose("[remove] marquee dropped " + dropped + " of " + units.Count + " boxed unit(s).");
+                return;
+            }
+
             var removed = 0;
 
             for (var i = 0; i < units.Count; i++)
             {
-                if (Remove(map, units[i]))
+                var unit = units[i];
+                if (unit == null || !IsSelected(map, unit))
                 {
-                    removed++;
-                }
-            }
-
-            Plugin.Verbose(
-                "[remove] marquee dropped " + removed + " of " + units.Count + " boxed unit(s).");
-        }
-
-        /// <summary>
-        /// Takes one unit out of the selection by whichever route owns it, and says whether it was in there
-        /// at all. A weapon target has to leave the weapon target list too, or the weapon stays locked to a
-        /// unit the player just dropped; the commander's selection only lives on the map.
-        /// </summary>
-        internal static bool Remove(DynamicMap map, Unit unit)
-        {
-            if (map == null || unit == null)
-            {
-                return false;
-            }
-
-            var aircraft = GetLiveAircraft();
-            var weapons = aircraft != null ? aircraft.weaponManager : null;
-            var targets = weapons != null ? weapons.GetTargetList() : null;
-
-            if (targets != null && targets.Contains(unit))
-            {
-                var hud = SceneSingleton<CombatHUD>.i;
-                if (hud == null)
-                {
-                    return false;
+                    continue;
                 }
 
-                hud.DeSelectUnit(unit);
-                return true;
+                map.DeselectIcon(unit);
+                removed++;
             }
 
-            if (!IsSelected(map, unit))
-            {
-                return false;
-            }
-
-            map.DeselectIcon(unit);
-            return true;
+            Plugin.Verbose("[remove] marquee dropped " + removed + " of " + units.Count + " boxed unit(s).");
         }
 
         private static bool IsSelected(DynamicMap map, Unit unit)

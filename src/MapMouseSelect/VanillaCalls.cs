@@ -26,10 +26,12 @@ namespace MapMouseSelect
         private static MethodInfo _targetSelect;
         private static MethodInfo _jumpCameraTo;
         private static FieldInfo _selectSound;
+        private static FieldInfo _deselectSound;
         private static bool _selectFromMapResolved;
         private static bool _targetSelectResolved;
         private static bool _jumpCameraToResolved;
         private static bool _selectSoundResolved;
+        private static bool _deselectSoundResolved;
 
         /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
         internal static bool ShiftHeld()
@@ -80,30 +82,45 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Plays the clip CombatHUD uses for a selection. The marquee plays it once for the whole box, which
-        /// is what CombatHUD's own multi-select does: TargetSelect adds every marker in range, then plays this
-        /// once and refreshes the target list once, rather than doing either per unit. The clip is a private
-        /// serialized field, so it is reached the same way the private methods above are.
+        /// Plays the clip CombatHUD uses for a selection. The mod plays it once for a whole gesture, which is
+        /// what CombatHUD's own multi-select does: TargetSelect adds every marker in range, then plays this once
+        /// and refreshes the target list once, rather than doing either per unit.
         /// </summary>
         internal static void PlaySelectSound(CombatHUD hud)
+        {
+            PlaySound(hud, ref _selectSound, ref _selectSoundResolved, "selectSound");
+        }
+
+        /// <summary>The same for a removal, which CombatHUD.DeSelectUnit plays for a single unit.</summary>
+        internal static void PlayDeselectSound(CombatHUD hud)
+        {
+            PlaySound(hud, ref _deselectSound, ref _deselectSoundResolved, "deselectSound");
+        }
+
+        /// <summary>
+        /// Both clips are private serialized fields on CombatHUD, so they are reached the same way the private
+        /// methods above are, and each is looked up once.
+        /// </summary>
+        private static void PlaySound(CombatHUD hud, ref FieldInfo field, ref bool resolved, string name)
         {
             if (hud == null || SoundManager.i == null)
             {
                 return;
             }
 
-            if (!_selectSoundResolved)
+            if (!resolved)
             {
-                _selectSoundResolved = true;
-                _selectSound = AccessTools.Field(typeof(CombatHUD), "selectSound");
-                if (_selectSound == null)
+                resolved = true;
+                field = AccessTools.Field(typeof(CombatHUD), name);
+                if (field == null)
                 {
                     Plugin.Log.LogWarning(
-                        "Could not find CombatHUD.selectSound, so a marquee will be silent. The game may have changed.");
+                        "Could not find CombatHUD." + name + ", so a marquee will be silent for it. "
+                        + "The game may have changed.");
                 }
             }
 
-            var clip = _selectSound != null ? _selectSound.GetValue(hud) as AudioClip : null;
+            var clip = field != null ? field.GetValue(hud) as AudioClip : null;
             if (clip != null)
             {
                 SoundManager.PlayInterfaceOneShot(clip);

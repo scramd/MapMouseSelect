@@ -18,6 +18,9 @@ namespace MapMouseSelect
     {
         private static bool _longFired;
 
+        /// <summary>Scratch for the single unit a key hands to the batched target list writers.</summary>
+        private static readonly List<Unit> One = new List<Unit>(1);
+
         internal static void Tick()
         {
             if (!ModActions.Registered)
@@ -87,7 +90,10 @@ namespace MapMouseSelect
                 if (oldest != null)
                 {
                     Plugin.Verbose("Dropping oldest target " + oldest.name + ".");
-                    hud.DeSelectUnit(oldest);
+                    One.Clear();
+                    One.Add(oldest);
+                    SelectionApplier.RemoveFromTargetList(aircraft, One);
+                    One.Clear();
                 }
                 return;
             }
@@ -128,8 +134,12 @@ namespace MapMouseSelect
 
                 if (newest != null)
                 {
-                    // SelectUnit re-adds it and AddTargetList does the network refresh.
-                    hud.SelectUnit(newest);
+                    // The clear is vanilla's, the add is the mod's batched writer: two refreshes for the whole
+                    // key press, rather than one per dropped target.
+                    One.Clear();
+                    One.Add(newest);
+                    SelectionApplier.AddToTargetList(aircraft, One);
+                    One.Clear();
                 }
                 return;
             }
@@ -221,7 +231,7 @@ namespace MapMouseSelect
 
             if (targets.Count == 0)
             {
-                PutBack(hud, previous);
+                PutBack(SelectionApplier.GetLiveAircraft(), previous);
             }
         }
 
@@ -237,20 +247,30 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Puts back the targets that were dropped to make room for a pick that never came. SelectUnit
-        /// restores the whole thing for a unit, marker and map icon alike, since the marker's own
-        /// SelectMarker is what selects the icon. AddTargetList inserts at the front, so the list is
-        /// rebuilt back to front to leave the order as it was.
+        /// Puts back the targets that were dropped to make room for a pick that never came, in one refresh and
+        /// one sound rather than one of each per target. Adding restores the whole thing for a unit, marker and
+        /// map icon alike, and it inserts at the front, so the list is rebuilt back to front to leave the order
+        /// as it was.
         /// </summary>
-        private static void PutBack(CombatHUD hud, List<Unit> previous)
+        private static void PutBack(Aircraft aircraft, List<Unit> previous)
         {
+            if (previous.Count == 0)
+            {
+                return;
+            }
+
+            One.Clear();
+
             for (var i = previous.Count - 1; i >= 0; i--)
             {
                 if (previous[i] != null)
                 {
-                    hud.SelectUnit(previous[i]);
+                    One.Add(previous[i]);
                 }
             }
+
+            SelectionApplier.AddToTargetList(aircraft, One);
+            One.Clear();
 
             Plugin.Verbose("Nothing under the cursor; put back " + previous.Count + " target(s).");
         }
