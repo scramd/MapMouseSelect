@@ -174,14 +174,16 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Vanilla's Select, then a cut back to whatever it picked up.
+        /// Vanilla's Select, on an emptied list while flying, so that what it picks is all that is left.
         ///
         /// Select is exactly what the Select key and the gamepad button run, so it is called rather than
-        /// reproduced, and it needs no clear first: it replaces the map selection on its own when nothing
-        /// is flying, and adds to the weapon target list while flying. The adding is where the second half
-        /// comes in, since the point of this key is to end up with the one unit being pointed at. So when
-        /// the call did take something, the list is cut back to it, the same way the Delete hold does. When
-        /// it took nothing, the list is left alone: pointing at empty sky should not throw away targets.
+        /// reproduced. While flying it only ever adds, and it skips a unit that is already in the list, so
+        /// pointing at a unit that is already a target would do nothing at all, and the rest of the list
+        /// would stay. Emptying the list first is what makes the pick land in that case. If the pick comes
+        /// up empty the previous list is put back, so pointing at empty sky is not a way to lose targets.
+        ///
+        /// Nothing is flying in commander view, where Select replaces the map selection by itself, so there
+        /// is nothing to do there but call it.
         /// </summary>
         private static void SelectOnly()
         {
@@ -194,23 +196,33 @@ namespace MapMouseSelect
             var hud = SceneSingleton<CombatHUD>.i;
             var targets = TargetList(hud);
 
-            if (DynamicMap.mapMaximized)
-            {
-                var before = targets != null ? targets.Count : 0;
-                VanillaCalls.SelectFromMap(map);
-                KeepOnlyPick(targets, before);
-                return;
-            }
-
             if (targets == null)
             {
+                if (DynamicMap.mapMaximized)
+                {
+                    VanillaCalls.SelectFromMap(map);
+                }
+
                 return;
             }
 
-            // Map closed: the only thing on screen to select is whatever the designator is pointing at.
-            var designatorBefore = targets.Count;
-            VanillaCalls.TargetSelect(hud, false);
-            KeepOnlyPick(targets, designatorBefore);
+            var previous = new List<Unit>(targets);
+            hud.DeselectAll(false);
+
+            if (DynamicMap.mapMaximized)
+            {
+                VanillaCalls.SelectFromMap(map);
+            }
+            else
+            {
+                // Map closed: the only thing on screen to select is whatever the designator is pointing at.
+                VanillaCalls.TargetSelect(hud, false);
+            }
+
+            if (targets.Count == 0)
+            {
+                PutBack(hud, previous);
+            }
         }
 
         /// <summary>
@@ -225,14 +237,22 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Cuts the target list back to the newest entry when the select call added one.
+        /// Puts back the targets that were dropped to make room for a pick that never came. SelectUnit
+        /// restores the whole thing for a unit, marker and map icon alike, since the marker's own
+        /// SelectMarker is what selects the icon. AddTargetList inserts at the front, so the list is
+        /// rebuilt back to front to leave the order as it was.
         /// </summary>
-        private static void KeepOnlyPick(List<Unit> targets, int before)
+        private static void PutBack(CombatHUD hud, List<Unit> previous)
         {
-            if (targets != null && targets.Count > before)
+            for (var i = previous.Count - 1; i >= 0; i--)
             {
-                KeepOnlyNewest();
+                if (previous[i] != null)
+                {
+                    hud.SelectUnit(previous[i]);
+                }
             }
+
+            Plugin.Verbose("Nothing under the cursor; put back " + previous.Count + " target(s).");
         }
     }
 }

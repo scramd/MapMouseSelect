@@ -31,7 +31,7 @@ Requires BepInEx 5 x64 in the game directory.
 | Shift + left drag | Add to selection instead of replacing |
 | Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
-| `\` | The game's own Select, then drop everything except what it picked |
+| `\` | Select only the unit under the cursor, dropping the rest of the target list |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
 Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
