@@ -55,13 +55,26 @@ namespace MapMouseSelect
 
             if (units == null || units.Count == 0)
             {
-                // An empty box clears the commander selection, which is the usual marquee meaning. Note
-                // this is a mod choice, not vanilla: a click on empty map space does nothing at all in
-                // this game, because MapControls only ever acts on an icon found under the cursor. An
-                // empty box that adds or removes has nothing to do either way.
-                if (aircraft == null && mode == MarqueeMode.Replace)
+                // An empty box clears the selection, which is the usual marquee meaning. Vanilla does not
+                // clear on a click in empty space, so this is a mod choice: a box is a targeting gesture, and
+                // releasing it over nothing is how a player expects to drop what is selected. Adding or
+                // removing from an empty box has nothing to do either way.
+                if (mode == MarqueeMode.Replace)
                 {
-                    map.UnselectAll();
+                    if (aircraft != null)
+                    {
+                        // Same clear a replace box does before it adds anything, so an empty one leaves the
+                        // weapon with its targets dropped rather than keeping the previous box's picks.
+                        var hud = SceneSingleton<CombatHUD>.i;
+                        if (hud != null)
+                        {
+                            hud.DeselectAll(false);
+                        }
+                    }
+                    else
+                    {
+                        map.UnselectAll();
+                    }
                 }
                 return;
             }
@@ -329,11 +342,8 @@ namespace MapMouseSelect
                 added++;
             }
 
-            if (added > 0)
-            {
-                VanillaCalls.PlaySelectSound(SceneSingleton<CombatHUD>.i);
-            }
-
+            // No sound here: vanilla's commander path is DynamicMap.SelectIcon, which is silent. The sound
+            // belongs to the weapon target selection, which is the flying mode.
             if (Plugin.FollowFirstUnit.Value && added > 0)
             {
                 var camera = SceneSingleton<CameraStateManager>.i;

@@ -18,8 +18,14 @@ boxed units back out of it, with the border colour showing which of the three is
 Shift when both are held.
 
 The marquee is deliberately dumb about factions: anything that survives the map's own filters gets boxed, so
-using those filters well is part of the job. A committed box plays the HUD's selection sound once, the same
-way the game's own multi-select does, rather than once per boxed unit.
+using those filters well is part of the job. In flight a committed box plays the HUD's selection sound once,
+the same way the game's own multi-select does, rather than once per boxed unit; a box in commander mode is
+silent, as vanilla's icon clicks are there.
+
+A box that ends up empty (a release over clear map) clears what was selected, in either mode, when the drag
+was a plain one. That is a mod choice rather than vanilla behaviour: a click on empty map space does nothing
+in this game, because the map's own controls only ever act on an icon under the cursor. Shift and Ctrl drags
+leave an empty box alone, since there is nothing to add or take out.
 
 ## Install
 
@@ -159,7 +165,8 @@ the map icon, then calls `WeaponManager.TargetListChanged()` once, and removing 
 `CombatHUD.DeSelectUnit`'s per-unit effects the same way. That list is networked through
 `SetStationTargets`, so a 20 unit marquee costs one message instead of twenty, and the HUD's own
 select or deselect sound plays once for the gesture, the way `CombatHUD.TargetSelect` plays it once
-for its whole batch.
+for its whole batch. An empty box while flying drops the target list with a single
+`CombatHUD.DeselectAll`, the same clear a replace box starts with.
 
 ## Limitations
 
