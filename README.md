@@ -46,6 +46,12 @@ Vanilla has the branch but routes it to the wrong call in both modes: with no li
 the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselect` and
 `TargetListSelector_UnitItem.ToggleSelect`, route the other way round and are what this follows.
 
+Clicking a map icon also has to stay a click: the release has to land within the game's drag threshold of
+the press. uGUI only cancels a click when the pressed object has somewhere to hand the drag to, and
+nothing on the map has, since its panning is axis driven inside `MapControls`. Vanilla therefore lets you
+press an icon, drag across the map and release back on that icon to select it. This mod applies the
+threshold the mission editor's own box select uses, which is `EventSystem.pixelDragThreshold`.
+
 While the map is maximized, any keyboard binding that sits directly on a key listed in `ModifierKeys` is
 disabled, whatever action it belongs to. By default that is Shift and Control, which is what stops the
 throttle: the game hangs its two directions on those keys and also uses Shift as the map's additive

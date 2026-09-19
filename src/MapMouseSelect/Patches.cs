@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using NuclearOption.MissionEditorScripts;
 using Rewired;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace MapMouseSelect
 {
@@ -23,6 +25,50 @@ namespace MapMouseSelect
             // Cheap guard against the host object having been lost during the game's boot.
             ModHost.Ensure();
             Marquee.Tick(__instance);
+        }
+    }
+
+    /// <summary>
+    /// Cancels a map icon click when the pointer travelled past the game's drag threshold between the
+    /// press and the release.
+    ///
+    /// uGUI only does this when the pressed object has somewhere to hand the drag to: PointerInputModule
+    /// clears eligibleForClick when the pressed object and the drag handler differ, and it never starts a
+    /// drag at all when nothing in the hierarchy implements IDragHandler. Nothing on the map does, its
+    /// panning is axis driven inside DynamicMap.MapControls, so pressing an icon, dragging across the map
+    /// and releasing back on the same icon selects it. Nobody expects a drag to end in a click, and for
+    /// the marquee it is not cosmetic: the drag is the gesture being used.
+    ///
+    /// The threshold is the game's own, through the same helper its mission editor box select gates on, so
+    /// this cannot disagree with the UI about where a click ends and a drag begins.
+    ///
+    /// The target is the compiler generated explicit implementation of IPointerClickHandler on MapIcon,
+    /// which all of the map's icons share. That name is not the game's to change, but it is a name, so
+    /// Plugin.ReportPatchState reports whether a prefix landed on it.
+    /// </summary>
+    [HarmonyPatch(typeof(MapIcon), "UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick",
+        new[] { typeof(PointerEventData) })]
+    internal static class MapIconPointerClickPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(PointerEventData eventData)
+        {
+            if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
+            {
+                return true;
+            }
+
+            if (!UnitSelection.DragThresholdPassed(eventData.pressPosition))
+            {
+                return true;
+            }
+
+            Plugin.Verbose(
+                "Cancelled a map icon click: the pointer travelled "
+                + Mathf.RoundToInt(Vector2.Distance(eventData.pressPosition, Input.mousePosition))
+                + " px from the press.");
+
+            return false;
         }
     }
 

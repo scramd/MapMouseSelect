@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace MapMouseSelect
 {
@@ -138,12 +139,18 @@ namespace MapMouseSelect
             var info = PatchProcessor.GetPatchInfo(target);
             var updateTarget = AccessTools.Method(typeof(DynamicMap), "Update");
             var updateInfo = updateTarget != null ? PatchProcessor.GetPatchInfo(updateTarget) : null;
+            var iconClickTarget = AccessTools.Method(
+                typeof(MapIcon),
+                "UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick",
+                new[] { typeof(PointerEventData) });
+            var iconClickInfo = iconClickTarget != null ? PatchProcessor.GetPatchInfo(iconClickTarget) : null;
 
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
+                + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value);
