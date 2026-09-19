@@ -18,8 +18,9 @@ namespace MapMouseSelect
 
             if (units == null || units.Count == 0)
             {
-                // Vanilla: clicking empty map space clears the commander selection, and does nothing
-                // at all while flying.
+                // An empty box clears the commander selection, which is the usual marquee meaning. Note
+                // this is a mod choice, not vanilla: a click on empty map space does nothing at all in
+                // this game, because MapControls only ever acts on an icon found under the cursor.
                 if (aircraft == null && !additive)
                 {
                     map.UnselectAll();

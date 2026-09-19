@@ -29,6 +29,7 @@ Requires BepInEx 5 x64 in the game directory.
 |---|---|
 | Left drag on the map | Marquee select |
 | Shift + left drag | Add to selection instead of replacing |
+| Shift + click a selected unit | Deselect it |
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
 | `\` | Drop the selection, then select under the cursor, or the HUD designator while flying |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
@@ -37,6 +38,13 @@ Those two keys are registered as Rewired actions rather than as mod-only keyboar
 show up in the game's own Controls menu, can be rebound to a gamepad or stick button, and are read with
 the same timed-press calls the game uses for its target keys. They join the action category that
 `Cancel` belongs to, which is why the menu lists them without any prefab changes.
+
+Shift + click on a unit that is already selected is meant to deselect it, and this mod makes that work.
+Vanilla has the branch but routes it to the wrong call in both modes: with no live aircraft it asks
+`CombatHUD.DeSelectUnit`, which returns immediately on an empty target list, and with one it asks
+`DynamicMap.DeselectIcon`, which clears the icon and the target list row but leaves the weapon locked to
+the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselect` and
+`TargetListSelector_UnitItem.ToggleSelect`, route the other way round and are what this follows.
 
 `PanButton` exists because the game hardcodes left drag for panning, which collides with the marquee.
 Set it to `Left` to keep vanilla panning; panning is then suppressed only while a marquee drag is in

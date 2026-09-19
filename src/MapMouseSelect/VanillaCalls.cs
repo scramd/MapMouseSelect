@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
+using UnityEngine;
 
 namespace MapMouseSelect
 {
@@ -22,7 +23,13 @@ namespace MapMouseSelect
         private static bool _selectFromMapResolved;
         private static bool _targetSelectResolved;
 
-        /// <summary>Vanilla's own "select the unit the cursor is over", including the click it issues.</summary>
+        /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
+        internal static bool ShiftHeld()
+        {
+            return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        }
+
+        /// <summary>Vanilla's "select the unit the cursor is over", including the click it issues.</summary>
         internal static void SelectFromMap(DynamicMap map)
         {
             if (!_selectFromMapResolved)

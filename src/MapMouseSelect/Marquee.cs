@@ -126,7 +126,7 @@ namespace MapMouseSelect
 
         private static bool ShiftHeld()
         {
-            return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            return VanillaCalls.ShiftHeld();
         }
 
         private static Rect ScreenRect()
