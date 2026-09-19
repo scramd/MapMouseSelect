@@ -32,7 +32,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> SuppressModifierBindings { get; private set; }
         internal static ConfigEntry<string> ModifierKeys { get; private set; }
         internal static ConfigEntry<bool> BatchTargetListWhileFlying { get; private set; }
-        internal static ConfigEntry<bool> FlyingHostilesOnly { get; private set; }
         internal static ConfigEntry<bool> FollowFirstUnit { get; private set; }
         internal static ConfigEntry<bool> EnableInMissionEditor { get; private set; }
         internal static ConfigEntry<int> MaxTargets { get; private set; }
@@ -84,9 +83,6 @@ namespace MapMouseSelect
             BatchTargetListWhileFlying = Config.Bind("Behavior", "BatchTargetListWhileFlying", true,
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "
                 + "Off disables the marquee in that mode.");
-
-            FlyingHostilesOnly = Config.Bind("Behavior", "FlyingHostilesOnly", false,
-                "While flying, only box hostiles. Map clicks allow any unit with a HUD marker.");
 
             FollowFirstUnit = Config.Bind("Behavior", "FollowFirstUnit", false,
                 "In commander view, move the camera to the first boxed unit.");

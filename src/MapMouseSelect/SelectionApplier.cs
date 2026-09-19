@@ -107,14 +107,9 @@ namespace MapMouseSelect
             {
                 var unit = units[i];
 
-                if (Plugin.FlyingHostilesOnly.Value
-                    && DynamicMap.GetFactionMode(unit.NetworkHQ, false) != FactionMode.Enemy)
-                {
-                    noMarker++;
-                    continue;
-                }
-
-                // Vanilla map clicks only add a unit that has a HUD marker to select on.
+                // Vanilla map clicks only add a unit that has a HUD marker to select on. Nothing here
+                // looks at the unit's faction: the map's own filters are the player's tool for that, and
+                // the marquee is deliberately dumb about it.
                 if (!hud.MarkerExists(unit))
                 {
                     noMarker++;

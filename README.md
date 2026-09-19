@@ -17,6 +17,9 @@ Shift while dragging adds to the current selection instead of replacing it, and 
 boxed units back out of it, with the border colour showing which of the three is in force. Control wins over
 Shift when both are held.
 
+The marquee is deliberately dumb about factions: anything that survives the map's own filters gets boxed, so
+using those filters well is part of the job.
+
 ## Install
 
 Requires BepInEx 5 x64 in the game directory.
@@ -92,7 +95,6 @@ EventSystem one.
 | Behavior | `SuppressModifierBindings` | `true` | While the map is open, disable keyboard bindings that sit directly on `ModifierKeys` |
 | Behavior | `ModifierKeys` | Shift, Control | Keys that act only as map modifiers while the map is open |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allow marquee while flying (weapon targets). Off disables it in that mode |
-| Behavior | `FlyingHostilesOnly` | `false` | While flying, only box hostiles. Vanilla clicks allow any unit with a HUD marker |
 | Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |
 | Behavior | `EnableInMissionEditor` | `false` | Allow the marquee in the mission editor, which has its own box select |
 | Behavior | `MaxTargets` | `128` | Cap on targets a marquee may add. The game itself refuses more than 128 |
