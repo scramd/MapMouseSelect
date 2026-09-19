@@ -227,13 +227,10 @@ namespace MapMouseSelect
                     continue;
                 }
 
-                // A disabled unit has no icon left to box, except for a wrecked building, which this mod keeps on
-                // the map. Whether that one can be boxed is the Target List pane's WRECK filter to say, so it is
-                // left to the CheckExclusions gate below rather than skipped here.
-                if (unit.disabled && !DestroyedBuildings.IsWreck(unit))
-                {
-                    continue;
-                }
+                // Dead units are not skipped here on purpose. Vanilla takes the icon away when a unit is disabled,
+                // so there is usually nothing to box, and the one case where an icon does outlive the unit, a
+                // wrecked building this mod keeps on the map, is the WRECK filter's business below. What is left
+                // is exactly what vanilla's own click tests: a live icon, inside the box, and not excluded.
 
                 // An icon the player has switched off in Map Options is an inactive object, and vanilla has no
                 // way to select one either: clicking needs a raycast hit, and the range select needs the HUD
