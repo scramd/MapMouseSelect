@@ -4,15 +4,15 @@ using UnityEngine.UI;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Draws the drag rectangle on its own screen-space overlay canvas.
+    /// Draws the drag box on its own screen-space overlay canvas.
     ///
-    /// This is deliberately independent of the game's map UI hierarchy: the vanilla
-    /// ScreenSpaceOverlay canvases use a null camera, so screen pixels map 1:1 to
-    /// canvas units at scale factor 1, and the rectangle math needs no scaling or
-    /// pivot guesswork.
+    /// Independent of the game's map UI hierarchy on purpose: for a ScreenSpaceOverlay canvas the
+    /// scale factor defaults to 1 and the canvas rect is the screen, so screen pixels map 1:1 to
+    /// canvas units and the box math needs no scaling or pivot guesswork.
     /// </summary>
     internal sealed class MarqueeOverlay
     {
+        /// <summary>Width of the frame, in screen pixels.</summary>
         private const float OutlineThickness = 1f;
 
         private const int Top = 0;
@@ -20,28 +20,9 @@ namespace MapMouseSelect
         private const int Left = 2;
         private const int Right = 3;
 
-        private static Sprite _whiteSprite;
-
         private Canvas _canvas;
         private readonly RectTransform[] _edges = new RectTransform[4];
         private readonly Image[] _edgeImages = new Image[4];
-
-        internal bool IsCreated => _canvas != null;
-
-        private static Sprite WhiteSprite()
-        {
-            if (_whiteSprite == null)
-            {
-                var texture = Texture2D.whiteTexture;
-                _whiteSprite = Sprite.Create(
-                    texture,
-                    new Rect(0f, 0f, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f),
-                    100f);
-                _whiteSprite.name = "MapMouseSelect_White";
-            }
-            return _whiteSprite;
-        }
 
         private void EnsureCreated()
         {
@@ -55,13 +36,12 @@ namespace MapMouseSelect
 
             _canvas = root.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = Plugin.OverlaySortingOrder != null ? Plugin.OverlaySortingOrder.Value : 32000;
+            _canvas.sortingOrder = Plugin.OverlaySortingOrder != null
+                ? Plugin.OverlaySortingOrder.Value
+                : Plugin.DefaultOverlaySortingOrder;
 
-            var scaler = root.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1f;
-
-            // No GraphicRaycaster on purpose: the overlay must never consume pointer input.
+            // No CanvasScaler: ConstantPixelSize at scale factor 1 is what an overlay canvas already is.
+            // No GraphicRaycaster either, on purpose: the overlay must never consume pointer input.
 
             CreateEdge(root.transform, "Top", Top);
             CreateEdge(root.transform, "Bottom", Bottom);
@@ -90,8 +70,8 @@ namespace MapMouseSelect
             rect.pivot = Vector2.zero;
 
             image = go.AddComponent<Image>();
-            image.sprite = WhiteSprite();
-            image.type = Image.Type.Simple;
+            // No sprite: an Image with a null sprite draws a plain quad through Graphic.OnPopulateMesh,
+            // which is all a bar of the frame needs.
             image.raycastTarget = false;
 
             return rect;
@@ -111,9 +91,8 @@ namespace MapMouseSelect
                 return;
             }
 
-            var fallback = additive ? new Color(0.49f, 0.89f, 0.55f, 0.8f) : new Color(0.24f, 0.71f, 1f, 0.8f);
             var color = Plugin.ParseColor(
-                additive ? Plugin.BoxOutlineColorAdditive : Plugin.BoxOutlineColor, fallback);
+                additive ? Plugin.BoxOutlineColorAdditive : Plugin.BoxOutlineColor);
 
             foreach (var image in _edgeImages)
             {
@@ -140,20 +119,6 @@ namespace MapMouseSelect
             if (_canvas != null)
             {
                 _canvas.gameObject.SetActive(false);
-            }
-        }
-
-        internal void Destroy()
-        {
-            if (_canvas != null)
-            {
-                Object.Destroy(_canvas.gameObject);
-                _canvas = null;
-                for (var i = 0; i < _edges.Length; i++)
-                {
-                    _edges[i] = null;
-                    _edgeImages[i] = null;
-                }
             }
         }
     }

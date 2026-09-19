@@ -19,13 +19,15 @@ namespace MapMouseSelect
         /// Stands in for the hardcoded <c>Input.GetMouseButton(0)</c> that gates map panning inside
         /// <c>DynamicMap.MapControls</c>. That gate is the only plain <c>GetMouseButton</c> call in the
         /// method, so swapping just that call moves panning without touching anything else.
+        ///
+        /// The transpiler has to call a method here rather than read the config inline, so this exists
+        /// as the replacement target. The argument is whatever vanilla passed, which doubles as the
+        /// fallback for the frames before the config is read.
         /// </summary>
         internal static bool GetMouseButton(int vanillaButtonIndex)
         {
-            var configured = Plugin.PanButton != null ? (int)Plugin.PanButton.Value : vanillaButtonIndex;
-            return configured == vanillaButtonIndex
-                ? Input.GetMouseButton(vanillaButtonIndex)
-                : Input.GetMouseButton(configured);
+            var button = Plugin.PanButton != null ? (int)Plugin.PanButton.Value : vanillaButtonIndex;
+            return Input.GetMouseButton(button);
         }
     }
 }

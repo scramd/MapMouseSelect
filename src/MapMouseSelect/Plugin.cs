@@ -11,7 +11,15 @@ namespace MapMouseSelect
     {
         public const string PluginGuid = "com.kerbiter.mapmouseselect";
         public const string PluginName = "Map Mouse Select";
+
+        /// <summary>
+        /// Lives in three places by necessity: this constant, which the BepInPlugin attribute needs to
+        /// be a compile-time literal, &lt;Version&gt; in the csproj, and version in meta.json. Bump all three.
+        /// </summary>
         public const string PluginVersion = "0.1.0";
+
+        /// <summary>Draw order for the mod's overlay canvas, above the map UI.</summary>
+        internal const int DefaultOverlaySortingOrder = 32000;
 
         internal static ManualLogSource Log { get; private set; }
 
@@ -33,6 +41,8 @@ namespace MapMouseSelect
         internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
 
         private Harmony _harmony;
+
+        private static string _lastRejectedColor;
 
         private void Awake()
         {
@@ -86,7 +96,7 @@ namespace MapMouseSelect
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing. Useful when something does not work.");
 
-            OverlaySortingOrder = Config.Bind("Visual", "OverlaySortingOrder", 32000,
+            OverlaySortingOrder = Config.Bind("Visual", "OverlaySortingOrder", DefaultOverlaySortingOrder,
                 "Sorting order of this mod's overlay canvas. Raise it if the rectangle renders under the map UI.");
 
             BoxOutlineColor = Config.Bind("Visual", "BoxOutlineColor", "#3CB4FFCC",
@@ -154,13 +164,26 @@ namespace MapMouseSelect
             Log.LogInfo("Plugin host torn down by the loader; leaving patches in place.");
         }
 
-        internal static Color ParseColor(ConfigEntry<string> entry, Color fallback)
+        /// <summary>
+        /// Reads one of the color settings. The config default is the only place a default color is
+        /// written down, so there is no second copy here to fall back to.
+        /// </summary>
+        internal static Color ParseColor(ConfigEntry<string> entry)
         {
             if (entry != null && ColorUtility.TryParseHtmlString(entry.Value, out var parsed))
             {
                 return parsed;
             }
-            return fallback;
+
+            // Mention a bad value once rather than on every frame the box is drawn.
+            var bad = entry != null ? entry.Value : "<unbound>";
+            if (_lastRejectedColor != bad)
+            {
+                _lastRejectedColor = bad;
+                Log.LogWarning("Could not read '" + bad + "' as #RRGGBB or #RRGGBBAA; drawing white.");
+            }
+
+            return Color.white;
         }
     }
 }

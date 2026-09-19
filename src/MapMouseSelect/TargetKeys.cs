@@ -14,9 +14,6 @@ namespace MapMouseSelect
     /// </summary>
     internal static class TargetKeys
     {
-        private const float FallbackPressDelay = 0.15f;
-        private const float FallbackClickDelay = 0.25f;
-
         private static bool _held;
         private static bool _longFired;
         private static float _pressedAt;
@@ -64,7 +61,7 @@ namespace MapMouseSelect
 
             var heldFor = Time.unscaledTime - _pressedAt;
 
-            if (!_longFired && heldFor >= PressDelay())
+            if (!_longFired && heldFor >= PlayerSettings.pressDelay)
             {
                 _longFired = true;
                 KeepOnlyNewest();
@@ -75,23 +72,13 @@ namespace MapMouseSelect
                 _held = false;
 
                 // Vanilla fires nothing at all for a hold between clickDelay and pressDelay.
-                if (!_longFired && heldFor <= ClickDelay())
+                if (!_longFired && heldFor <= PlayerSettings.clickDelay)
                 {
                     DropOldest();
                 }
 
                 _longFired = false;
             }
-        }
-
-        private static float PressDelay()
-        {
-            return PlayerSettings.pressDelay > 0f ? PlayerSettings.pressDelay : FallbackPressDelay;
-        }
-
-        private static float ClickDelay()
-        {
-            return PlayerSettings.clickDelay > 0f ? PlayerSettings.clickDelay : FallbackClickDelay;
         }
 
         /// <summary>

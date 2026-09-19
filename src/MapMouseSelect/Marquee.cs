@@ -117,17 +117,11 @@ namespace MapMouseSelect
             }
         }
 
-        internal static void Cancel()
+        private static void Cancel()
         {
             _pending = false;
             _dragging = false;
             Overlay.Hide();
-        }
-
-        internal static void Shutdown()
-        {
-            Cancel();
-            Overlay.Destroy();
         }
 
         private static bool ShiftHeld()
