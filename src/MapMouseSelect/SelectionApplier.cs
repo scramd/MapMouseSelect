@@ -377,15 +377,11 @@ namespace MapMouseSelect
                 return;
             }
 
-            if (replace)
-            {
-                // A replace box means the boxed units, so the targets it keeps are the boxed ones and they stay
-                // where they are. Clearing the list and adding them back would deselect them on the way: their
-                // markers and map icons would blink out and back, and the server would be sent an empty list in
-                // between. Only the targets the box leaves out are dropped, below.
-                RemoveTargetsOutsideBox(aircraft, targets, units, false);
-            }
-
+            // A replace box means the boxed units, so the targets it keeps are the boxed ones and they stay where
+            // they are. Clearing the list and adding them back would deselect them on the way: their markers and
+            // map icons would blink out and back, and the server would be sent an empty list in between. Only the
+            // targets the box leaves out are dropped, and only once what is being added is known, since that
+            // decides whether the gesture ends on a select or on a drop.
             var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);
 
             // Only the units that will be added are new, whenever the box keeps some of what it covers. The
