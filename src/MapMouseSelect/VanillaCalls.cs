@@ -6,7 +6,7 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Wrappers over the private vanilla methods the mod needs verbatim.
+    /// Wrappers over the private vanilla members the mod needs verbatim.
     ///
     /// They own rules that would otherwise have to be copied here and kept in step with the game:
     /// DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with the
@@ -25,9 +25,11 @@ namespace MapMouseSelect
         private static MethodInfo _selectFromMap;
         private static MethodInfo _targetSelect;
         private static MethodInfo _jumpCameraTo;
+        private static FieldInfo _selectSound;
         private static bool _selectFromMapResolved;
         private static bool _targetSelectResolved;
         private static bool _jumpCameraToResolved;
+        private static bool _selectSoundResolved;
 
         /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
         internal static bool ShiftHeld()
@@ -75,6 +77,37 @@ namespace MapMouseSelect
 
             Invoke(_jumpCameraTo, map, position);
             return true;
+        }
+
+        /// <summary>
+        /// Plays the clip CombatHUD uses for a selection. The marquee plays it once for the whole box, which
+        /// is what CombatHUD's own multi-select does: TargetSelect adds every marker in range, then plays this
+        /// once and refreshes the target list once, rather than doing either per unit. The clip is a private
+        /// serialized field, so it is reached the same way the private methods above are.
+        /// </summary>
+        internal static void PlaySelectSound(CombatHUD hud)
+        {
+            if (hud == null || SoundManager.i == null)
+            {
+                return;
+            }
+
+            if (!_selectSoundResolved)
+            {
+                _selectSoundResolved = true;
+                _selectSound = AccessTools.Field(typeof(CombatHUD), "selectSound");
+                if (_selectSound == null)
+                {
+                    Plugin.Log.LogWarning(
+                        "Could not find CombatHUD.selectSound, so a marquee will be silent. The game may have changed.");
+                }
+            }
+
+            var clip = _selectSound != null ? _selectSound.GetValue(hud) as AudioClip : null;
+            if (clip != null)
+            {
+                SoundManager.PlayInterfaceOneShot(clip);
+            }
         }
 
         private static MethodInfo Resolve(Type type, string name, Type[] parameters)

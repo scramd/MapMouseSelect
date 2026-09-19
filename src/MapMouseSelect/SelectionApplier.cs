@@ -148,9 +148,11 @@ namespace MapMouseSelect
 
             if (added > 0)
             {
-                // One refresh for the whole batch. The list is networked (SetStationTargets), so this
-                // keeps a 20-unit marquee to a single message instead of twenty.
+                // One refresh for the whole batch, and one sound with it, which is what CombatHUD's own
+                // multi-select does: the list is networked (SetStationTargets), so the alternative is a
+                // message and a sound per unit.
                 weapons.TargetListChanged();
+                VanillaCalls.PlaySelectSound(hud);
             }
 
             if (capped > 0)
@@ -186,6 +188,11 @@ namespace MapMouseSelect
 
                 map.SelectIcon(unit);
                 added++;
+            }
+
+            if (added > 0)
+            {
+                VanillaCalls.PlaySelectSound(SceneSingleton<CombatHUD>.i);
             }
 
             if (Plugin.FollowFirstUnit.Value && added > 0)

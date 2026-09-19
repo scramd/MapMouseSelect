@@ -85,16 +85,19 @@ namespace MapMouseSelect
     /// list panel row but leaves the unit in the target list, so the weapon stays locked to a unit the
     /// player just tried to drop. Both siblings that deselect, TargetListSelector.ForceDeselect and
     /// TargetListSelector_UnitItem.ToggleSelect, route the other way round, and that is what this does.
+    ///
+    /// It also makes a plain mouse click replace the target list while flying, which vanilla's branch refuses
+    /// to do; the prefix carries the reasoning for why those two belong in the same patch.
     /// </summary>
     [HarmonyPatch(typeof(UnitMapIcon), nameof(UnitMapIcon.ClickIcon))]
     internal static class UnitMapIconClickPatch
     {
         /// <summary>
-        /// Returns false only for the case it handles, so selecting, additive selecting and the vanilla
-        /// guards are all left exactly as they were.
+        /// Returns false only for the shift+click-on-an-already-selected-unit case. A plain mouse click is
+        /// left to vanilla, but only after clearing the target list, and the Select key is not touched.
         /// </summary>
         [HarmonyPrefix]
-        private static bool Prefix(UnitMapIcon __instance)
+        private static bool Prefix(UnitMapIcon __instance, MapIcon.ClickSource clickSource)
         {
             var map = SceneSingleton<DynamicMap>.i;
             var hud = SceneSingleton<CombatHUD>.i;
@@ -104,14 +107,41 @@ namespace MapMouseSelect
             }
 
             // The same gates vanilla applies before it ever looks at the selection state.
-            if (__instance.unit == hud.aircraft || !map.IsCursorInMapRectangle() || !VanillaCalls.ShiftHeld())
+            if (__instance.unit == hud.aircraft || !map.IsCursorInMapRectangle())
             {
                 return true;
             }
 
-            // Removing reports whether the unit was selected, which is the condition this patch is here
-            // for. Anything else is left to vanilla, selecting included.
+            if (!VanillaCalls.ShiftHeld())
+            {
+                // A plain mouse click means "this one", the same as a plain marquee drag, and vanilla's
+                // flying branch only ever adds: it calls UnselectAll only when there is no live aircraft.
+                // Clearing first is also what lets vanilla take the unit when it is already a target, since
+                // the selection it tests against is empty by then. Shift is the additive click and the
+                // Select key is left as vanilla wrote it, so only the mouse is patched here.
+                if (clickSource == MapIcon.ClickSource.Mouse
+                    && SelectionApplier.GetLiveAircraft() != null
+                    && !Excluded(__instance.unit))
+                {
+                    hud.DeselectAll(false);
+                }
+
+                return true;
+            }
+
+            // Shift on a unit that is already selected deselects it. Removing reports whether the unit was
+            // in the selection, which is the condition this half is here for.
             return !SelectionApplier.Remove(map, __instance.unit);
+        }
+
+        /// <summary>
+        /// Whether the player's Target List filters keep this unit out, which is what would leave vanilla's
+        /// select branch with nothing to add after the list was cleared.
+        /// </summary>
+        private static bool Excluded(Unit unit)
+        {
+            var selector = SceneSingleton<TargetListSelector>.i;
+            return selector != null && selector.CheckExclusions(unit);
         }
     }
 

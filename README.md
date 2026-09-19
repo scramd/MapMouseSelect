@@ -18,7 +18,8 @@ boxed units back out of it, with the border colour showing which of the three is
 Shift when both are held.
 
 The marquee is deliberately dumb about factions: anything that survives the map's own filters gets boxed, so
-using those filters well is part of the job.
+using those filters well is part of the job. A committed box plays the HUD's selection sound once, the same
+way the game's own multi-select does, rather than once per boxed unit.
 
 ## Install
 
@@ -54,6 +55,12 @@ Vanilla has the branch but routes it to the wrong call in both modes: with no li
 `DynamicMap.DeselectIcon`, which clears the icon and the target list row but leaves the weapon locked to
 the unit. The two other vanilla deselect paths, `TargetListSelector.ForceDeselect` and
 `TargetListSelector_UnitItem.ToggleSelect`, route the other way round and are what this follows.
+
+A plain mouse click also replaces the target list while flying. Vanilla's branch only ever adds when an
+aircraft is live, because the `UnselectAll` it runs in commander view sits behind a test for exactly that, so
+clicking unit after unit quietly accumulates targets and nothing about the click says so. The mod clears the
+list first, which makes a plain click mean the same thing as a plain drag, and leaves Shift as the additive
+click. The `Select` key keeps vanilla's behaviour.
 
 Clicking a map icon also has to stay a click: the release has to land within the game's drag threshold of
 the press. uGUI only cancels a click when the pressed object has somewhere to hand the drag to, and
