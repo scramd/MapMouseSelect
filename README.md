@@ -37,6 +37,12 @@ the wreckage model and leaves the unit in place, disabled and repairable. Blocki
 change, so the wreck keeps its position, its scaling and its theme colour, and the tint is applied afterwards by
 multiplying the colour, defaulting to 45% of it. Repairing the building puts the normal colour back.
 
+A wreck only shows if the building was already on the map when it died. `DynamicMap.SpawnQueuedIcons`, the only
+thing that creates unit icons, refuses to create one for a unit that is disabled (`!unit.disabled`, and
+`unit.definition.mapIconSize > 0`), so a building destroyed before anything put an icon on it stays off the map,
+and that is where this stops: keeping an icon is not the same as inventing one, and inventing one would show a
+building the player's faction never knew about.
+
 Whether a wreck can be selected is the `WRECK` filter's business, not the icon's. Vanilla's clicks, the `Select`
 action and the marquee all pass through `TargetListSelector.CheckExclusions`, so an unlit filter is what makes a
 wreck unselectable, and the icon is left alone otherwise: it still hovers for its tooltip, which a cleared

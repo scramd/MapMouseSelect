@@ -326,10 +326,14 @@ namespace MapMouseSelect
             return best;
         }
 
-        /// <summary>A live unit that is not the player's own aircraft and survives their own filters.</summary>
+        /// <summary>
+        /// A unit this key may point at: not the player's own aircraft, and not excluded by the Target List
+        /// filters. That is the same gate vanilla's clicks and the marquee use, so a wreck is pickable exactly
+        /// when the pane's WRECK filter says so, and not because of any rule of this key's own.
+        /// </summary>
         private static bool Pickable(Unit unit)
         {
-            if (unit == null || unit.disabled)
+            if (unit == null)
             {
                 return false;
             }
