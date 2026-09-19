@@ -27,6 +27,7 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> RequireModifier { get; private set; }
         internal static ConfigEntry<MapPanButton> PanButton { get; private set; }
         internal static ConfigEntry<bool> ShiftAddsToSelection { get; private set; }
+        internal static ConfigEntry<bool> BlockModifierThrottle { get; private set; }
         internal static ConfigEntry<bool> BatchTargetListWhileFlying { get; private set; }
         internal static ConfigEntry<bool> FlyingHostilesOnly { get; private set; }
         internal static ConfigEntry<bool> FollowFirstUnit { get; private set; }
@@ -59,6 +60,10 @@ namespace MapMouseSelect
 
             ShiftAddsToSelection = Config.Bind("Behavior", "ShiftAddsToSelection", true,
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
+
+            BlockModifierThrottle = Config.Bind("Behavior", "BlockModifierThrottle", true,
+                "While the map is maximized, keep Shift and Control from also working the throttle. Shift "
+                + "is the map's additive modifier, so without this, adding to a selection spools the engine.");
 
             BatchTargetListWhileFlying = Config.Bind("Behavior", "BatchTargetListWhileFlying", true,
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "

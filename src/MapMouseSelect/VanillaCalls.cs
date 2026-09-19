@@ -29,6 +29,15 @@ namespace MapMouseSelect
             return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         }
 
+        /// <summary>
+        /// Both control keys. Nothing in gameplay reads them as a modifier, but they are the throttle
+        /// action's other direction, which is the half of that pair the mod has to account for.
+        /// </summary>
+        internal static bool CtrlHeld()
+        {
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        }
+
         /// <summary>Vanilla's "select the unit the cursor is over", including the click it issues.</summary>
         internal static void SelectFromMap(DynamicMap map)
         {

@@ -100,6 +100,31 @@ namespace MapMouseSelect
     }
 
     /// <summary>
+    /// Stops the map's modifier keys from working the throttle at the same time.
+    ///
+    /// Shift and Control are the two directions of the single "Throttle" axis action, and in map mode
+    /// Shift is also the additive modifier, for vanilla's click-select and waypoint append and for this
+    /// mod's marquee. Vanilla freezes the aircraft's axes, the camera and the trigger while the map is
+    /// open but leaves the throttle live, so adding to a selection spools the engine. Dropping the read
+    /// for the frames where a modifier is down leaves the throttle where it is, which is what the rest
+    /// of the frozen controls already do. Everything else, including a throttle lever, still works.
+    /// </summary>
+    [HarmonyPatch(typeof(PilotPlayerState), "PlayerThrottleAxis1Controls")]
+    internal static class ModifierThrottlePatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix()
+        {
+            if (!Plugin.BlockModifierThrottle.Value || !DynamicMap.mapMaximized)
+            {
+                return true;
+            }
+
+            return !VanillaCalls.ShiftHeld() && !VanillaCalls.CtrlHeld();
+        }
+    }
+
+    /// <summary>
     /// Adds the mod's actions to Rewired while it is still loading the game's input data.
     /// </summary>
     [HarmonyPatch(typeof(InputManager_Base), "Awake")]
