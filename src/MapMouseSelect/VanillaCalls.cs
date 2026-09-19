@@ -24,11 +24,13 @@ namespace MapMouseSelect
     {
         private static MethodInfo _selectFromMap;
         private static MethodInfo _jumpCameraTo;
+        private static MethodInfo _spawnIconForUnit;
         private static FieldInfo _selectSound;
         private static FieldInfo _deselectSound;
         private static FieldInfo _markers;
         private static bool _selectFromMapResolved;
         private static bool _jumpCameraToResolved;
+        private static bool _spawnIconForUnitResolved;
         private static bool _selectSoundResolved;
         private static bool _deselectSoundResolved;
         private static bool _markersResolved;
@@ -76,6 +78,29 @@ namespace MapMouseSelect
             }
 
             return _markers != null ? _markers.GetValue(hud) as List<HUDUnitMarker> : null;
+        }
+
+        /// <summary>
+        /// Vanilla's icon creation for a single unit, which its own code only reaches through the queue.
+        ///
+        /// The queue refuses a unit that is disabled, which is right for a corpse and wrong for a wreck this mod
+        /// keeps on the map, so the wreck path calls this directly instead.
+        /// </summary>
+        internal static bool SpawnIconForUnit(DynamicMap map, Unit unit)
+        {
+            if (!_spawnIconForUnitResolved)
+            {
+                _spawnIconForUnitResolved = true;
+                _spawnIconForUnit = Resolve(typeof(DynamicMap), "SpawnIconForUnit", new[] { typeof(Unit) });
+            }
+
+            if (_spawnIconForUnit == null)
+            {
+                return false;
+            }
+
+            Invoke(_spawnIconForUnit, map, unit);
+            return true;
         }
 
         /// <summary>Vanilla's commander camera jump, the call its own Jump Map branch makes.</summary>

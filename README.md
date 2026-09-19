@@ -37,11 +37,12 @@ the wreckage model and leaves the unit in place, disabled and repairable. Blocki
 change, so the wreck keeps its position, its scaling and its theme colour, and the tint is applied afterwards by
 multiplying the colour, defaulting to 45% of it. Repairing the building puts the normal colour back.
 
-A wreck only shows if the building was already on the map when it died. `DynamicMap.SpawnQueuedIcons`, the only
-thing that creates unit icons, refuses to create one for a unit that is disabled (`!unit.disabled`, and
-`unit.definition.mapIconSize > 0`), so a building destroyed before anything put an icon on it stays off the map,
-and that is where this stops: keeping an icon is not the same as inventing one, and inventing one would show a
-building the player's faction never knew about.
+A wreck shows whether or not the game ever put it on the map. `DynamicMap.SpawnQueuedIcons`, the only thing that
+creates unit icons, refuses a unit that is disabled, so a building that dies before its first icon is made, or one
+that is already a wreck when a client generates its map, would otherwise have no icon to keep. Every path that
+decides a unit belongs on the map asks for its icon through `DynamicMap.AddIcon`, so that is where the refusal is
+undone, for wrecks only and only for units whose definition asks for an icon (`mapIconSize > 0`, vanilla's own
+"not worth an icon" case).
 
 Whether a wreck can be selected is the `WRECK` filter's business, not the icon's. Vanilla's clicks, the `Select`
 action and the marquee all pass through `TargetListSelector.CheckExclusions`, so an unlit filter is what makes a
@@ -245,6 +246,21 @@ both.
   The dedup guards make that harmless but it is a double-handled click.
 - Panning is not a bindable game action, so `PanButton` is mod-only and the in-game controls menu
   will not show it.
+
+## Vanilla fixes
+
+Three game paths assume every unit they are handed has a map icon or a HUD marker, and throw when it does
+not. They are in the mod because the wreck feature is what makes a unit with an icon but no marker an everyday
+thing, and because the same assumption is what vanilla's own radar and missile warnings hit:
+
+- `DynamicMap.GetOrAddIcon` queues an icon and then returns `iconLookup[unit]`, which throws
+  `KeyNotFoundException` for a unit that gets no icon: a disabled one, or one whose definition asks for none.
+  It returns no icon now.
+- `DynamicMap.FlagIncomingMissile` calls that and dereferences the result. It skips a unit with no icon.
+- `CombatHUD.HighlightMarker` indexes `markerLookup` directly, reached from a radar warning, and
+  `CombatHUD.CreateMarker` refuses to give a marker to a unit that is disabled, is `Scenery`, or turns up while
+  the player has no aircraft. A radar contact that was already wrecked when it was detected is the everyday case.
+  The highlight is skipped when there is no marker.
 
 ## Status
 
