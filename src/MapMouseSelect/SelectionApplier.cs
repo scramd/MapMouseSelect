@@ -56,11 +56,12 @@ namespace MapMouseSelect
                 return;
             }
 
-            // Vanilla map clicks only ever add a weapon target, so a flying marquee adds whatever the user
-            // asked for; the replacing half of the mode only exists in the commander view.
+            // Vanilla map clicks only ever add a weapon target, so there is nothing to copy from them here:
+            // the mode says what the box does, and a replacing box empties the target list before filling
+            // it. Adding is what the Shift drag is for.
             if (aircraft != null)
             {
-                ApplyFlying(aircraft, units);
+                ApplyFlying(aircraft, units, mode == MarqueeMode.Replace);
             }
             else
             {
@@ -80,7 +81,7 @@ namespace MapMouseSelect
             return aircraft != null && !aircraft.disabled ? aircraft : null;
         }
 
-        private static void ApplyFlying(Aircraft aircraft, List<Unit> units)
+        private static void ApplyFlying(Aircraft aircraft, List<Unit> units, bool replace)
         {
             var hud = SceneSingleton<CombatHUD>.i;
             var weapons = aircraft.weaponManager;
@@ -94,6 +95,14 @@ namespace MapMouseSelect
             if (targets == null)
             {
                 return;
+            }
+
+            if (replace)
+            {
+                // One clear for the whole box rather than a clear before every unit: DeselectAll drops the
+                // target list, the HUD markers and the map icons together, and each unit added below puts
+                // its own marker and icon back.
+                hud.DeselectAll(false);
             }
 
             var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);

@@ -10,7 +10,7 @@ A left click means different things in the two map modes, and the marquee follow
 
 | Mode | Condition | A vanilla click does | A marquee does |
 |---|---|---|---|
-| Flying | You have a live aircraft | `CombatHUD.SelectUnit` adds a weapon/sensor target to your aircraft's target list | Adds every boxed unit with a HUD marker to that same target list |
+| Flying | You have a live aircraft | `CombatHUD.SelectUnit` adds a weapon/sensor target to your aircraft's target list | Replaces that target list with every boxed unit that has a HUD marker, which a click cannot do |
 | Commander | No live aircraft (ejected, dead, or observing) | `DynamicMap.SelectIcon` selects the unit so right-click move orders apply to it | Selects every boxed unit, so a follow-up right-click orders the whole group |
 
 Shift while dragging adds to the current selection instead of replacing it, and Ctrl while dragging takes the
