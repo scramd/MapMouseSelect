@@ -31,7 +31,8 @@ take out.
 
 ## Destroyed buildings
 
-A destroyed building keeps its map icon, drawn darker, instead of vanishing from the map. Vanilla drops the
+Off by default, behind `Destroyed.Enabled`. A destroyed building keeps its map icon, drawn darker, instead of
+vanishing from the map. Vanilla drops the
 icon in `UnitMapIcon.UnitMapIcon_OnUnitDisabled`, and that building is not gone: `Building.UnitDisabled` spawns
 the wreckage model and leaves the unit in place, disabled and repairable. Blocking the icon removal is the whole
 change, so the wreck keeps its position, its scaling and its theme colour, and the tint is applied afterwards by
@@ -57,7 +58,7 @@ sharing the slot after them, and they are added to the row when the pane starts:
 | Button | Lit means | Unlit means | Starts |
 |---|---|---|---|
 | `NTL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out | Lit, as vanilla behaves |
-| `DED` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default |
+| `DED` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default; only added when `Destroyed.Enabled` is on |
 
 They behave like the pane's own filters: clicking toggles them, `Reset` turns them back on, and changing one
 re-checks the icons the way a vanilla filter does. Filtering a wreck out also deselects it, if it was selected.
@@ -181,9 +182,8 @@ EventSystem one.
 | Visual | `BoxOutlineColorAdditive` | green | Outline color for an additive selection (Shift held) |
 | Visual | `BoxOutlineColorRemove` | red | Outline color for a deselecting marquee (Ctrl held) |
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
-| Wrecks | `ShowDestroyedBuildings` | `true` | Keep destroyed buildings on the map, drawn darker |
-| Wrecks | `DestroyedBuildingTint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
-| Target list | `FilterWrecks` | `true` | Add the `DED` button to the Target List filter pane |
+| Destroyed | `Enabled` | `false` | Keep destroyed buildings on the map as darkened wrecks, and add the `DED` filter |
+| Destroyed | `Tint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
 | Target list | `FilterNeutral` | `true` | Add the `NTL` button to the Target List filter pane |
 
 ## Build

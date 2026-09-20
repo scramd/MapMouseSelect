@@ -203,7 +203,7 @@ namespace MapMouseSelect
         [HarmonyPostfix]
         private static void Postfix(Unit __instance, bool nowDisabled)
         {
-            if (nowDisabled)
+            if (nowDisabled && Plugin.EnableDestroyedUnits.Value)
             {
                 SelectionApplier.Forget(__instance);
             }

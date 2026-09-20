@@ -54,7 +54,7 @@ namespace MapMouseSelect
         /// </summary>
         internal static void EnsureIcon(DynamicMap map, PersistentID id)
         {
-            if (!Plugin.ShowDestroyedBuildings.Value || map == null)
+            if (!Plugin.EnableDestroyedUnits.Value || map == null)
             {
                 return;
             }
@@ -114,7 +114,7 @@ namespace MapMouseSelect
         [HarmonyPrefix]
         private static bool Prefix(UnitMapIcon __instance, Unit unit)
         {
-            if (!Plugin.ShowDestroyedBuildings.Value || !DestroyedBuildings.IsWreck(unit))
+            if (!Plugin.EnableDestroyedUnits.Value || !DestroyedBuildings.IsWreck(unit))
             {
                 return true;
             }
@@ -135,7 +135,7 @@ namespace MapMouseSelect
         [HarmonyPostfix]
         private static void Postfix(UnitMapIcon __instance)
         {
-            if (Plugin.ShowDestroyedBuildings.Value)
+            if (Plugin.EnableDestroyedUnits.Value)
             {
                 DestroyedBuildings.ApplyTint(__instance);
             }
@@ -153,7 +153,10 @@ namespace MapMouseSelect
         [HarmonyPostfix]
         private static void Postfix(Building __instance)
         {
-            DestroyedBuildings.Refresh(__instance);
+            if (Plugin.EnableDestroyedUnits.Value)
+            {
+                DestroyedBuildings.Refresh(__instance);
+            }
         }
     }
 

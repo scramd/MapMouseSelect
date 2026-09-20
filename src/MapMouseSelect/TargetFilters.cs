@@ -59,10 +59,11 @@ namespace MapMouseSelect
                 slot.x += half + gap;
             }
 
-            // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit
+            // Wrecks start filtered out, and the whole wreck feature, this button included, only exists when the
+            // Destroyed section is enabled. Nothing about a wreck is worth selecting by default, and an unlit
             // filter is exactly what stops it being selectable, through the same gate every vanilla selection
             // path already uses. Lighting the button is how a player asks to select wrecks on purpose.
-            if (Plugin.FilterWrecks.Value && _wreck == null)
+            if (Plugin.EnableDestroyedUnits.Value && _wreck == null)
             {
                 _wreck = Clone(template, last, "DED", false, slot, half);
             }

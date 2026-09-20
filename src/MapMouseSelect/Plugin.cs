@@ -43,9 +43,8 @@ namespace MapMouseSelect
         internal static ConfigEntry<string> BoxOutlineColor { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
         internal static ConfigEntry<string> BoxOutlineColorRemove { get; private set; }
-        internal static ConfigEntry<bool> ShowDestroyedBuildings { get; private set; }
+        internal static ConfigEntry<bool> EnableDestroyedUnits { get; private set; }
         internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
-        internal static ConfigEntry<bool> FilterWrecks { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
         private Harmony _harmony;
@@ -117,19 +116,21 @@ namespace MapMouseSelect
             BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", "#FF5A5ACC",
                 "Outline color for a deselecting marquee (Control held).");
 
-            ShowDestroyedBuildings = Config.Bind("Wrecks", "ShowDestroyedBuildings", true,
-                "Keep a destroyed building's map icon instead of letting the game drop it, drawn darker.");
+            // Off by default: this is the one part of the mod that changes what the map shows about a unit that is
+            // already dead, and it is the least proven. Its other half is the DED filter button, which only exists
+            // when this is on.
+            EnableDestroyedUnits = Config.Bind("Destroyed", "Enabled", false,
+                "Keep destroyed buildings on the map as darkened wrecks, add the DED filter, and drop a dead unit "
+                + "from the target list when it dies.");
 
-            DestroyedBuildingTint = Config.Bind("Wrecks", "DestroyedBuildingTint", 0.45f,
+            DestroyedBuildingTint = Config.Bind("Destroyed", "Tint", 0.45f,
                 new ConfigDescription(
-                    "How much of its usual colour a wrecked building's icon keeps. 1 leaves it unchanged.",
+                    "How much of its usual colour a wrecked building's icon keeps. 1 leaves it unchanged. "
+                    + "Only used when Destroyed.Enabled is on.",
                     new AcceptableValueRange<float>(0.1f, 1f)));
 
-            FilterWrecks = Config.Bind("Target list", "FilterWrecks", true,
-                "Add a WRECK button to the Target List pane, which filters destroyed buildings out when unlit.");
-
             FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
-                "Add a NEUTRAL button to the Target List pane, for units that are neither friendly nor hostile.");
+                "Add a NTL button to the Target List pane, for units that are neither friendly nor hostile.");
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();
@@ -212,8 +213,7 @@ namespace MapMouseSelect
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
                 + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
                 + " | target filter postfixes="
-                + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)
-                + " | panButton=" + PanButton.Value
+                + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)                + " | destroyedUnits=" + EnableDestroyedUnits.Value                + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value);
         }
