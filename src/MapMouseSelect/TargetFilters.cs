@@ -23,6 +23,9 @@ namespace MapMouseSelect
     /// </summary>
     internal static class TargetFilters
     {
+        /// <summary>Prefix of every button this mod adds, so its own copies can be told from the pane's.</summary>
+        private const string ClonePrefix = "MapMouseSelect_";
+
         private static TargetListSelector_ToggleButton _neutral;
         private static TargetListSelector_ToggleButton _wreck;
 
@@ -33,10 +36,22 @@ namespace MapMouseSelect
                 return;
             }
 
-            // Destroyed objects compare equal to null, so a scene change clears these by itself.
+            // The row has no layout group: the pane places its filter buttons by hand, so a copy keeps the anchored
+            // position it was taken from and lands on top of the button it came from. Ours share the slot after
+            // the faction buttons, one half a button each, measured against the row's own spacing.
+            var items = selector.toggleFactionItems;
+            var template = items[0];
+            var anchor = items[items.Count - 1];
+            var anchorRect = (RectTransform)anchor.transform;
+            var wide = ((RectTransform)template.transform).rect.width;
+            var half = wide * 0.5f;
+            var lane = anchorRect.anchoredPosition + new Vector2(RowStep(anchor.transform.parent, template), 0f);
+            var slot = lane;
+
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
-                _neutral = Clone(selector.toggleFactionItems[0], "NEUTRAL", true);
+                _neutral = Clone(template, anchor, "NTL", true, slot, half);
+                slot.x += half;
             }
 
             // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit
@@ -44,19 +59,65 @@ namespace MapMouseSelect
             // path already uses. Lighting the button is how a player asks to select wrecks on purpose.
             if (Plugin.FilterWrecks.Value && _wreck == null)
             {
-                _wreck = Clone(selector.toggleFactionItems[0], "WRECK", false);
+                _wreck = Clone(template, anchor, "DED", false, slot, half);
             }
+
+            Plugin.Verbose(
+                "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
+                + ", lane=" + lane + ", half=" + half + ".");
+        }
+
+        private static string Describe(TargetListSelector_ToggleButton button)
+        {
+            if (button == null)
+            {
+                return "absent";
+            }
+
+            var rect = (RectTransform)button.transform;
+            return button.label.text + (button.status ? " lit at " : " unlit at ") + rect.anchoredPosition;
         }
 
         /// <summary>
-        /// Copies one of the pane's own faction buttons. Copying keeps the sizing, the label and the theme
-        /// colours the pane already uses, so the two new buttons sit in the row looking like the rest of it.
+        /// The pitch the row gives its own buttons, measured from the last two in it. That is what one slot is
+        /// worth, which is the space the two halves have to share.
+        /// </summary>
+        private static float RowStep(Transform row, TargetListSelector_ToggleButton template)
+        {
+            var step = ((RectTransform)template.transform).rect.width + 4f;
+
+            if (row.childCount >= 2)
+            {
+                var a = row.GetChild(row.childCount - 2) as RectTransform;
+                var b = row.GetChild(row.childCount - 1) as RectTransform;
+                if (a != null && b != null)
+                {
+                    var delta = b.anchoredPosition.x - a.anchoredPosition.x;
+                    if (delta > 1f)
+                    {
+                        step = delta;
+                    }
+                }
+            }
+
+            return step;
+        }
+
+        /// <summary>
+        /// Copies one of the pane's own faction buttons, sized to the slot it has to share and placed where the
+        /// row's own anchoring puts it. Copying keeps the label styling and the theme colours the pane already
+        /// uses, so the two new buttons look like the rest of them.
         /// </summary>
         private static TargetListSelector_ToggleButton Clone(
-            TargetListSelector_ToggleButton template, string text, bool lit)
+            TargetListSelector_ToggleButton template,
+            TargetListSelector_ToggleButton anchor,
+            string text,
+            bool lit,
+            Vector2 position,
+            float width)
         {
             var copy = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
-            copy.name = "MapMouseSelect_" + text;
+            copy.name = ClonePrefix + text;
             copy.transform.SetAsLastSibling();
 
             var button = copy.GetComponent<TargetListSelector_ToggleButton>();
@@ -70,6 +131,14 @@ namespace MapMouseSelect
             {
                 button.label.text = text;
             }
+
+            var rect = (RectTransform)copy.transform;
+            var anchorRect = (RectTransform)anchor.transform;
+            rect.anchorMin = anchorRect.anchorMin;
+            rect.anchorMax = anchorRect.anchorMax;
+            rect.pivot = anchorRect.pivot;
+            rect.sizeDelta = new Vector2(width, anchorRect.sizeDelta.y);
+            rect.anchoredPosition = position;
 
             button.Set(lit);
             return button;

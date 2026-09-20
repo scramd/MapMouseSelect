@@ -51,13 +51,13 @@ raycast target would have taken away.
 
 Two extra groups join the game's Target List filter pane, because neither fits what vanilla models there: the
 faction buttons carry a same-faction flag rather than a faction, so neutral units can never be filtered, and
-nothing at all knows about destroyed buildings. They are copies of the pane's own faction buttons, added to the
-row when the pane starts:
+nothing at all knows about destroyed buildings. They are half-width copies of the pane's own faction buttons,
+sharing the slot after them, and they are added to the row when the pane starts:
 
 | Button | Lit means | Unlit means | Starts |
 |---|---|---|---|
-| `NEUTRAL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out | Lit, as vanilla behaves |
-| `WRECK` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default |
+| `NTL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out | Lit, as vanilla behaves |
+| `DED` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default |
 
 They behave like the pane's own filters: clicking toggles them, `Reset` turns them back on, and changing one
 re-checks the icons the way a vanilla filter does. Filtering a wreck out also deselects it, if it was selected.
@@ -183,8 +183,8 @@ EventSystem one.
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
 | Wrecks | `ShowDestroyedBuildings` | `true` | Keep destroyed buildings on the map, drawn darker |
 | Wrecks | `DestroyedBuildingTint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
-| Target list | `FilterWrecks` | `true` | Add the `WRECK` button to the Target List filter pane |
-| Target list | `FilterNeutral` | `true` | Add the `NEUTRAL` button to the Target List filter pane |
+| Target list | `FilterWrecks` | `true` | Add the `DED` button to the Target List filter pane |
+| Target list | `FilterNeutral` | `true` | Add the `NTL` button to the Target List filter pane |
 
 ## Build
 
