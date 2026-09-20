@@ -114,9 +114,15 @@ namespace MapMouseSelect
 
             // A unit the player's own filters exclude is not selectable, but the click still gets here in vanilla:
             // in commander view it clears the whole selection before selecting nothing, and while flying it plays
-            // the selection sound for a target list it then refuses to change. Doing nothing is what the filter
-            // has to mean for a click to make sense.
-            if (Excluded(__instance.unit))
+            // the selection sound for a target list it then refuses to change. Doing nothing is what the filter has
+            // to mean for a click to make sense.
+            //
+            // That is the selecting half of a click, not the releasing half. Vanilla tests its filters in the select
+            // branch and nowhere else, which is what lets a player put down a unit the filters hide, and it has to
+            // stay that way here: the pane's own pass cannot always do it, since a deselect while flying goes through
+            // CombatHUD.DeSelectUnit and that gives up when the weapon list is empty. A wreck is never in that list, so
+            // swallowing the release as well would leave it selected with nothing but unselect all able to clear it.
+            if (Excluded(__instance.unit) && !SelectionApplier.IsSelected(map, __instance.unit))
             {
                 Plugin.Verbose("Ignored a click on " + __instance.unit.name + ": the filters exclude it.");
                 return false;
@@ -181,6 +187,13 @@ namespace MapMouseSelect
             if (__instance is UnitMapIcon icon && icon.iconImage != null)
             {
                 icon.iconImage.raycastTarget = true;
+
+                var unit = icon.unit;
+                if (unit != null && unit is Building && unit.disabled)
+                {
+                    Plugin.Verbose(
+                        "Selected disabled " + unit.name + ", icon now " + icon.iconImage.color + ".");
+                }
             }
         }
     }
@@ -188,11 +201,14 @@ namespace MapMouseSelect
     /// <summary>
     /// Takes a unit out of the weapon target list when it dies.
     ///
-    /// Vanilla leaves a dead unit in the target list: its HUD marker is removed by the disable handler, so the
-    /// aircraft's own display stops showing it as locked, while its map icon stays lit and the weapon list still
-    /// holds it. The two then disagree about what is selected, and only clearing the list by hand puts them back
-    /// together. Unit.UnitDisabled is the one edge every unit passes through, Building's override included, since
-    /// that override calls base.
+    /// Vanilla's own cleanup walks the dying unit's HUD marker handler into CombatHUD.RemoveMarker and on into
+    /// WeaponManager.RemoveTargetList, which drops the entry and sends the new list. It stops short when the player's
+    /// own aircraft is disabled, because RemoveMarker skips that call then, and the unit is left in the list with
+    /// nothing drawing it. That leftover is invisible without this mod, which is why it never mattered: the map icon
+    /// goes away with the unit too. Keeping the wreck's icon is what makes it visible, so the mod clears it.
+    ///
+    /// Unit.UnitDisabled is the one edge every unit passes through, Building's override included, since that override
+    /// calls base. When vanilla got there first this is a no-op: nothing is removed, so nothing is sent.
     ///
     /// The second parameter is named after the game's, not after what it means: HarmonyX resolves postfix
     /// arguments by name, and this one is the game's nowDisabled.

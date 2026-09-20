@@ -223,9 +223,18 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Takes one unit out of the selection by whichever system owns it, and says whether it was in there at
-        /// all. A weapon target has to leave the target list too, or the weapon stays locked to a unit the
-        /// player just dropped; the commander's selection only lives on the map.
+        /// Takes one unit out of the selection by whichever system holds it, and says whether it was in one.
+        ///
+        /// The weapon target list and the map's own selection are separate states, and while flying they can hold
+        /// different things: a wreck never reaches the weapon list, since that needs a HUD marker, and a selection
+        /// made in commander view survives the move into a cockpit. Both halves are therefore taken here, rather than
+        /// routing the whole thing to one of them. Vanilla routes by mode instead, which is why its flying deselect
+        /// branch can leave a selected icon behind: it only ever reaches the weapon list, and CombatHUD.DeSelectUnit
+        /// returns immediately when that list is empty.
+        ///
+        /// A unit in the target list leaves it, which drops its HUD marker, its map icon and its entry, and the list
+        /// is sent once. A unit that is only selected on the map is released silently, which is what vanilla's
+        /// DynamicMap.DeselectIcon does and what a commander sees.
         /// </summary>
         internal static bool Remove(DynamicMap map, Unit unit)
         {
@@ -234,29 +243,27 @@ namespace MapMouseSelect
                 return false;
             }
 
+            var removed = false;
             var aircraft = GetLiveAircraft();
             var targets = TargetList(aircraft);
-            if (targets != null)
-            {
-                if (!targets.Contains(unit))
-                {
-                    return false;
-                }
 
+            if (targets != null && targets.Contains(unit))
+            {
                 Pending.Clear();
                 Pending.Add(unit);
                 RemoveFromTargetList(aircraft, Pending);
                 Pending.Clear();
-                return true;
+                removed = true;
             }
 
-            if (!IsSelected(map, unit))
+            // The map side, which the list side above has already cleared when it owned the unit.
+            if (IsSelected(map, unit))
             {
-                return false;
+                map.DeselectIcon(unit);
+                removed = true;
             }
 
-            map.DeselectIcon(unit);
-            return true;
+            return removed;
         }
 
         /// <summary>
@@ -309,9 +316,13 @@ namespace MapMouseSelect
         /// <summary>
         /// Takes a unit out of the target list because it is gone, not because the player asked.
         ///
-        /// Vanilla leaves a dead unit in the list, which leaves the aircraft showing no lock while the map icon
-        /// stays lit, so the two disagree until the list is cleared by hand. This is one refresh, and silent: no
-        /// one deselected anything, the target stopped existing.
+        /// Vanilla normally does this itself: the dying unit's HUD marker handler calls CombatHUD.RemoveMarker, which
+        /// calls WeaponManager.RemoveTargetList, which drops the entry and sends the new list. It skips that whole step
+        /// when the player's own aircraft is disabled, which is the hole this covers. Whenever vanilla did get there
+        /// first this is a no-op: RemoveFromTargetList returns as soon as nothing was actually removed, so no second
+        /// list is sent and no sound plays.
+        ///
+        /// This is one refresh, and silent: no one deselected anything, the target stopped existing.
         /// </summary>
         internal static void Forget(Unit unit)
         {
@@ -561,7 +572,8 @@ namespace MapMouseSelect
             Plugin.Verbose("[remove] marquee dropped " + removed + " of " + units.Count + " boxed unit(s).");
         }
 
-        private static bool IsSelected(DynamicMap map, Unit unit)
+        /// <summary>Whether this unit's icon is in the map's own selection, which is a separate state from the list.</summary>
+        internal static bool IsSelected(DynamicMap map, Unit unit)
         {
             var selected = map.selectedIcons;
             if (selected == null)
