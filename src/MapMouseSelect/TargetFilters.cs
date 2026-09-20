@@ -71,10 +71,18 @@ namespace MapMouseSelect
             // pair also ends where that third button would have ended.
             var slot = laneStart + gap;
 
+            // Copies are toned like the pane's type filters, which is what lights them in the neutral colour
+            // instead of in the faction colour they were copied from. Which enum value that is happens not to be
+            // the one called NEUTRAL: asking for that gave the copies the friendly blue. The context is therefore
+            // read off one of those buttons rather than named.
+            var toned = selector.toggleUnitTypesItems != null && selector.toggleUnitTypesItems.Count > 0
+                ? selector.toggleUnitTypesItems[0]
+                : null;
+
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
                 Dump("filter template: ", templateRect, 2);
-                _neutral = Clone(template, left, "NTL", true, slot, each);
+                _neutral = Clone(template, toned, left, "NTL", true, slot, each);
                 slot += each + gap;
             }
 
@@ -83,14 +91,14 @@ namespace MapMouseSelect
             // uses. Lighting the button is how a player asks to select wrecks on purpose.
             if (Plugin.EnableDestroyedUnits.Value && _wreck == null)
             {
-                _wreck = Clone(template, left, "DED", false, slot, each);
+                _wreck = Clone(template, toned, left, "DED", false, slot, each);
             }
 
             Plugin.Verbose(
                 "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
                 + ", laneStart=" + laneStart.ToString("0.#") + ", normal=" + templateRect.rect.width.ToString("0.#")
                 + ", gap=" + gap.ToString("0.#") + ", each=" + each.ToString("0.#")
-                + ", frame=" + FrameType(template) + ".");
+                + ", themed after " + Describe(toned) + ".");
         }
 
         private static string Describe(TargetListSelector_ToggleButton button)
@@ -102,12 +110,20 @@ namespace MapMouseSelect
 
             var rect = (RectTransform)button.transform;
             return button.label.text + (button.status ? " lit at " : " unlit at ") + rect.anchoredPosition
-                + " " + rect.rect.width.ToString("0.#") + "x" + rect.rect.height.ToString("0.#");
+                + " " + rect.rect.width.ToString("0.#") + "x" + rect.rect.height.ToString("0.#")
+                + " " + Tint(button);
         }
 
-        private static string FrameType(TargetListSelector_ToggleButton button)
+        /// <summary>The colour the button's frame is drawn in, which is what its theme context decided.</summary>
+        private static string Tint(TargetListSelector_ToggleButton button)
         {
-            return button.image != null ? button.image.type.ToString() : "none";
+            return "tint=" + (button.image != null ? button.image.color.ToString() : "none")
+                + " context=" + Context(button);
+        }
+
+        private static string Context(TargetListSelector_ToggleButton button)
+        {
+            return ThemeContext() != null ? ThemeContext().GetValue(button).ToString() : "unknown";
         }
 
         /// <summary>
@@ -176,6 +192,7 @@ namespace MapMouseSelect
         /// </summary>
         private static TargetListSelector_ToggleButton Clone(
             TargetListSelector_ToggleButton template,
+            TargetListSelector_ToggleButton toned,
             RectTransform anchorRect,
             string text,
             bool lit,
@@ -220,7 +237,7 @@ namespace MapMouseSelect
             }
 
             Dump("filter copy: ", rect, 1);
-            UseNeutralTheme(button);
+            MatchTheme(button, toned);
             button.Set(lit);
             return button;
         }
@@ -283,11 +300,26 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Moves a copied button into the theme group the pane's type filters use. The context is a private
-        /// serialized field, and it is what decides the lit colour, so the theme handler has to run again for the
+        /// Tones a copy like the pane's type filters, by copying their theme context. The context is a private
+        /// serialized field and it is what decides the lit colour, so the theme handler has to run again for the
         /// change to show.
         /// </summary>
-        private static void UseNeutralTheme(TargetListSelector_ToggleButton button)
+        private static void MatchTheme(TargetListSelector_ToggleButton button, TargetListSelector_ToggleButton source)
+        {
+            var context = ThemeContext();
+            if (context == null || source == null)
+            {
+                Plugin.Log.LogWarning(
+                    "Could not read the Target List button theme, so the new filters keep the faction colour they "
+                    + "were copied from.");
+                return;
+            }
+
+            context.SetValue(button, context.GetValue(source));
+            _themeChanged.Invoke(button, null);
+        }
+
+        private static FieldInfo ThemeContext()
         {
             if (_context == null)
             {
@@ -297,15 +329,11 @@ namespace MapMouseSelect
 
                 if (_context == null || _themeChanged == null)
                 {
-                    Plugin.Log.LogWarning(
-                        "Could not find the Target List button theme members, so the new filters keep the "
-                        + "faction colour they were copied from.");
-                    return;
+                    return null;
                 }
             }
 
-            _context.SetValue(button, TargetListSelector_ToggleButton.ButtonContext.NEUTRAL);
-            _themeChanged.Invoke(button, null);
+            return _context;
         }
 
         /// <summary>
