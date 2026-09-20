@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -28,6 +29,8 @@ namespace MapMouseSelect
 
         private static TargetListSelector_ToggleButton _neutral;
         private static TargetListSelector_ToggleButton _wreck;
+        private static FieldInfo _context;
+        private static MethodInfo _themeChanged;
 
         internal static void Add(TargetListSelector selector)
         {
@@ -37,21 +40,23 @@ namespace MapMouseSelect
             }
 
             // The row has no layout group: the pane places its filter buttons by hand, so a copy keeps the anchored
-            // position it was taken from and lands on top of the button it came from. Ours share the slot after
-            // the faction buttons, one half a button each, measured against the row's own spacing.
+            // position it was taken from and lands on top of the button it came from. Ours take the slot after the
+            // faction buttons, one half of a slot each, and both the slot and the half are measured from the
+            // faction buttons themselves rather than from the row, which holds buttons of other widths too.
             var items = selector.toggleFactionItems;
             var template = items[0];
-            var anchor = items[items.Count - 1];
-            var anchorRect = (RectTransform)anchor.transform;
-            var wide = ((RectTransform)template.transform).rect.width;
-            var half = wide * 0.5f;
-            var lane = anchorRect.anchoredPosition + new Vector2(RowStep(anchor.transform.parent, template), 0f);
-            var slot = lane;
+            var last = items[items.Count - 1];
+            var lastRect = (RectTransform)last.transform;
+
+            var pitch = FactionPitch(items);
+            var gap = 2f;
+            var half = (pitch - gap) * 0.5f;
+            var slot = lastRect.anchoredPosition + new Vector2(pitch, 0f);
 
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
-                _neutral = Clone(template, anchor, "NTL", true, slot, half);
-                slot.x += half;
+                _neutral = Clone(template, last, "NTL", true, slot, half);
+                slot.x += half + gap;
             }
 
             // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit
@@ -59,12 +64,12 @@ namespace MapMouseSelect
             // path already uses. Lighting the button is how a player asks to select wrecks on purpose.
             if (Plugin.FilterWrecks.Value && _wreck == null)
             {
-                _wreck = Clone(template, anchor, "DED", false, slot, half);
+                _wreck = Clone(template, last, "DED", false, slot, half);
             }
 
             Plugin.Verbose(
                 "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
-                + ", lane=" + lane + ", half=" + half + ".");
+                + ", pitch=" + pitch + ", half=" + half + ".");
         }
 
         private static string Describe(TargetListSelector_ToggleButton button)
@@ -79,34 +84,30 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// The pitch the row gives its own buttons, measured from the last two in it. That is what one slot is
-        /// worth, which is the space the two halves have to share.
+        /// The distance between two of the row's faction buttons, which is what one slot is worth. Measuring the
+        /// faction buttons rather than the row's last two children keeps this right when the row also holds
+        /// buttons of other sizes.
         /// </summary>
-        private static float RowStep(Transform row, TargetListSelector_ToggleButton template)
+        private static float FactionPitch(List<TargetListSelector_ToggleButton> items)
         {
-            var step = ((RectTransform)template.transform).rect.width + 4f;
-
-            if (row.childCount >= 2)
+            if (items.Count >= 2)
             {
-                var a = row.GetChild(row.childCount - 2) as RectTransform;
-                var b = row.GetChild(row.childCount - 1) as RectTransform;
-                if (a != null && b != null)
+                var first = (RectTransform)items[0].transform;
+                var last = (RectTransform)items[items.Count - 1].transform;
+                var span = last.anchoredPosition.x - first.anchoredPosition.x;
+                if (span > 1f)
                 {
-                    var delta = b.anchoredPosition.x - a.anchoredPosition.x;
-                    if (delta > 1f)
-                    {
-                        step = delta;
-                    }
+                    return span / (items.Count - 1);
                 }
             }
 
-            return step;
+            return ((RectTransform)items[0].transform).rect.width + 4f;
         }
 
         /// <summary>
-        /// Copies one of the pane's own faction buttons, sized to the slot it has to share and placed where the
-        /// row's own anchoring puts it. Copying keeps the label styling and the theme colours the pane already
-        /// uses, so the two new buttons look like the rest of them.
+        /// Copies one of the pane's own faction buttons, sized to the slot it shares and placed where the row's own
+        /// anchoring puts it. Its theme context is switched to neutral, which is the theme group the pane's type
+        /// filters use: lit buttons come out green rather than in a faction colour.
         /// </summary>
         private static TargetListSelector_ToggleButton Clone(
             TargetListSelector_ToggleButton template,
@@ -140,8 +141,35 @@ namespace MapMouseSelect
             rect.sizeDelta = new Vector2(width, anchorRect.sizeDelta.y);
             rect.anchoredPosition = position;
 
+            UseNeutralTheme(button);
             button.Set(lit);
             return button;
+        }
+
+        /// <summary>
+        /// Moves a copied button into the theme group the pane's type filters use. The context is a private
+        /// serialized field, and it is what decides the lit colour, so the theme handler has to run again for the
+        /// change to show.
+        /// </summary>
+        private static void UseNeutralTheme(TargetListSelector_ToggleButton button)
+        {
+            if (_context == null)
+            {
+                _context = AccessTools.Field(typeof(TargetListSelector_ToggleButton), "context");
+                _themeChanged = AccessTools.Method(
+                    typeof(TargetListSelector_ToggleButton), "TargetListSelector_ToggleButton_OnThemeGroupChanged");
+
+                if (_context == null || _themeChanged == null)
+                {
+                    Plugin.Log.LogWarning(
+                        "Could not find the Target List button theme members, so the new filters keep the "
+                        + "faction colour they were copied from.");
+                    return;
+                }
+            }
+
+            _context.SetValue(button, TargetListSelector_ToggleButton.ButtonContext.NEUTRAL);
+            _themeChanged.Invoke(button, null);
         }
 
         /// <summary>

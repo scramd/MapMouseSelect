@@ -112,6 +112,16 @@ namespace MapMouseSelect
                 return true;
             }
 
+            // A unit the player's own filters exclude is not selectable, but the click still gets here in vanilla:
+            // in commander view it clears the whole selection before selecting nothing, and while flying it plays
+            // the selection sound for a target list it then refuses to change. Doing nothing is what the filter
+            // has to mean for a click to make sense.
+            if (Excluded(__instance.unit))
+            {
+                Plugin.Verbose("Ignored a click on " + __instance.unit.name + ": the filters exclude it.");
+                return false;
+            }
+
             if (!VanillaCalls.ShiftHeld())
             {
                 // A plain mouse click means "this one", the same as a plain marquee drag, and vanilla's
@@ -171,6 +181,28 @@ namespace MapMouseSelect
             if (__instance is UnitMapIcon icon && icon.iconImage != null)
             {
                 icon.iconImage.raycastTarget = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Takes a unit out of the weapon target list when it dies.
+    ///
+    /// Vanilla leaves a dead unit in the target list: its HUD marker is removed by the disable handler, so the
+    /// aircraft's own display stops showing it as locked, while its map icon stays lit and the weapon list still
+    /// holds it. The two then disagree about what is selected, and only clearing the list by hand puts them back
+    /// together. Unit.UnitDisabled is the one edge every unit passes through, Building's override included, since
+    /// that override calls base.
+    /// </summary>
+    [HarmonyPatch(typeof(Unit), nameof(Unit.UnitDisabled))]
+    internal static class UnitUnitDisabledPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(Unit __instance, bool newState)
+        {
+            if (newState)
+            {
+                SelectionApplier.Forget(__instance);
             }
         }
     }
