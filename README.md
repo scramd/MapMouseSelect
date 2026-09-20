@@ -289,13 +289,14 @@ thing, and because the same assumption is what vanilla's own radar and missile w
   the player has no aircraft. A radar contact that was already wrecked when it was detected is the everyday case.
   The highlight is skipped when there is no marker.
 
-A fourth is not a crash but a colour that goes missing. `DynamicMap.UnselectAll` deselects every icon on the
-map, not only the selected ones, and `MapIcon.DeselectIcon` rebuilds an icon's colour through
-`MapIcon.UpdateColor`, which knows nothing about the target list filters. The dimming a filtered out icon
-carries lives one level down in `UnitMapIcon.UnitMapIcon_UpdateColor`, and the only thing that runs that for
-every icon is the pane's own exclusion pass, which happens when a filter is toggled. So a click that ends in
-`UnselectAll` leaves every filtered out icon bright until a filter is touched, and batched deselection in this
-mod reaches that path far more often than vanilla clicks do. The icon's colour is rebuilt after a deselect.
+A fourth is not a crash but a colour that goes missing. `MapIcon.UpdateColor` sets the theme colour and stops
+there, while the dimming a filtered out unit carries lives one level down in
+`UnitMapIcon.UnitMapIcon_UpdateColor`. Anything that calls the base method directly therefore draws a
+filtered out unit as if it were live, and several things do: `SelectIcon`, `DeselectIcon`, and
+`DynamicMap.UnselectAll`, which deselects every icon on the map whether or not it was selected. Since this
+mod's batched deselection reaches those paths far more often than vanilla clicks do, the base method now
+ends in the unit icon's own update, through a postfix with a depth counter so its own call back into the
+base method cannot apply the tint twice.
 
 ## Status
 

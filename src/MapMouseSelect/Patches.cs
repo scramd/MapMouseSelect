@@ -128,6 +128,23 @@ namespace MapMouseSelect
                 return false;
             }
 
+            // While flying, a click means "make this a weapon target", and the HUD only lets a unit be one if it has
+            // a marker: CombatHUD.SelectUnit checks the marker and then plays the select sound regardless, so a unit
+            // without one gets a sound and nothing else. This mod is what puts such a unit on the map at all, since it
+            // keeps a wreck's icon where vanilla removes it, so the click is refused here instead of left sounding like
+            // it did something. The marquee already skips these units for the same reason, through MarkerExists.
+            //
+            // Releasing still goes through: a unit selected on the map without a marker is exactly the state a click
+            // on one has to be able to end.
+            if (SelectionApplier.GetLiveAircraft() != null
+                && !hud.MarkerExists(__instance.unit)
+                && !SelectionApplier.IsSelected(map, __instance.unit))
+            {
+                Plugin.Verbose(
+                    "Ignored a click on " + __instance.unit.name + ": the HUD has no marker for it, so it cannot be a target.");
+                return false;
+            }
+
             if (!VanillaCalls.ShiftHeld())
             {
                 // A plain mouse click means "this one", the same as a plain marquee drag, and vanilla's
