@@ -234,9 +234,10 @@ namespace MapMouseSelect
             // slice borders drawn stretched over whatever width it is given, which is the one thing about it the log
             // does confirm (it prints type, border and aspect for the template).
             //
-            // Unverified: whether that stretched sprite actually loses its sides at this width. That was the reading
-            // of a screenshot, which later turned out to be of an age nobody could pin down, so this may be drawing
-            // the same thing the pane's sprite would have drawn. Deleting the sprite assignment below is the test.
+            // Unverified: why it happens. Squeezing the pane's sprite into a narrower rect is the obvious candidate,
+            // but that was a reading of a screenshot rather than a measurement. What is not in doubt is that it does
+            // happen: with the sprite assignment below taken out, a copy shows the top and bottom of a frame and
+            // nothing else.
             //
             // Simple with the aspect off is what the template already uses, so those two lines only matter if a
             // future version of the pane ships a sliced frame.
