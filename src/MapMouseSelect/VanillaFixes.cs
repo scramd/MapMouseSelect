@@ -99,24 +99,47 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Puts the filter dimming back after an icon is deselected.
+    /// Makes every colour rebuild go through the unit icon's own update, which is the only one that knows about the
+    /// Target List filters and about wrecks.
     ///
-    /// DynamicMap.UnselectAll deselects every icon in mapIcons, not only the selected ones, and MapIcon.DeselectIcon
-    /// rebuilds an icon's colour through MapIcon.UpdateColor, which knows nothing about the target list filters. The
-    /// dimming lives one level down, in UnitMapIcon.UnitMapIcon_UpdateColor, and the only thing that runs that for
-    /// every icon is the pane's own exclusion pass, which happens when a filter is toggled. So any click that ends in
-    /// UnselectAll, or any bulk deselect, leaves the filtered out icons drawn at full brightness until the player
-    /// touches a filter. Vanilla does this too; batched deselection just makes it happen far more often.
+    /// MapIcon.UpdateColor sets the colour from the theme and stops there. The filter dimming, and this mod's wreck
+    /// tint, live one level down in UnitMapIcon.UnitMapIcon_UpdateColor, so everything that calls the base method
+    /// directly draws a filtered out unit, or a wreck, as if it were still alive: MapIcon.SelectIcon and
+    /// MapIcon.DeselectIcon do, DynamicMap.UnselectAll calls DeselectIcon on every icon on the map whether it was
+    /// selected or not, and DynamicMap.UpdateUnitFaction and DynamicMap_OnFactionChanged call UpdateColor themselves.
     ///
-    /// Re-running the update after the deselect restores what the icon should look like, whichever deselect did it.
+    /// The depth counter is what keeps this from compounding: UnitMapIcon_UpdateColor calls the base method itself,
+    /// so without it the postfix would run the update again inside its own call and apply the tint twice. A finalizer
+    /// rather than a postfix, so the counter cannot be left raised by an exception and silently disable the fix.
     /// </summary>
-    [HarmonyPatch(typeof(MapIcon), nameof(MapIcon.DeselectIcon))]
-    internal static class MapIconDeselectIconPatch
+    [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_UpdateColor")]
+    internal static class UnitMapIconDepthPatch
+    {
+        internal static int Depth;
+
+        [HarmonyPrefix]
+        private static void Prefix()
+        {
+            Depth++;
+        }
+
+        [HarmonyFinalizer]
+        private static void Finalizer()
+        {
+            Depth--;
+        }
+    }
+
+    /// <summary>
+    /// Sends a colour rebuild that bypassed the unit icon's update back through it.
+    /// </summary>
+    [HarmonyPatch(typeof(MapIcon), nameof(MapIcon.UpdateColor))]
+    internal static class MapIconUpdateColorPatch
     {
         [HarmonyPostfix]
         private static void Postfix(MapIcon __instance)
         {
-            if (__instance is UnitMapIcon icon)
+            if (UnitMapIconDepthPatch.Depth == 0 && __instance is UnitMapIcon icon)
             {
                 icon.UnitMapIcon_UpdateColor();
             }
