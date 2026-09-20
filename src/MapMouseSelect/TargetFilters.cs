@@ -35,6 +35,8 @@ namespace MapMouseSelect
         private static Sprite _frame;
         private static float _frameWidth;
         private static float _frameHeight;
+        private static FieldInfo _resetImage;
+        private static FieldInfo _resetLabel;
 
         internal static void Add(TargetListSelector selector)
         {
@@ -349,6 +351,69 @@ namespace MapMouseSelect
         }
 
         /// <summary>
+        /// Puts a filter back to the state it starts in. Reset is the button for "back to normal", and normal is
+        /// where the pane comes up: neutrals shown, wrecks hidden.
+        /// </summary>
+        private static void Restore(TargetListSelector_ToggleButton button, string who, bool startsOn)
+        {
+            if (button == null || button.status == startsOn)
+            {
+                return;
+            }
+
+            button.Set(startsOn);
+            Plugin.Verbose("Reset Filter put " + who + " back to its default.");
+        }
+
+        /// <summary>
+        /// Helps the pane's Reset button, which only walks the three lists the pane owns and therefore leaves the
+        /// two copies where they were even though it lights up for them like for any other filter.
+        ///
+        /// Wrecks go back to hidden rather than to shown: selecting a wreck is something a player opts into with
+        /// that button, so a reset that quietly turned it on would be the one control in this pane that makes
+        /// wrecks targetable without being asked. Setting a filter asks the pane to rebuild its icons, which is
+        /// also what lights the Reset button, so the button is greyed again the way the pane's own method ends.
+        /// </summary>
+        internal static void Reset(TargetListSelector pane)
+        {
+            if (_neutral == null && _wreck == null)
+            {
+                return;
+            }
+
+            Restore(_neutral, "NTL", true);
+            Restore(_wreck, "DED", false);
+            GreyResetButton(pane);
+        }
+
+        private static void GreyResetButton(TargetListSelector pane)
+        {
+            if (_resetImage == null)
+            {
+                _resetImage = AccessTools.Field(typeof(TargetListSelector), "resetButtonImage");
+                _resetLabel = AccessTools.Field(typeof(TargetListSelector), "resetButtonLabel");
+            }
+
+            if (pane == null || _resetImage == null || _resetLabel == null)
+            {
+                return;
+            }
+
+            var image = _resetImage.GetValue(pane) as Graphic;
+            var label = _resetLabel.GetValue(pane) as Graphic;
+
+            if (image != null)
+            {
+                image.color = Color.gray;
+            }
+
+            if (label != null)
+            {
+                label.color = Color.gray;
+            }
+        }
+
+        /// <summary>
         /// The mod's half of the pane's exclusions, added to whatever the pane itself decided.
         /// </summary>
         internal static bool Excludes(Unit unit)
@@ -407,6 +472,20 @@ namespace MapMouseSelect
             {
                 __result = TargetFilters.Excludes(u);
             }
+        }
+    }
+
+    /// <summary>
+    /// The pane's Reset button walks the three filter lists the pane owns, and the two this mod adds are not in
+    /// them, so it lit up for a filter it could not put back. This is what puts them back.
+    /// </summary>
+    [HarmonyPatch(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters))]
+    internal static class TargetListSelectorResetFiltersPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(TargetListSelector __instance)
+        {
+            TargetFilters.Reset(__instance);
         }
     }
 }
