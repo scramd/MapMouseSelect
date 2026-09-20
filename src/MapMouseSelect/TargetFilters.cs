@@ -66,6 +66,7 @@ namespace MapMouseSelect
 
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
+                Dump("filter template: ", templateRect, 2);
                 _neutral = Clone(template, left, "NTL", true, slot, each);
                 slot += each + gap;
             }
@@ -100,6 +101,50 @@ namespace MapMouseSelect
         private static string FrameType(TargetListSelector_ToggleButton button)
         {
             return button.image != null ? button.image.type.ToString() : "none";
+        }
+
+        /// <summary>
+        /// Dumps a button's hierarchy and the frame settings of everything in it. This exists because the filter
+        /// buttons are drawn from a prefab nobody here can see: when a copy looked wrong, the log said which sprite
+        /// draws the frame and how the rect around it is set instead of leaving it to guesswork. Verbose only, and
+        /// it runs once, when the buttons are first added.
+        /// </summary>
+        private static void Dump(string label, RectTransform root, int depth)
+        {
+            if (depth < 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i) as RectTransform;
+                if (child == null)
+                {
+                    continue;
+                }
+
+                var line = label + child.name
+                    + " rect=" + child.rect.width.ToString("0.#") + "x" + child.rect.height.ToString("0.#")
+                    + " anchors=" + child.anchorMin + ".." + child.anchorMax
+                    + " pos=" + child.anchoredPosition;
+
+                var image = child.GetComponent<Image>();
+                if (image != null)
+                {
+                    var sprite = image.sprite;
+                    line += " image[sprite=" + (sprite != null ? sprite.name : "none")
+                        + ", type=" + image.type
+                        + ", border=" + (sprite != null ? sprite.border.ToString() : "-")
+                        + ", ppu=" + image.pixelsPerUnitMultiplier.ToString("0.###")
+                        + ", aspect=" + image.preserveAspect
+                        + ", center=" + image.fillCenter
+                        + ", color=" + image.color + "]";
+                }
+
+                Plugin.Verbose(line);
+                Dump(label + "  ", child, depth - 1);
+            }
         }
 
         private static float LeftEdge(RectTransform rect)
@@ -155,13 +200,20 @@ namespace MapMouseSelect
             // Left edge at leftEdge: the pivot sits that far in from it.
             rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
 
-            // A sliced frame collides with itself once the button is narrower than its own borders, which is what
-            // ate the left and right edges of the copy. Stretching the frame instead keeps them.
-            if (button.image != null && button.image.type == Image.Type.Sliced)
+            // A sliced frame collides with itself once the button is narrower than its own borders, and a frame that
+            // preserves its aspect is drawn smaller than its rect and centred, which is what eats the vertical
+            // strokes of a narrow copy. Both are turned off so the frame simply stretches to fill the button.
+            if (button.image != null)
             {
-                button.image.type = Image.Type.Simple;
+                if (button.image.type == Image.Type.Sliced)
+                {
+                    button.image.type = Image.Type.Simple;
+                }
+
+                button.image.preserveAspect = false;
             }
 
+            Dump("filter copy: ", rect, 1);
             UseNeutralTheme(button);
             button.Set(lit);
             return button;
