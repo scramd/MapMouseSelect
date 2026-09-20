@@ -10,3 +10,6 @@ Directory.Build.user.props
 .vs/
 .idea/
 *.user
+
+# Publish output, not source.
+dist/
