@@ -11,5 +11,9 @@ Directory.Build.user.props
 .idea/
 *.user
 
+# Editor settings carry machine-specific paths (nuclearOption.root); launch.json and tasks.json
+# reference the key, this file holds it.
+.vscode/settings.json
+
 # Publish output, not source.
 dist/

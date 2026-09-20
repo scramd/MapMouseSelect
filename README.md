@@ -226,8 +226,13 @@ being touched, and defaults the mission name to "Free Flight". The game is a rel
 this launches the process rather than offering managed breakpoints.
 
 The install path is the `nuclearOption.root` setting in `.vscode\settings.json`, which the build task
-uses too, so there is one place to edit if the game moves. It is a machine path, so put that key in
-your user settings instead if you would rather not commit it.
+uses too, so there is one place to edit if the game moves. That file is gitignored because it is a
+machine path, and the key is the one thing to add yourself; without it the build and the launch stop
+on an unresolved variable rather than guessing.
+
+`NUCLEAR_OPTION_ROOT` cannot stand in for it: VS Code resolves `${env:...}` against the environment it
+was started with, so a variable set after that is missing from tasks and launches even though new
+terminals see it.
 
 ## How it works
 
