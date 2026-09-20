@@ -32,6 +32,9 @@ namespace MapMouseSelect
         private static TargetListSelector_ToggleButton _wreck;
         private static FieldInfo _context;
         private static MethodInfo _themeChanged;
+        private static Sprite _frame;
+        private static float _frameWidth;
+        private static float _frameHeight;
 
         internal static void Add(TargetListSelector selector)
         {
@@ -204,16 +207,15 @@ namespace MapMouseSelect
             // Left edge at leftEdge: the pivot sits that far in from it.
             rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
 
-            // A sliced frame collides with itself once the button is narrower than its own borders, and a frame that
-            // preserves its aspect is drawn smaller than its rect and centred, which is what eats the vertical
-            // strokes of a narrow copy. Both are turned off so the frame simply stretches to fill the button.
+            // The pane's frame sprite is a plain hollow rectangle from an atlas, stretched to fill a normal
+            // button and readable there only because the button is wide: the same sprite squeezed into half a
+            // button draws its two side strokes at well under a pixel and they blend away, which is what leaves
+            // a copy with the top and bottom of a frame and nothing else. Unity cannot be given nine slice
+            // borders on that sprite at runtime, so a copy draws its own frame instead, at its own size.
             if (button.image != null)
             {
-                if (button.image.type == Image.Type.Sliced)
-                {
-                    button.image.type = Image.Type.Simple;
-                }
-
+                button.image.sprite = Frame(width, rect.rect.height);
+                button.image.type = Image.Type.Simple;
                 button.image.preserveAspect = false;
             }
 
@@ -221,6 +223,63 @@ namespace MapMouseSelect
             UseNeutralTheme(button);
             button.Set(lit);
             return button;
+        }
+
+        /// <summary>
+        /// A hollow rectangle drawn at the size of one copy, one canvas unit to a stroke, white so that the
+        /// Image tints it with the lit or unlit colour exactly like it tints the pane's own frame. Drawing it at
+        /// the copy's own size is the point: the stroke keeps its width whatever the button's width is.
+        ///
+        /// The two copies are the same size, so the result is cached and built at most once per size.
+        /// </summary>
+        private static Sprite Frame(float width, float height)
+        {
+            const int Oversample = 4;
+
+            if (_frame != null && Mathf.Approximately(_frameWidth, width) && Mathf.Approximately(_frameHeight, height))
+            {
+                return _frame;
+            }
+
+            var w = Mathf.Max(Oversample, Mathf.RoundToInt(width * Oversample));
+            var h = Mathf.Max(Oversample, Mathf.RoundToInt(height * Oversample));
+            var stroke = Oversample;
+            var solid = new Color32(255, 255, 255, 255);
+            var clear = new Color32(255, 255, 255, 0);
+            var pixels = new Color32[w * h];
+
+            for (var y = 0; y < h; y++)
+            {
+                for (var x = 0; x < w; x++)
+                {
+                    var edge = x < stroke || y < stroke || x >= w - stroke || y >= h - stroke;
+                    pixels[(y * w) + x] = edge ? solid : clear;
+                }
+            }
+
+            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false)
+            {
+                name = ClonePrefix + "Frame",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+
+            // The sprite's own size comes out as the button's size, so the Image draws it one to one and a
+            // stroke is one canvas unit rather than a stretched fraction of one.
+            _frameWidth = width;
+            _frameHeight = height;
+            _frame = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, w, h),
+                new Vector2(0.5f, 0.5f),
+                Oversample,
+                0,
+                SpriteMeshType.FullRect);
+
+            return _frame;
         }
 
         /// <summary>
