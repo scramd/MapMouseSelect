@@ -116,10 +116,7 @@ namespace MapMouseSelect
             BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", "#FF5A5ACC",
                 "Outline color for a deselecting marquee (Control held).");
 
-            // Off by default: this is the one part of the mod that changes what the map shows about a unit that is
-            // already dead, and it is the least proven. Its other half is the DED filter button, which only exists
-            // when this is on.
-            EnableDestroyedUnits = Config.Bind("Destroyed", "Enabled", false,
+            EnableDestroyedUnits = Config.Bind("Destroyed", "Enabled", true,
                 "Keep destroyed buildings on the map as darkened wrecks, add the DED filter, and drop a dead unit "
                 + "from the target list when it dies.");
 

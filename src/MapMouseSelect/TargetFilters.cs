@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MapMouseSelect
 {
@@ -39,38 +40,43 @@ namespace MapMouseSelect
                 return;
             }
 
-            // The row has no layout group: the pane places its filter buttons by hand, so a copy keeps the anchored
-            // position it was taken from and lands on top of the button it came from. Ours take the slot after the
-            // faction buttons, one half of a slot each, and both the slot and the half are measured from the
-            // faction buttons themselves rather than from the row, which holds buttons of other widths too.
+            // The pane places its filter buttons by hand, with no layout group, and their geometry is only real once
+            // the canvas has been laid out, so both of those are settled first: ours are placed against the measured
+            // edges of the free lane rather than against spacing worked out from the row.
+            Canvas.ForceUpdateCanvases();
+
             var items = selector.toggleFactionItems;
             var template = items[0];
-            var last = items[items.Count - 1];
-            var lastRect = (RectTransform)last.transform;
+            var left = (RectTransform)items[items.Count - 1].transform;
 
-            var pitch = FactionPitch(items);
-            var gap = 2f;
-            var half = (pitch - gap) * 0.5f;
-            var slot = lastRect.anchoredPosition + new Vector2(pitch, 0f);
+            // The lane runs from the right edge of the faction buttons to the left edge of the next button the pane
+            // itself put in this row, which is the laser toggle. Both edges are measured, so the pair fills the gap
+            // instead of landing somewhere near it.
+            var right = selector.toggleLaser != null ? (RectTransform)selector.toggleLaser.transform : null;
+            MeasureLane(left, right, out var laneStart, out var laneWidth);
+
+            var gap = Mathf.Min(3f, laneWidth * 0.1f);
+            var each = Mathf.Max(1f, (laneWidth - gap) * 0.5f);
+            var slot = laneStart;
 
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
-                _neutral = Clone(template, last, "NTL", true, slot, half);
-                slot.x += half + gap;
+                _neutral = Clone(template, left, "NTL", true, slot, each);
+                slot += each + gap;
             }
 
-            // Wrecks start filtered out, and the whole wreck feature, this button included, only exists when the
-            // Destroyed section is enabled. Nothing about a wreck is worth selecting by default, and an unlit
-            // filter is exactly what stops it being selectable, through the same gate every vanilla selection
-            // path already uses. Lighting the button is how a player asks to select wrecks on purpose.
+            // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit filter is
+            // exactly what stops it being selectable, through the same gate every vanilla selection path already
+            // uses. Lighting the button is how a player asks to select wrecks on purpose.
             if (Plugin.EnableDestroyedUnits.Value && _wreck == null)
             {
-                _wreck = Clone(template, last, "DED", false, slot, half);
+                _wreck = Clone(template, left, "DED", false, slot, each);
             }
 
             Plugin.Verbose(
                 "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
-                + ", pitch=" + pitch + ", half=" + half + ".");
+                + ", lane=" + laneStart.ToString("0.#") + "+" + laneWidth.ToString("0.#")
+                + ", each=" + each.ToString("0.#") + ", frame=" + FrameType(template) + ".");
         }
 
         private static string Describe(TargetListSelector_ToggleButton button)
@@ -81,41 +87,68 @@ namespace MapMouseSelect
             }
 
             var rect = (RectTransform)button.transform;
-            return button.label.text + (button.status ? " lit at " : " unlit at ") + rect.anchoredPosition;
+            return button.label.text + (button.status ? " lit at " : " unlit at ") + rect.anchoredPosition
+                + " " + rect.rect.width.ToString("0.#") + "x" + rect.rect.height.ToString("0.#");
+        }
+
+        private static string FrameType(TargetListSelector_ToggleButton button)
+        {
+            return button.image != null ? button.image.type.ToString() : "none";
         }
 
         /// <summary>
-        /// The distance between two of the row's faction buttons, which is what one slot is worth. Measuring the
-        /// faction buttons rather than the row's last two children keeps this right when the row also holds
-        /// buttons of other sizes.
+        /// The free lane after the last faction button, as a left edge and a width in the row's own local units
+        /// measured from the middle of the row. That is the frame a centre-anchored button uses, which is how the
+        /// copies are anchored, and measuring in world space is what makes both edges right regardless of how the
+        /// row and the canvas scale themselves.
         /// </summary>
-        private static float FactionPitch(List<TargetListSelector_ToggleButton> items)
+        private static void MeasureLane(RectTransform left, RectTransform right, out float start, out float width)
         {
-            if (items.Count >= 2)
+            var row = (RectTransform)left.parent;
+            var scale = row.lossyScale.x;
+            if (scale <= 0f)
             {
-                var first = (RectTransform)items[0].transform;
-                var last = (RectTransform)items[items.Count - 1].transform;
-                var span = last.anchoredPosition.x - first.anchoredPosition.x;
-                if (span > 1f)
-                {
-                    return span / (items.Count - 1);
-                }
+                scale = 1f;
             }
 
-            return ((RectTransform)items[0].transform).rect.width + 4f;
+            var centreWorld = row.TransformPoint(row.rect.center).x;
+            start = (RightEdge(left) - centreWorld) / scale;
+
+            // Without the neighbour there is no lane to measure, so one button's worth is assumed after the left
+            // edge, which is where the pane would have put its next button anyway.
+            var end = right != null && right.parent == left.parent
+                ? (LeftEdge(right) - centreWorld) / scale
+                : start + Mathf.Max(left.rect.width, 8f);
+
+            width = Mathf.Max(end - start, 0f);
+        }
+
+        private static float LeftEdge(RectTransform rect)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return Mathf.Min(corners[0].x, corners[3].x);
+        }
+
+        private static float RightEdge(RectTransform rect)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return Mathf.Max(corners[1].x, corners[2].x);
         }
 
         /// <summary>
-        /// Copies one of the pane's own faction buttons, sized to the slot it shares and placed where the row's own
-        /// anchoring puts it. Its theme context is switched to neutral, which is the theme group the pane's type
-        /// filters use: lit buttons come out green rather than in a faction colour.
+        /// Copies one of the pane's own faction buttons, sized to the half of the lane it takes and anchored to the
+        /// middle of the row horizontally. The vertical anchoring is the pane's own, so the copies sit on the same
+        /// line as the buttons they were copied from. Their theme context is switched to neutral, which is the theme
+        /// group the pane's type filters use: lit buttons come out green rather than in a faction colour.
         /// </summary>
         private static TargetListSelector_ToggleButton Clone(
             TargetListSelector_ToggleButton template,
-            TargetListSelector_ToggleButton anchor,
+            RectTransform anchorRect,
             string text,
             bool lit,
-            Vector2 position,
+            float leftEdge,
             float width)
         {
             var copy = UnityEngine.Object.Instantiate(template.gameObject, template.transform.parent);
@@ -135,12 +168,20 @@ namespace MapMouseSelect
             }
 
             var rect = (RectTransform)copy.transform;
-            var anchorRect = (RectTransform)anchor.transform;
-            rect.anchorMin = anchorRect.anchorMin;
-            rect.anchorMax = anchorRect.anchorMax;
+            rect.anchorMin = new Vector2(0.5f, anchorRect.anchorMin.y);
+            rect.anchorMax = new Vector2(0.5f, anchorRect.anchorMax.y);
             rect.pivot = anchorRect.pivot;
             rect.sizeDelta = new Vector2(width, anchorRect.sizeDelta.y);
-            rect.anchoredPosition = position;
+
+            // Left edge at leftEdge: the pivot sits that far in from it.
+            rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
+
+            // A sliced frame collides with itself once the button is narrower than its own borders, which is what
+            // ate the left and right edges of the copy. Stretching the frame instead keeps them.
+            if (button.image != null && button.image.type == Image.Type.Sliced)
+            {
+                button.image.type = Image.Type.Simple;
+            }
 
             UseNeutralTheme(button);
             button.Set(lit);
