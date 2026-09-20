@@ -29,23 +29,6 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Keeps the map selection honest while flying, from the one tick that runs there.
-    ///
-    /// The check has to happen with a cockpit active, and `DynamicMap.Update` is the wrong place for it: it is the
-    /// map's own tick, so a selection carried into flight sits there until the map is opened again. `CombatHUD
-    /// .LateUpdate` is the HUD's, so it runs for as long as the player is flying, map or no map.
-    /// </summary>
-    [HarmonyPatch(typeof(CombatHUD), "LateUpdate")]
-    internal static class CombatHudLateUpdatePatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix()
-        {
-            SelectionApplier.ReleaseUnsupportedSelection();
-        }
-    }
-
-    /// <summary>
     /// Cancels a map icon click when the pointer travelled past the game's drag threshold between the
     /// press and the release.
     ///
@@ -261,13 +244,12 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Makes the map selection let go of anything the weapon target list does not hold, at the moment a cockpit is
-    /// entered.
+    /// Logs entering a cockpit, and leaving one. Diagnostics only, one line per transition.
     ///
-    /// That is when the two are supposed to agree. A unit selected in commander view has no list entry, and vanilla
-    /// has nothing that clears a map selection, so the selection carried into flight sits there in a state nothing
-    /// else produces: it shows in the Target List panel, its icon has no reason to look selected, and every deselect
-    /// path starts from the unit or from the list, neither of which can reach it while the list is empty.
+    /// Aircraft.OnStartClient calls SetAircraft and then DynamicMap.DeselectAllIcons in the same local-player branch, so
+    /// the first line is where a commander-view selection stops existing, and a map selection that outlives a sortie is a
+    /// different bug from one that never had a cockpit at all. Both were live candidates while this was being worked out,
+    /// and the log is what ruled one of them out.
     /// </summary>
     [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.SetAircraft))]
     internal static class CombatHudSetAircraftPatch
@@ -277,15 +259,14 @@ namespace MapMouseSelect
         {
             var aircraft = __instance.aircraft;
             Plugin.Verbose("Entered " + (aircraft != null ? aircraft.name : "an aircraft") + ".");
-            SelectionApplier.ReleaseMapOnlySelection();
         }
     }
 
     /// <summary>
-    /// Notes the other half of that transition. Diagnostics only.
+    /// The other half of that transition.
     ///
-    /// It is the moment a cockpit's own selection has no owner left, and the line is what tells a selection left over
-    /// from a sortie apart from one that never had a cockpit at all, which are two different bugs.
+    /// CombatHUD.RemoveAircraft runs on death, and it clears the target list after dropping the aircraft, so the cockpit
+    /// this one belonged to is gone either way.
     /// </summary>
     [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft))]
     internal static class CombatHudRemoveAircraftPatch
