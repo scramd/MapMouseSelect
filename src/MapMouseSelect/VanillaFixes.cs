@@ -1,3 +1,4 @@
+using System;
 using HarmonyLib;
 
 namespace MapMouseSelect
@@ -24,6 +25,60 @@ namespace MapMouseSelect
                 && !unit.disabled
                 && unit.definition != null
                 && unit.definition.mapIconSize > 0f;
+        }
+    }
+
+    /// <summary>
+    /// Fires the event DynamicMap.DeselectAllIcons forgets, so the Target List panel drops its rows with the selection.
+    ///
+    /// That method is a hand-rolled clear: it deselects every icon by hand, empties selectedIcons, and fires neither
+    /// onUnitDeselected nor onAllDeselected. TargetListSelector builds its rows from those two events and nothing else,
+    /// so every row survives a clear that way, and what the panel is left showing is a target that nothing holds: no
+    /// lit icon on the map, no entry in the weapon list, and no way to tell it apart from a real one except that
+    /// clicking it does nothing. Unselect all is the gesture a player reaches for, and that is CombatHUD.DeselectAll
+    /// going through this very method, so the clear leaves the row where it was, and the row outlives the selection by
+    /// as long as the player puts up with it.
+    ///
+    /// Vanilla reaches this by playing normally: Aircraft.OnStartClient, which is every respawn,
+    /// AircraftSelectionMenu.OnEnable, which is the spawn screen, and AirbaseMapIcon.ClickIcon. The row is left behind
+    /// for any unit, a wreck or not.
+    ///
+    /// Calling the event rather than the panel keeps every other subscriber of a clear in the loop, which is what the
+    /// game meant to do. The count in the log comes from a prefix because the body has already emptied the list by the
+    /// time a postfix runs.
+    /// </summary>
+    [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.DeselectAllIcons))]
+    internal static class DynamicMapDeselectAllIconsPatch
+    {
+        private static readonly System.Reflection.FieldInfo AllDeselected =
+            AccessTools.Field(typeof(DynamicMap), "onAllDeselected");
+
+        private static int _icons;
+
+        [HarmonyPrefix]
+        private static void Prefix(DynamicMap __instance)
+        {
+            var selected = __instance.selectedIcons;
+            _icons = selected != null ? selected.Count : 0;
+        }
+
+        [HarmonyPostfix]
+        private static void Postfix(DynamicMap __instance)
+        {
+            if (_icons == 0)
+            {
+                return;
+            }
+
+            Plugin.Verbose(
+                "Dropped the Target List rows with the selection: DeselectAllIcons cleared " + _icons
+                + " selected icon(s) without firing onAllDeselected.");
+
+            var cleared = AllDeselected != null ? AllDeselected.GetValue(__instance) as Action : null;
+            if (cleared != null)
+            {
+                cleared();
+            }
         }
     }
 
@@ -95,6 +150,49 @@ namespace MapMouseSelect
             }
 
             return true;
+        }
+    }
+
+    /// <summary>
+    /// Releases a unit that the weapon target list has nothing to say about.
+    ///
+    /// CombatHUD.DeSelectUnit starts by returning when the target list is empty, and that return skips the rest of
+    /// the method, the map icon included. An empty list is exactly the case this mod walks into: a unit selected in
+    /// commander view keeps its selection into the cockpit with no list entry, and a wreck can never be a weapon
+    /// target at all, so it is never in the list whatever selected it. Every deselect path that routes through here
+    /// then does nothing, and they are the ones a player reaches: TargetListSelector.ForceDeselect, which is the
+    /// pane's own exclusion pass, and TargetListSelector_UnitItem.ToggleSelect, which is the row in that panel.
+    /// Unselect all was the only thing left that could clear the selection.
+    ///
+    /// Where vanilla would give up, the map half is done instead. DynamicMap.DeselectIcon is where the rest of the
+    /// method ends anyway, and it is silent, which is what a release with no list entry should be.
+    /// </summary>
+    [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.DeSelectUnit))]
+    internal static class CombatHudDeSelectUnitPatch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(CombatHUD __instance, Unit unit)
+        {
+            if (unit == null)
+            {
+                return true;
+            }
+
+            var targets = __instance.GetTargetList();
+            if (targets == null || targets.Count > 0)
+            {
+                return true;
+            }
+
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null || !DynamicMap.TryGetMapIcon(unit, out _))
+            {
+                return false;
+            }
+
+            Plugin.Verbose("Released " + unit.name + " from the map selection: the weapon list has nothing to drop.");
+            map.DeselectIcon(unit);
+            return false;
         }
     }
 

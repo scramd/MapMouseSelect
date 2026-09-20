@@ -298,6 +298,19 @@ mod's batched deselection reaches those paths far more often than vanilla clicks
 ends in the unit icon's own update, through a postfix with a depth counter so its own call back into the
 base method cannot apply the tint twice.
 
+A fifth is a row the Target List panel keeps after the map has dropped the selection. `DynamicMap
+.DeselectAllIcons` is a hand-rolled clear: it deselects every icon itself and empties `selectedIcons`
+without firing `onUnitDeselected` or `onAllDeselected`, which are the only two events the panel builds its
+rows from. The row then outlives the selection it stands for, and what the panel is left showing is a target
+nothing holds: no lit icon on the map, no entry in the weapon list, and nothing to tell it from a real one
+except that clicking it does nothing. Unselect all is the gesture a player reaches for, and that is
+`CombatHUD.DeselectAll` calling this very method, so the clear leaves the row exactly where it was. Vanilla
+reaches it by playing normally: `Aircraft.OnStartClient` is every respawn, and `AircraftSelectionMenu
+.OnEnable` is the spawn screen. It is not about wrecks either, since any unit selected in commander view
+then survives the same way.
+
+The mod fires the event that was skipped, once per clear that actually dropped something.
+
 ## Status
 
 The plugin loads and both Harmony patches register, but the marquee itself is not yet confirmed to
