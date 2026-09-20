@@ -202,6 +202,17 @@ namespace MapMouseSelect
             var exclusionsInfo =
                 exclusionsTarget != null ? PatchProcessor.GetPatchInfo(exclusionsTarget) : null;
 
+            // The patches added since this report was written are listed by the method they land on, not by what
+            // they do, because the point is to tell a silent no-op from a patch that never applied. HarmonyX
+            // resolves arguments by name, so a rename in the game can lose one without anything else failing.
+            var deselectInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.DeSelectUnit)));
+            var setAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.SetAircraft)));
+            var removeAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft)));
+            var updateColorInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.UpdateColor)));
+            var unitDestroyInfo = PatchInfo(AccessTools.Method(typeof(Unit), "OnDestroy"));
+            var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
+            var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
+
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
@@ -210,9 +221,25 @@ namespace MapMouseSelect
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
                 + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
                 + " | target filter postfixes="
-                + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)                + " | destroyedUnits=" + EnableDestroyedUnits.Value                + " | panButton=" + PanButton.Value
+                + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)
+                + " | deselect prefixes=" + deselectInfo
+                + ", setAircraft postfixes=" + setAircraftInfo
+                + ", removeAircraft postfixes=" + removeAircraftInfo
+                + ", updateColor postfixes=" + updateColorInfo
+                + ", selectIcon postfixes=" + selectIconInfo
+                + ", unit destroy postfixes=" + unitDestroyInfo
+                + ", reset postfixes=" + resetInfo
+                + " | destroyedUnits=" + EnableDestroyedUnits.Value
+                + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value);
+        }
+
+        /// <summary>How many prefixes and postfixes landed on a method, or -1 when the method is not there.</summary>
+        private static int PatchInfo(System.Reflection.MethodBase target)
+        {
+            var info = target != null ? PatchProcessor.GetPatchInfo(target) : null;
+            return info != null ? info.Prefixes.Count + info.Postfixes.Count : -1;
         }
 
         internal static void Verbose(string message)

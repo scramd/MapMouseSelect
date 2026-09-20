@@ -572,6 +572,116 @@ namespace MapMouseSelect
             Plugin.Verbose("[remove] marquee dropped " + removed + " of " + units.Count + " boxed unit(s).");
         }
 
+        /// <summary>When the flying selection may be checked again, so it is not every frame.</summary>
+        private static float _nextSelectionCheck;
+
+        /// <summary>
+        /// Releases any selected unit the HUD has no marker for, while there is a live aircraft.
+        ///
+        /// In flight the map's selection and the weapon target list are the same thing seen twice, and a unit only
+        /// reaches that list through its HUD marker: CombatHUD.SelectUnit checks the marker before it adds. A selected
+        /// unit without one is therefore a state the game cannot mean, and it is reachable, because the paths that
+        /// select on the map alone never ask for a marker: DynamicMap.SelectIcon, which the Select key and a
+        /// commander-view click both use, and a selection made before taking off, which nothing clears.
+        ///
+        /// The click, the marquee and the Select key all refuse such a unit already. This is the same rule applied to
+        /// the selection itself, so a state made before any of them could refuse it does not have to be lived with.
+        ///
+        /// Any aircraft counts, a disabled one included, because a dead cockpit still owns the list and a selection
+        /// outlives the sortie it was made in, which is where a stranded one is most likely to appear. Once a second,
+        /// and only for unit icons.
+        /// </summary>
+        internal static void ReleaseUnsupportedSelection()
+        {
+            if (Time.timeSinceLevelLoad < _nextSelectionCheck)
+            {
+                return;
+            }
+
+            _nextSelectionCheck = Time.timeSinceLevelLoad + 1f;
+
+            var hud = SceneSingleton<CombatHUD>.i;
+            var map = SceneSingleton<DynamicMap>.i;
+            var selected = map != null ? map.selectedIcons : null;
+            if (hud == null || selected == null)
+            {
+                return;
+            }
+
+            if (hud.aircraft == null)
+            {
+                return;
+            }
+
+            // Backwards: deselecting takes the icon out of this list.
+            for (var i = selected.Count - 1; i >= 0; i--)
+            {
+                if (!(selected[i] is UnitMapIcon icon) || icon.unit == null || hud.MarkerExists(icon.unit))
+                {
+                    continue;
+                }
+
+                Plugin.Verbose(
+                    "Released " + icon.unit.name + " from the map selection: it has no HUD marker, so it cannot be a "
+                    + "weapon target.");
+                map.DeselectIcon(icon.unit);
+            }
+        }
+
+        /// <summary>
+        /// Drops every selected icon that the weapon target list does not hold, which is what entering an aircraft
+        /// means: in flight the map selection and the list are meant to agree, and a selection made in commander view
+        /// has nothing on the other side of it.
+        ///
+        /// Vanilla never clears one, so the selection survives into the cockpit with no list entry. Everything that
+        /// could then have released it starts from the unit or from the list, and the list has nothing, which is how a
+        /// unit ends up selected in flight with no way out except unselect all.
+        /// </summary>
+        internal static void ReleaseMapOnlySelection()
+        {
+            var map = SceneSingleton<DynamicMap>.i;
+            var selected = map != null ? map.selectedIcons : null;
+            if (selected == null)
+            {
+                return;
+            }
+
+            var hud = SceneSingleton<CombatHUD>.i;
+            var targets = TargetList(GetLiveAircraft());
+
+            // Backwards: deselecting takes the icon out of this list.
+            for (var i = selected.Count - 1; i >= 0; i--)
+            {
+                var icon = selected[i];
+                if (icon == null)
+                {
+                    continue;
+                }
+
+                // A unit icon stays when the list holds it, and when the HUD has a marker for it: a marker is what a
+                // weapon target is made of, so a selected unit that has one is one the cockpit can still mean, even
+                // while the list it belongs to is being rebuilt.
+                if (icon is UnitMapIcon unitIcon
+                    && (unitIcon.unit == null
+                        || (targets != null && targets.Contains(unitIcon.unit))
+                        || (hud != null && hud.MarkerExists(unitIcon.unit))))
+                {
+                    continue;
+                }
+
+                Plugin.Verbose("Released " + icon.name + " from the map selection: it is not a weapon target.");
+                if (icon is UnitMapIcon unit)
+                {
+                    map.DeselectIcon(unit.unit);
+                    continue;
+                }
+
+                // Airbase icons have no DeselectIcon(Unit) path, the same as in the keep-one key.
+                icon.DeselectIcon();
+                selected.Remove(icon);
+            }
+        }
+
         /// <summary>Whether this unit's icon is in the map's own selection, which is a separate state from the list.</summary>
         internal static bool IsSelected(DynamicMap map, Unit unit)
         {
