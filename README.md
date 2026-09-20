@@ -60,9 +60,10 @@ sharing the slot after them, and they are added to the row when the pane starts:
 | `NTL` | Units that are neither friendly nor hostile are shown | Neutral units are filtered out | Lit, as vanilla behaves |
 | `DED` | Wrecks can be selected again | Wrecks are filtered out, so they cannot be selected | Unlit, so wrecks are inert by default; only added when `Destroyed.Enabled` is on |
 
-Both copies are placed against the measured edges of the free lane in that row, from the right edge of the
-faction buttons to the left edge of the laser toggle, so `NTL` starts where the lane starts and `DED` ends where
-it ends whatever the row's own spacing is. They share that lane with a small gap between them.
+Both copies are placed from the measured right edge of the faction buttons, and each is half of a normal button
+less the gap the row leaves between its own buttons, so together they take exactly one button's worth of the row
+with `NTL` first. The placement is measured in world space after forcing a canvas layout, so it holds whatever
+the row and the canvas scale themselves to.
 
 They behave like the pane's own filters: clicking toggles them, `Reset` turns them back on, and changing one
 re-checks the icons the way a vanilla filter does. Filtering a wreck out also deselects it, if it was selected.

@@ -47,16 +47,21 @@ namespace MapMouseSelect
 
             var items = selector.toggleFactionItems;
             var template = items[0];
+            var templateRect = (RectTransform)template.transform;
             var left = (RectTransform)items[items.Count - 1].transform;
 
-            // The lane runs from the right edge of the faction buttons to the left edge of the next button the pane
-            // itself put in this row, which is the laser toggle. Both edges are measured, so the pair fills the gap
-            // instead of landing somewhere near it.
-            var right = selector.toggleLaser != null ? (RectTransform)selector.toggleLaser.transform : null;
-            MeasureLane(left, right, out var laneStart, out var laneWidth);
-
-            var gap = Mathf.Min(3f, laneWidth * 0.1f);
-            var each = Mathf.Max(1f, (laneWidth - gap) * 0.5f);
+            // Both edges and the row's own spacing are measured rather than assumed, and all three are used in the
+            // row's local units. Only the left edge of the row is needed, since the pair is sized from a normal
+            // button rather than from the lane: half a button each, less the gap the row leaves between its own
+            // buttons, so the two of them together take one button's worth of the row.
+            var row = (RectTransform)left.parent;
+            var scale = row.lossyScale.x > 0f ? row.lossyScale.x : 1f;
+            var centreWorld = row.TransformPoint(row.rect.center).x;
+            var laneStart = (RightEdge(left) - centreWorld) / scale;
+            var gap = items.Count >= 2
+                ? Mathf.Max(1f, (LeftEdge(left) - RightEdge((RectTransform)items[items.Count - 2].transform)) / scale)
+                : 4f;
+            var each = Mathf.Max(1f, (templateRect.rect.width - gap) * 0.5f);
             var slot = laneStart;
 
             if (Plugin.FilterNeutral.Value && _neutral == null)
@@ -75,8 +80,9 @@ namespace MapMouseSelect
 
             Plugin.Verbose(
                 "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
-                + ", lane=" + laneStart.ToString("0.#") + "+" + laneWidth.ToString("0.#")
-                + ", each=" + each.ToString("0.#") + ", frame=" + FrameType(template) + ".");
+                + ", laneStart=" + laneStart.ToString("0.#") + ", normal=" + templateRect.rect.width.ToString("0.#")
+                + ", gap=" + gap.ToString("0.#") + ", each=" + each.ToString("0.#")
+                + ", frame=" + FrameType(template) + ".");
         }
 
         private static string Describe(TargetListSelector_ToggleButton button)
@@ -94,33 +100,6 @@ namespace MapMouseSelect
         private static string FrameType(TargetListSelector_ToggleButton button)
         {
             return button.image != null ? button.image.type.ToString() : "none";
-        }
-
-        /// <summary>
-        /// The free lane after the last faction button, as a left edge and a width in the row's own local units
-        /// measured from the middle of the row. That is the frame a centre-anchored button uses, which is how the
-        /// copies are anchored, and measuring in world space is what makes both edges right regardless of how the
-        /// row and the canvas scale themselves.
-        /// </summary>
-        private static void MeasureLane(RectTransform left, RectTransform right, out float start, out float width)
-        {
-            var row = (RectTransform)left.parent;
-            var scale = row.lossyScale.x;
-            if (scale <= 0f)
-            {
-                scale = 1f;
-            }
-
-            var centreWorld = row.TransformPoint(row.rect.center).x;
-            start = (RightEdge(left) - centreWorld) / scale;
-
-            // Without the neighbour there is no lane to measure, so one button's worth is assumed after the left
-            // edge, which is where the pane would have put its next button anyway.
-            var end = right != null && right.parent == left.parent
-                ? (LeftEdge(right) - centreWorld) / scale
-                : start + Mathf.Max(left.rect.width, 8f);
-
-            width = Mathf.Max(end - start, 0f);
         }
 
         private static float LeftEdge(RectTransform rect)
