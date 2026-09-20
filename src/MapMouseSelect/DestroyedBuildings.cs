@@ -17,6 +17,10 @@ namespace MapMouseSelect
     /// pane's business, through the WRECK filter this mod adds, which is off by default. That filter is the same
     /// gate vanilla's own clicks, the Select action and the marquee all pass through, so an unlit WRECK button
     /// makes wrecks unselectable without any click handling of this mod's own.
+    ///
+    /// The icon's life is the unit's life: kept while the disabled building exists, which is where vanilla would have
+    /// dropped it, and removed when the unit itself is destroyed, which vanilla never has to handle because its icon
+    /// is long gone by then. UnitOnDestroyWreckPatch is that second half.
     /// </summary>
     internal static class DestroyedBuildings
     {
@@ -40,7 +44,14 @@ namespace MapMouseSelect
 
             var tint = Mathf.Clamp(Plugin.DestroyedBuildingTint.Value, 0.1f, 1f);
             var color = unitIcon.iconImage.color;
-            unitIcon.iconImage.color = new Color(color.r * tint, color.g * tint, color.b * tint, color.a);
+            var tinted = new Color(color.r * tint, color.g * tint, color.b * tint, color.a);
+            unitIcon.iconImage.color = tinted;
+
+            var pane = SceneSingleton<TargetListSelector>.i;
+            Plugin.Verbose(
+                "Wreck " + unitIcon.unit.name + ": " + color + " -> " + tinted
+                + ", filtered out=" + (pane != null && pane.CheckExclusions(unitIcon.unit))
+                + ", clickable=" + unitIcon.iconImage.raycastTarget + ".");
         }
 
         /// <summary>
@@ -120,6 +131,18 @@ namespace MapMouseSelect
             }
 
             DestroyedBuildings.ApplyTint(__instance);
+
+            // Vanilla's handler is also the deselect: it takes the icon out of the map's selection and destroys its
+            // target marker. Keeping the icon must not keep that, or a building that dies while selected stays marked
+            // as a target with nothing able to clear it, since every deselect path starts from an icon whose unit is
+            // still there. The colour is rebuilt by the deselect itself, which lands on the same tint through the
+            // postfix on MapIcon.UpdateColor.
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map != null)
+            {
+                map.DeselectIcon(unit);
+            }
+
             Plugin.Verbose("Kept the map icon of wrecked " + unit.name + " (" + unit.UniqueName + ").");
             return false;
         }
@@ -151,11 +174,59 @@ namespace MapMouseSelect
     internal static class BuildingUnitDisabledPatch
     {
         [HarmonyPostfix]
-        private static void Postfix(Building __instance)
+        private static void Postfix(Building __instance, bool oldState, bool newState)
         {
+            Plugin.Verbose("Building " + __instance.name + ": disabled " + oldState + " -> " + newState + ".");
+
             if (Plugin.EnableDestroyedUnits.Value)
             {
                 DestroyedBuildings.Refresh(__instance);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes a unit's map icon when the unit itself is destroyed.
+    ///
+    /// Vanilla removes the icon when the unit is disabled, and for an aircraft or a ship that is the same moment as
+    /// the unit being gone. A building is the one case where the wreck outlives that moment, and blocking the removal
+    /// is the whole feature, so the icon has to be taken away when the object really goes. Vanilla does not cover it
+    /// and cannot: Unit.OnDestroy only raises the disable event for a unit that is not disabled, so a wreck's icon is
+    /// left in mapIcons with a destroyed unit behind it, drawing a colour picked for a unit that no longer exists,
+    /// out of reach of every deselect path because they all start from the unit, and handing a destroyed unit to the
+    /// tooltip.
+    ///
+    /// Every unit passes through Unit.OnDestroy, buildings directly and aircraft, ships and vehicles through their own
+    /// override calling base, so one postfix here covers the lot. The icon is matched by reference rather than through
+    /// the map's lookup, since the lookup is keyed by the unit and this runs while that unit is being destroyed.
+    /// </summary>
+    [HarmonyPatch(typeof(Unit), "OnDestroy")]
+    internal static class UnitOnDestroyWreckPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(Unit __instance)
+        {
+            if (!Plugin.EnableDestroyedUnits.Value)
+            {
+                return;
+            }
+
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null || map.mapIcons == null)
+            {
+                return;
+            }
+
+            for (var i = map.mapIcons.Count - 1; i >= 0; i--)
+            {
+                if (!(map.mapIcons[i] is UnitMapIcon icon) || !ReferenceEquals(icon.unit, __instance))
+                {
+                    continue;
+                }
+
+                Plugin.Verbose("Removed the map icon of " + __instance.name + ", which is gone.");
+                map.RemoveIcon(icon);
+                icon.RemoveIcon();
             }
         }
     }
