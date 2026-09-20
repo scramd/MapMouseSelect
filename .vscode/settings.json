@@ -1,0 +1,9 @@
+{
+  // Where Nuclear Option lives. The launch config and the build task both read this, so it is the one
+  // place to change if the install moves. It cannot come from NUCLEAR_OPTION_ROOT: VS Code resolves
+  // ${env:...} against the environment it was started with, and a variable added after that is not
+  // there for tasks or launches even though new terminals see it (which is exactly what happened when
+  // this was first written). Machine specific, so put this key in your user settings instead if you
+  // would rather not commit the path.
+  "nuclearOption.root": "D:\\SteamLibrary\\steamapps\\common\\Nuclear Option"
+}

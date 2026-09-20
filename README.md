@@ -218,6 +218,17 @@ for finding things without opening a decompiler:
 .\tools\Find-GameTypes.ps1 -Pattern 'Map|Select' -Methods
 ```
 
+## Launch
+
+`.vscode\launch.json` builds, deploys and then starts the game with `-autoHost`, which is the game's
+own shortcut into a hosted Free Flight mission: it waits for the main menu, hosts without a menu
+being touched, and defaults the mission name to "Free Flight". The game is a release Mono build, so
+this launches the process rather than offering managed breakpoints.
+
+The install path is the `nuclearOption.root` setting in `.vscode\settings.json`, which the build task
+uses too, so there is one place to edit if the game moves. It is a machine path, so put that key in
+your user settings instead if you would rather not commit it.
+
 ## How it works
 
 `DynamicMap.MapControls` runs every frame while the map is maximized. A Harmony prefix gives the

@@ -1,0 +1,25 @@
+{
+  // F5 builds and deploys the mod, then starts Nuclear Option straight into a hosted Free Flight
+  // mission. -autoHost is the game's own shortcut: it waits for the main menu to load, then hosts a
+  // mission without any menu being touched, and it defaults the mission name to "Free Flight", so no
+  // -mission is needed unless a different one is wanted.
+  //
+  // The game is a release Mono build, so there are no managed symbols to stop on: this launches the
+  // process, it does not give you C# breakpoints. Log output is in
+  // BepInEx\LogOutput.log as usual.
+  //
+  // The install path comes from the nuclearOption.root setting (.vscode\settings.json).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Nuclear Option: Free Flight",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${config:nuclearOption.root}\\NuclearOption.exe",
+      "args": ["-autoHost"],
+      "cwd": "${config:nuclearOption.root}",
+      "console": "internalConsole",
+      "preLaunchTask": "build mod"
+    }
+  ]
+}
