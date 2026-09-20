@@ -62,7 +62,11 @@ namespace MapMouseSelect
                 ? Mathf.Max(1f, (LeftEdge(left) - RightEdge((RectTransform)items[items.Count - 2].transform)) / scale)
                 : 4f;
             var each = Mathf.Max(1f, (templateRect.rect.width - gap) * 0.5f);
-            var slot = laneStart;
+
+            // The pair takes the slot a third normal button would have taken, opening gap included: it starts one
+            // gap past the last faction button, and since gap + each + gap + each is exactly one button wide, the
+            // pair also ends where that third button would have ended.
+            var slot = laneStart + gap;
 
             if (Plugin.FilterNeutral.Value && _neutral == null)
             {
