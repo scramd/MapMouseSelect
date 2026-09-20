@@ -229,11 +229,17 @@ namespace MapMouseSelect
             // Left edge at leftEdge: the pivot sits that far in from it.
             rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
 
-            // The pane's frame sprite is a plain hollow rectangle from an atlas, stretched to fill a normal
-            // button and readable there only because the button is wide: the same sprite squeezed into half a
-            // button draws its two side strokes at well under a pixel and they blend away, which is what leaves
-            // a copy with the top and bottom of a frame and nothing else. Unity cannot be given nine slice
-            // borders on that sprite at runtime, so a copy draws its own frame instead, at its own size.
+            // The copies draw their own frame, generated at the copy's own size with one canvas unit to a stroke, so
+            // the stroke does not depend on the button's width. The pane's own frame is a plain sprite with no nine
+            // slice borders drawn stretched over whatever width it is given, which is the one thing about it the log
+            // does confirm (it prints type, border and aspect for the template).
+            //
+            // Unverified: whether that stretched sprite actually loses its sides at this width. That was the reading
+            // of a screenshot, which later turned out to be of an age nobody could pin down, so this may be drawing
+            // the same thing the pane's sprite would have drawn. Deleting the sprite assignment below is the test.
+            //
+            // Simple with the aspect off is what the template already uses, so those two lines only matter if a
+            // future version of the pane ships a sliced frame.
             if (button.image != null)
             {
                 button.image.sprite = Frame(width, rect.rect.height);
