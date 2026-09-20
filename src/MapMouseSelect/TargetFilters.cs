@@ -55,8 +55,7 @@ namespace MapMouseSelect
 
             // Both edges and the row's own spacing are measured rather than assumed, and all three are used in the
             // row's local units. Only the left edge of the row is needed, since the pair is sized from a normal
-            // button rather than from the lane: half a button each, less the gap the row leaves between its own
-            // buttons, so the two of them together take one button's worth of the row.
+            // button rather than from the lane, so the two of them together take one button's worth of the row.
             var row = (RectTransform)left.parent;
             var scale = row.lossyScale.x > 0f ? row.lossyScale.x : 1f;
             var centreWorld = row.TransformPoint(row.rect.center).x;
@@ -64,10 +63,15 @@ namespace MapMouseSelect
             var gap = items.Count >= 2
                 ? Mathf.Max(1f, (LeftEdge(left) - RightEdge((RectTransform)items[items.Count - 2].transform)) / scale)
                 : 4f;
-            var each = Mathf.Max(1f, (templateRect.rect.width - gap) * 0.5f);
+
+            // The split between the two is half the row's own spacing, and it comes out of their width rather than
+            // out of the row: half a button each, less half the split, keeps the pair exactly as wide as the single
+            // button whose slot it takes, so only the balance inside changes.
+            var split = Mathf.Max(1f, gap * 0.5f);
+            var each = Mathf.Max(1f, (templateRect.rect.width - split) * 0.5f);
 
             // The pair takes the slot a third normal button would have taken, opening gap included: it starts one
-            // gap past the last faction button, and since gap + each + gap + each is exactly one button wide, the
+            // gap past the last faction button, and since gap + each + split + each is exactly one button wide, the
             // pair also ends where that third button would have ended.
             var slot = laneStart + gap;
 
@@ -83,7 +87,7 @@ namespace MapMouseSelect
             {
                 Dump("filter template: ", templateRect, 2);
                 _neutral = Clone(template, toned, left, "NTL", true, slot, each);
-                slot += each + gap;
+                slot += each + split;
             }
 
             // Wrecks start filtered out. Nothing about a wreck is worth selecting by default, and an unlit filter is
@@ -97,7 +101,8 @@ namespace MapMouseSelect
             Plugin.Verbose(
                 "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
                 + ", laneStart=" + laneStart.ToString("0.#") + ", normal=" + templateRect.rect.width.ToString("0.#")
-                + ", gap=" + gap.ToString("0.#") + ", each=" + each.ToString("0.#")
+                + ", gap=" + gap.ToString("0.#") + ", split=" + split.ToString("0.#")
+                + ", each=" + each.ToString("0.#")
                 + ", themed after " + Describe(toned) + ".");
         }
 
