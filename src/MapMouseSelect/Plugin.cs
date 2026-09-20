@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -130,7 +132,7 @@ namespace MapMouseSelect
                 "Add a NEUTRAL button to the Target List pane, for units that are neither friendly nor hostile.");
 
             _harmony = new Harmony(PluginGuid);
-            _harmony.PatchAll(typeof(Plugin).Assembly);
+            ApplyPatches();
             ModHost.Ensure();
             ReportPatchState();
 
@@ -143,6 +145,34 @@ namespace MapMouseSelect
             catch
             {
                 // Location is unavailable for in-memory assemblies.
+            }
+        }
+
+        /// <summary>
+        /// Patches every class in this assembly, one class at a time.
+        ///
+        /// PatchAll stops at the first class it cannot patch, which takes every class after it down too: one
+        /// postfix argument named differently from the game's own once left this mod half applied, with the pan
+        /// gate still on the left mouse button and the Target List filter buttons missing. Failing per class keeps
+        /// the rest working and says which one did not land.
+        /// </summary>
+        private void ApplyPatches()
+        {
+            foreach (var type in typeof(Plugin).Assembly.GetTypes())
+            {
+                if (type.GetCustomAttributes(typeof(HarmonyPatch), true).Length == 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    _harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception e)
+                {
+                    Log.LogError("Could not apply the patches in " + type.Name + ": " + e);
+                }
             }
         }
 

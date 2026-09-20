@@ -193,14 +193,17 @@ namespace MapMouseSelect
     /// holds it. The two then disagree about what is selected, and only clearing the list by hand puts them back
     /// together. Unit.UnitDisabled is the one edge every unit passes through, Building's override included, since
     /// that override calls base.
+    ///
+    /// The second parameter is named after the game's, not after what it means: HarmonyX resolves postfix
+    /// arguments by name, and this one is the game's nowDisabled.
     /// </summary>
     [HarmonyPatch(typeof(Unit), nameof(Unit.UnitDisabled))]
     internal static class UnitUnitDisabledPatch
     {
         [HarmonyPostfix]
-        private static void Postfix(Unit __instance, bool newState)
+        private static void Postfix(Unit __instance, bool nowDisabled)
         {
-            if (newState)
+            if (nowDisabled)
             {
                 SelectionApplier.Forget(__instance);
             }
