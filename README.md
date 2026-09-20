@@ -85,9 +85,10 @@ Requires BepInEx 5 x64 in the game directory.
 | Middle drag on the map | Pan the map (moved off the left button by this mod) |
 | Double left click on the map | Move the camera there, which vanilla puts on the middle button |
 | `\` | Select only the unit being pointed at, dropping the rest of the target list |
+| `-` | Drop the unit being pointed at out of the selection |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
 
-Those two keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
+Those three keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
 show up in the game's own Controls menu, can be rebound to a gamepad or stick button, and are read with
 the same timed-press calls the game uses for its target keys. They join the action category that
 `Cancel` belongs to, which is why the menu lists them without any prefab changes. The mod binds them to
@@ -122,6 +123,11 @@ vanilla picks skip a unit that is already selected, and a target that is already
 key is asked to keep; pruning directly also means a press that lands on empty sky changes nothing, instead of
 losing the selection to a pick that never came. Pointing at a unit that is not a target replaces the list with
 it, the same as a plain click does in commander view.
+
+`-` is that key's mirror: the same pick, and one removal instead of a prune. Flying, it takes the unit out of
+the weapon target list with the marker, the map icon, one refresh and one deselect sound, which is what
+shift-clicking the map does. With no aircraft it is the map selection that loses the unit. Pointing at nothing
+does nothing, and the filters gate the pick, so a unit they hide cannot be dropped this way.
 
 Nothing the mod does deselects a target that is meant to stay in the selection, at any point in the call. There
 is no clear-then-re-add anywhere in the flying target list: a replace box drops only the targets the box leaves

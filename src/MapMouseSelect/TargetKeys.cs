@@ -44,6 +44,11 @@ namespace MapMouseSelect
                 SelectOnly();
             }
 
+            if (player.GetButtonDown(ModActions.DeselectLookedAtName))
+            {
+                DeselectLookedAt();
+            }
+
             // The same thresholds ExtraUiInput uses for Cancel: the hold fires as soon as pressDelay has
             // elapsed, and a release within clickDelay is a tap.
             if (player.GetButtonTimedPressDown(ModActions.DeselectOldestName, PlayerSettings.pressDelay))
@@ -175,6 +180,40 @@ namespace MapMouseSelect
 
             icon.DeselectIcon();
             map.selectedIcons.Remove(icon);
+        }
+
+        /// <summary>
+        /// Drops the unit being pointed at out of the selection: the same pick SelectOnly makes, with a removal
+        /// instead of a prune, so the two keys are each other's mirror.
+        ///
+        /// Flying, that is one unit out of the weapon target list, one refresh and one deselect sound, which is
+        /// what shift-clicking the map does. With no aircraft it is the map selection that loses the unit. Pointing
+        /// at nothing does nothing at all, and the Target List filters gate the pick, so a unit they hide cannot be
+        /// dropped this way any more than it can be selected.
+        /// </summary>
+        private static void DeselectLookedAt()
+        {
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null)
+            {
+                return;
+            }
+
+            var unit = PointedAt(map, SceneSingleton<CombatHUD>.i);
+            if (unit == null)
+            {
+                Plugin.Verbose("Deselect-looked-at found nothing being pointed at.");
+                return;
+            }
+
+            if (SelectionApplier.Remove(map, unit))
+            {
+                Plugin.Verbose("Deselected " + unit.name + ".");
+            }
+            else
+            {
+                Plugin.Verbose(unit.name + " was not selected, so nothing was dropped.");
+            }
         }
 
         /// <summary>

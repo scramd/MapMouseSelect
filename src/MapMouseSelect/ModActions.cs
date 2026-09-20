@@ -35,6 +35,8 @@ namespace MapMouseSelect
 
         internal const string DeselectOldestName = "MapMouseSelect::DeselectOldest";
 
+        internal const string DeselectLookedAtName = "MapMouseSelect::DeselectLookedAt";
+
         /// <summary>
         /// Cancel is the action ExtraUiInput already uses to drop targets, so the two keys here share
         /// its category and its keyboard map.
@@ -45,6 +47,8 @@ namespace MapMouseSelect
         private const int SelectOnlyId = 971001;
 
         private const int DeselectOldestId = 971002;
+
+        private const int DeselectLookedAtId = 971003;
 
         /// <summary>
         /// False until both actions exist, so nothing polls a name Rewired cannot resolve.
@@ -87,11 +91,14 @@ namespace MapMouseSelect
 
             EnsureAction(actions, categoryMap, anchor.categoryId, SelectOnlyId, SelectOnlyName, "Select Target Only");
             EnsureAction(actions, categoryMap, anchor.categoryId, DeselectOldestId, DeselectOldestName, "Deselect Oldest Target");
+            EnsureAction(
+                actions, categoryMap, anchor.categoryId, DeselectLookedAtId, DeselectLookedAtName,
+                "Deselect Target Looked At");
 
             Plugin.Log.LogInfo(
-                "Registered " + SelectOnlyName + " and " + DeselectOldestName + " in the Rewired '"
-                + CategoryName(userData, anchor.categoryId) + "' category, matching the '" + AnchorActionName
-                + "' action. Both are rebindable in the Controls menu.");
+                "Registered " + SelectOnlyName + ", " + DeselectOldestName + " and " + DeselectLookedAtName
+                + " in the Rewired '" + CategoryName(userData, anchor.categoryId) + "' category, matching the '"
+                + AnchorActionName + "' action. All three are rebindable in the Controls menu.");
             return true;
         }
 
@@ -169,6 +176,8 @@ namespace MapMouseSelect
 
             BindIfUnbound(player, keyboard, anchorActionId, SelectOnlyId, KeyCode.Backslash, SelectOnlyName);
             BindIfUnbound(player, keyboard, anchorActionId, DeselectOldestId, KeyCode.Delete, DeselectOldestName);
+            BindIfUnbound(
+                player, keyboard, anchorActionId, DeselectLookedAtId, KeyCode.Minus, DeselectLookedAtName);
 
             _bindingsApplied = true;
         }
