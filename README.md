@@ -92,13 +92,26 @@ Requires BepInEx 5 x64 in the game directory.
 | `\` | Select only the unit being pointed at, dropping the rest of the target list |
 | `-` | Drop the unit being pointed at out of the selection |
 | `Delete` | Tap to drop your oldest target. Hold to keep only the newest |
+| `Ctrl + E` | Get out of an aircraft that is parked at one of your own airbases. Nothing anywhere else |
 
-Those three keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
+The four keys are registered as Rewired actions rather than as mod-only keyboard shortcuts, so they
 show up in the game's own Controls menu, can be rebound to a gamepad or stick button, and are read with
 the same timed-press calls the game uses for its target keys. They join the action category that
-`Cancel` belongs to, which is why the menu lists them without any prefab changes. The mod binds them to
-their default keys once Rewired is up, which is also what puts a default in front of anyone whose saved
-controls layout predates them, as long as nothing is bound to either action already.
+`Cancel` belongs to, which is why the menu lists them without any prefab changes. The mod writes a
+default key once per action, and only where nothing is bound to that action already, so a saved controls
+layout keeps the keys in it and one that predates them gains them. Each action it has dealt with is
+recorded by name in `Hotkeys.DefaultBindings`, and an action in that record is never written again: a key
+cleared in the Controls menu stays cleared, while an action a later version of the mod adds is not in the
+record yet and gets its default. Removing a name from the record is how you ask for its default back.
+The Controls menu's own "Restore Defaults" cannot do it, since the mod's keys live in the player's maps
+rather than in Rewired's editor data.
+
+The safe exit is the one of those that is not about targets. The game decides what its eject key does by asking
+`Aircraft.IsLanded` (`radarAlt < 5` and `speed < 2.5`): on the ground the crew get out of the aircraft where they
+stand and the pilot is switched to its parked state, in the air the seats fire. Ctrl+E takes the first half and adds
+the base, so it acts only when the aircraft is on the ground inside a friendly airbase's radius, which is the same
+test the game's own landed and crashed reporting uses. Anywhere else it does nothing, and the game's own eject is
+Control+Shift+E and is left alone.
 
 Shift + click on a unit that is already selected is meant to deselect it, and this mod makes that work.
 Vanilla has the branch but routes it to the wrong call in both modes: with no live aircraft it asks
@@ -180,6 +193,7 @@ EventSystem one.
 | Hotkeys | `PanButton` | `Middle` | Mouse button that drags to pan the map |
 | Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
+| Hotkeys | `DefaultBindings` | empty, then one name per action | Actions whose default key the mod has already written. Removing a name has it written again, which is there so a key you clear stays clear |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
 | Behavior | `ControlRemovesFromSelection` | `true` | Ctrl takes the boxed units out of the selection |
 | Behavior | `SuppressModifierBindings` | `true` | While the map is open, disable keyboard bindings that sit directly on `ModifierKeys` |

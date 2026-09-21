@@ -47,6 +47,15 @@ namespace MapMouseSelect
         internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
+        /// <summary>
+        /// The mod actions whose default key has already been written. The mod adds a name as it deals with that action
+        /// and never writes that default again, so a key cleared in the Controls menu stays cleared.
+        /// </summary>
+        internal static ConfigEntry<string> DefaultBindings { get; private set; }
+
+        /// <summary>The config file, kept reachable for that one write, which happens outside Awake.</summary>
+        internal static ConfigFile Settings { get; private set; }
+
         private Harmony _harmony;
 
         private static string _lastRejectedColor;
@@ -128,6 +137,12 @@ namespace MapMouseSelect
 
             FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
                 "Add a NTL button to the Target List pane, for units that are neither friendly nor hostile.");
+
+            Settings = Config;
+
+            DefaultBindings = Config.Bind("Hotkeys", "DefaultBindings", string.Empty,
+                "Actions whose default key the mod has already written, added to as it does. Removing a name has its "
+                + "default written again; the record exists so a key you clear in the Controls menu stays clear.");
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();
@@ -212,11 +227,14 @@ namespace MapMouseSelect
             var unitDestroyInfo = PatchInfo(AccessTools.Method(typeof(Unit), "OnDestroy"));
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
+            var playerControlsInfo = PatchInfo(AccessTools.Method(typeof(PilotPlayerState), "PlayerControls"));
 
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
+                + ", wheel mask call sites=" + CameraCockpitStateWheelMaskPatch.Masked
+                + "/" + CameraTVStateWheelMaskPatch.Masked
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
                 + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
@@ -228,6 +246,7 @@ namespace MapMouseSelect
                 + ", updateColor postfixes=" + updateColorInfo
                 + ", selectIcon postfixes=" + selectIconInfo
                 + ", unit destroy postfixes=" + unitDestroyInfo
+                + ", player controls postfixes=" + playerControlsInfo
                 + ", reset postfixes=" + resetInfo
                 + " | destroyedUnits=" + EnableDestroyedUnits.Value
                 + " | panButton=" + PanButton.Value

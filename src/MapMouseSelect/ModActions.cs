@@ -8,7 +8,7 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Registers the mod's two keys as real Rewired actions.
+    /// Registers the mod's keys as real Rewired actions.
     ///
     /// Being Rewired actions is what makes them behave like the game's own controls: bindable in the
     /// in-game Controls menu, usable from a gamepad or a stick button, and read through the same
@@ -38,6 +38,12 @@ namespace MapMouseSelect
         internal const string DeselectLookedAtName = "MapMouseSelect::DeselectLookedAt";
 
         /// <summary>
+        /// The safe exit key. It runs the game's landed eject and nothing else, and the game's own eject is
+        /// Control+Shift+E, so Control+E is free and reads as the gentler half of the same idea.
+        /// </summary>
+        internal const string SafeExitName = "MapMouseSelect::SafeExit";
+
+        /// <summary>
         /// Cancel is the action ExtraUiInput already uses to drop targets, so the two keys here share
         /// its category and its keyboard map.
         /// </summary>
@@ -49,6 +55,8 @@ namespace MapMouseSelect
         private const int DeselectOldestId = 971002;
 
         private const int DeselectLookedAtId = 971003;
+
+        private const int SafeExitId = 971004;
 
         /// <summary>
         /// False until both actions exist, so nothing polls a name Rewired cannot resolve.
@@ -94,11 +102,12 @@ namespace MapMouseSelect
             EnsureAction(
                 actions, categoryMap, anchor.categoryId, DeselectLookedAtId, DeselectLookedAtName,
                 "Deselect Target Looked At");
+            EnsureAction(actions, categoryMap, anchor.categoryId, SafeExitId, SafeExitName, "Safe Exit Aircraft");
 
             Plugin.Log.LogInfo(
-                "Registered " + SelectOnlyName + ", " + DeselectOldestName + " and " + DeselectLookedAtName
-                + " in the Rewired '" + CategoryName(userData, anchor.categoryId) + "' category, matching the '"
-                + AnchorActionName + "' action. All three are rebindable in the Controls menu.");
+                "Registered " + SelectOnlyName + ", " + DeselectOldestName + ", " + DeselectLookedAtName + " and "
+                + SafeExitName + " in the Rewired '" + CategoryName(userData, anchor.categoryId) + "' category, matching the '"
+                + AnchorActionName + "' action. All four are rebindable in the Controls menu.");
             return true;
         }
 
@@ -131,7 +140,12 @@ namespace MapMouseSelect
 
         private static readonly List<ControllerMap> KeyboardMaps = new List<ControllerMap>();
 
-        private static bool _bindingsApplied;
+        /// <summary>Actions whose default key has already been dealt with. Read from the config once per session.</summary>
+        private static readonly HashSet<string> Written = new HashSet<string>(StringComparer.Ordinal);
+
+        private static bool _writtenLoaded;
+
+        private static bool _bindingsSettled;
 
         /// <summary>
         /// Gives each of the mod's actions its default key, once, on the first frame Rewired can answer.
@@ -141,12 +155,14 @@ namespace MapMouseSelect
         /// binds the anchor action, which is the same reach the editor data would have had, with
         /// ControllerMap.ReplaceOrCreateElementMap doing the work, the call the Controls menu itself uses.
         ///
-        /// A player who deliberately clears one of these keys gets it back on the next launch. That is the
-        /// price of the mod's own keys working out of the box.
+        /// It happens once per action and never again, recorded by name in the config. A key the player clears in
+        /// the Controls menu therefore stays cleared, and an action a later version of the mod adds still gets its
+        /// default the first time that version runs, which latching once per install would have missed. A player who
+        /// wants a written key back either binds it again or removes its name from that record.
         /// </summary>
         internal static void EnsureDefaultBindings()
         {
-            if (_bindingsApplied || !Registered)
+            if (_bindingsSettled || !Registered)
             {
                 return;
             }
@@ -174,12 +190,66 @@ namespace MapMouseSelect
                 return;
             }
 
+            LoadWritten();
+
             BindIfUnbound(player, keyboard, anchorActionId, SelectOnlyId, KeyCode.Backslash, SelectOnlyName);
             BindIfUnbound(player, keyboard, anchorActionId, DeselectOldestId, KeyCode.Delete, DeselectOldestName);
             BindIfUnbound(
                 player, keyboard, anchorActionId, DeselectLookedAtId, KeyCode.Minus, DeselectLookedAtName);
+            BindIfUnbound(
+                player, keyboard, anchorActionId, SafeExitId, KeyCode.E, SafeExitName,
+                ModifierKeyFlags.LeftControl | ModifierKeyFlags.RightControl);
 
-            _bindingsApplied = true;
+            // Every action this version knows about has been dealt with, so there is nothing left to look at. A later
+            // version that adds one re-enters here for that one action, which is why the record is per name.
+            _bindingsSettled = Written.Contains(SelectOnlyName)
+                && Written.Contains(DeselectOldestName)
+                && Written.Contains(DeselectLookedAtName)
+                && Written.Contains(SafeExitName);
+        }
+
+        /// <summary>
+        /// Reads the record of actions whose default has been dealt with, once, on the first frame there is something
+        /// to bind into: reading it before Rewired is ready would latch an empty record and rewrite every default.
+        /// </summary>
+        private static void LoadWritten()
+        {
+            if (_writtenLoaded)
+            {
+                return;
+            }
+
+            _writtenLoaded = true;
+
+            var record = Plugin.DefaultBindings.Value;
+            if (string.IsNullOrEmpty(record))
+            {
+                return;
+            }
+
+            var names = record.Split(',');
+            for (var i = 0; i < names.Length; i++)
+            {
+                var name = names[i].Trim();
+                if (name.Length > 0)
+                {
+                    Written.Add(name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Notes that an action's default has been dealt with and writes the record out, so the next launch leaves it
+        /// alone whether the player keeps the key or clears it.
+        /// </summary>
+        private static void Record(string name)
+        {
+            Written.Add(name);
+
+            var names = new List<string>(Written);
+            names.Sort(StringComparer.Ordinal);
+            Plugin.DefaultBindings.Value = string.Join(", ", names);
+            Plugin.Settings.Save();
         }
 
         private static void BindIfUnbound(
@@ -188,10 +258,20 @@ namespace MapMouseSelect
             int anchorActionId,
             int actionId,
             KeyCode key,
-            string name)
+            string name,
+            ModifierKeyFlags modifiers = ModifierKeyFlags.None)
         {
+            // Once per action, ever. A key the player has cleared is not put back, and an action a later version adds
+            // still gets its default, since it is not in the record yet.
+            if (Written.Contains(name))
+            {
+                return;
+            }
+
             if (player.controllers.maps.GetFirstElementMapWithAction(actionId, false) != null)
             {
+                // The player bound this one, so there is no default to write, now or later.
+                Record(name);
                 return;
             }
 
@@ -209,7 +289,7 @@ namespace MapMouseSelect
                 identifier.id,
                 AxisRange.Full,
                 key,
-                ModifierKeyFlags.None,
+                modifiers,
                 actionId,
                 Pole.Positive,
                 false);
@@ -232,12 +312,36 @@ namespace MapMouseSelect
             if (added == 0)
             {
                 Plugin.Log.LogWarning(
-                    "No keyboard map took a default " + key + " binding for " + name
+                    "No keyboard map took a default " + Describe(key, modifiers) + " binding for " + name
                     + ", so it has to be bound in the Controls menu. The game may have changed.");
                 return;
             }
 
-            Plugin.Verbose("Bound " + name + " to " + key + " on " + added + " keyboard map(s).");
+            Plugin.Verbose("Bound " + name + " to " + Describe(key, modifiers) + " on " + added + " keyboard map(s).");
+            Record(name);
+        }
+
+        /// <summary>The key as the Controls menu would write it, for the log lines.</summary>
+        private static string Describe(KeyCode key, ModifierKeyFlags modifiers)
+        {
+            var text = string.Empty;
+
+            if ((modifiers & (ModifierKeyFlags.LeftShift | ModifierKeyFlags.RightShift)) != ModifierKeyFlags.None)
+            {
+                text += "Shift+";
+            }
+
+            if ((modifiers & (ModifierKeyFlags.LeftControl | ModifierKeyFlags.RightControl)) != ModifierKeyFlags.None)
+            {
+                text += "Ctrl+";
+            }
+
+            if ((modifiers & (ModifierKeyFlags.LeftAlt | ModifierKeyFlags.RightAlt)) != ModifierKeyFlags.None)
+            {
+                text += "Alt+";
+            }
+
+            return text + key;
         }
 
         private static bool BindsAction(ControllerMap map, int actionId)
