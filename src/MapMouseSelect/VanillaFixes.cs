@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using HarmonyLib;
+using Rewired;
+using UnityEngine;
 
 namespace MapMouseSelect
 {
@@ -18,6 +22,15 @@ namespace MapMouseSelect
     /// </summary>
     internal static class VanillaFixes
     {
+        /// <summary>
+        /// The wheel value a camera state should see: none at all while the cursor is up. Two of the four camera states
+        /// ask this themselves, and this is that same question for the two that do not.
+        /// </summary>
+        internal static float WheelWhileCursorUp(float value)
+        {
+            return Cursor.visible ? 0f : value;
+        }
+
         /// <summary>Whether an icon can exist for this unit at all, which is what the queue tests.</summary>
         internal static bool CanHaveIcon(Unit unit)
         {
@@ -79,6 +92,104 @@ namespace MapMouseSelect
             {
                 cleared();
             }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the wheel out of the camera states that do not ask whether they should have it.
+    ///
+    /// "Zoom View" is the wheel, and two things want it: DynamicMap.MapControls zooms the map with it, which is what it
+    /// is for while the map is up, and the camera states move their own view with it. CameraChaseState and
+    /// CameraOrbitState do their wheel work inside `if (!Cursor.visible)`, which is the question that matters - the cursor
+    /// is up for every menu, dialog and the map - while CameraCockpitState asks only whether the map is maximized, and
+    /// CameraTVState, the flyby camera, asks nothing at all. A scroll inside a dialog therefore moved the field of view of
+    /// the cockpit behind it, and the same scroll in the flyby view moved its field of view with the map open. Both cases
+    /// are the same missing question, so both reads are masked while the cursor is up, which is the question the other two
+    /// states already ask.
+    ///
+    /// The mask is inserted after the axis read rather than replacing the call, so the stack and the evaluation order stay
+    /// as they were and the method's own logic gets a zero instead of a scroll. The cockpit's own map check stays where it
+    /// is underneath.
+    /// </summary>
+    internal static class CameraWheelMask
+    {
+        internal static IEnumerable<CodeInstruction> Apply(
+            IEnumerable<CodeInstruction> instructions, string method, out int masked)
+        {
+            var getAxis = AccessTools.Method(typeof(Player), nameof(Player.GetAxis), new[] { typeof(string) });
+            var mask = AccessTools.Method(typeof(VanillaFixes), nameof(VanillaFixes.WheelWhileCursorUp));
+
+            var patched = 0;
+            var result = new List<CodeInstruction>();
+            string axis = null;
+
+            foreach (var instruction in instructions)
+            {
+                result.Add(instruction);
+
+                if (instruction.opcode == OpCodes.Ldstr)
+                {
+                    axis = instruction.operand as string;
+                    continue;
+                }
+
+                if (getAxis != null && mask != null && instruction.Calls(getAxis) && axis == "Zoom View")
+                {
+                    result.Add(new CodeInstruction(OpCodes.Call, mask));
+                    patched++;
+                }
+
+                axis = null;
+            }
+
+            masked = patched;
+
+            if (patched != 1)
+            {
+                Plugin.Log.LogWarning(
+                    "Expected exactly one Zoom View read in " + method + " but found " + patched
+                    + ". Scrolling with a menu open, or with the map open in the flyby view, will go on moving the camera.");
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// The cockpit camera, whose own gate only asks whether the map is maximized. A menu shows the cursor and leaves the
+    /// map minimized, which is how a scroll in a dialog used to change the field of view of a flying cockpit.
+    /// </summary>
+    [HarmonyPatch(typeof(CameraCockpitState), "UpdateState")]
+    internal static class CameraCockpitStateWheelMaskPatch
+    {
+        /// <summary>Call sites masked, or -1 when the method never ran through the transpiler.</summary>
+        internal static int Masked { get; private set; } = -1;
+
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var result = CameraWheelMask.Apply(instructions, "CameraCockpitState.UpdateState", out var masked);
+            Masked = masked;
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// The flyby camera, which reads the wheel with no gate of its own at all. Scrolling with the map open moved its field
+    /// of view as well as zooming the map, confirmed in play 2026-09-21.
+    /// </summary>
+    [HarmonyPatch(typeof(CameraTVState), "UpdateState")]
+    internal static class CameraTVStateWheelMaskPatch
+    {
+        /// <summary>Call sites masked, or -1 when the method never ran through the transpiler.</summary>
+        internal static int Masked { get; private set; } = -1;
+
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var result = CameraWheelMask.Apply(instructions, "CameraTVState.UpdateState", out var masked);
+            Masked = masked;
+            return result;
         }
     }
 

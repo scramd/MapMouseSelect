@@ -325,6 +325,15 @@ then survives the same way.
 
 The mod fires the event that was skipped, once per clear that actually dropped something.
 
+A sixth is the wheel in menus and in the flyby view. `Zoom View` is the wheel, and `DynamicMap.MapControls` reads it to
+zoom the map, which is what it is for while the map is up. Of the camera states that read the same axis,
+`CameraChaseState` and `CameraOrbitState` do their wheel work inside `if (!Cursor.visible)`, while
+`CameraCockpitState` asks only whether the map is maximized and `CameraTVState`, the flyby camera, asks nothing.
+So scrolling inside a dialog moved the field of view of the cockpit behind it and left the view zoomed after the
+dialog closed, and in the flyby view a scroll that zoomed the map moved its field of view at the same time. Both
+reads are masked while the cursor is up, which is the question the other two states already ask, and the two that ask
+it themselves are left alone.
+
 ## Status
 
 The plugin loads and both Harmony patches register, but the marquee itself is not yet confirmed to
