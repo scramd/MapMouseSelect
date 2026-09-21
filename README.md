@@ -336,9 +336,9 @@ it themselves are left alone.
 
 ## Status
 
-The plugin loads and both Harmony patches register, but the marquee itself is not yet confirmed to
-work in game. Unverified: the overlay rectangle's placement and scale, whether `DynamicMap.Update`
-is the right per-frame driver, and the rectangle versus EventSystem click interaction listed above.
+0.2.0, played against 0.34.1. The marquee, the target keys, the wreck icons and the fixes listed above are all in
+use in play. The one rough edge left is the double-handled click a drag can produce when it ends on the icon it
+started from, which the dedup guards make harmless.
 
 ## License
 

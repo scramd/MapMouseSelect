@@ -19,7 +19,7 @@ namespace MapMouseSelect
         /// Lives in three places by necessity: this constant, which the BepInPlugin attribute needs to
         /// be a compile-time literal, &lt;Version&gt; in the csproj, and version in meta.json. Bump all three.
         /// </summary>
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         /// <summary>Draw order for the mod's overlay canvas, above the map UI.</summary>
         internal const int DefaultOverlaySortingOrder = 32000;
