@@ -3,16 +3,10 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// The mod's own per-frame component.
-    ///
-    /// BepInEx attaches plugins to its own manager object. In this game that object does not survive startup: every
-    /// plugin's OnDestroy runs right after "Chainloader startup complete". The established mods here work around it
-    /// the same way. They make a GameObject of their own and mark it DontDestroyOnLoad. This does the same. The host
-    /// is created lazily and re-created if it ever goes missing. So whatever happens during the game's boot cannot
-    /// lose it.
-    ///
-    /// Work that has to preempt vanilla input stays in Harmony patches. It has to run before the game acts on the
-    /// same input in the same frame.
+    /// The mod's own per-frame component. BepInEx destroys its plugin host object in this game right after
+    /// "Chainloader startup complete", so a component added in Plugin.Awake does not survive. The host is created
+    /// lazily and rebuilt if it goes missing. Work that must preempt vanilla input stays in Harmony patches, which
+    /// run before the game acts on the same input in the same frame.
     /// </summary>
     internal sealed class ModHost : MonoBehaviour
     {
@@ -31,8 +25,7 @@ namespace MapMouseSelect
             var host = new GameObject(HostName);
             Object.DontDestroyOnLoad(host);
 
-            // Keeps the object out of the hierarchy and out of Resources.UnloadUnusedAssets, which the
-            // game calls on its way between scenes.
+            // HideAndDontSave keeps the host out of Resources.UnloadUnusedAssets, which the game calls between scenes.
             host.hideFlags = HideFlags.HideAndDontSave;
 
             _instance = host.AddComponent<ModHost>();
@@ -46,7 +39,6 @@ namespace MapMouseSelect
             CameraJump.Tick();
             PanCursor.Tick();
 
-            // One line a session that shows whether this object outlived the boot. The plugin's own object did not.
             if (!_survivalReported && Time.timeSinceLevelLoad > 60f)
             {
                 _survivalReported = true;

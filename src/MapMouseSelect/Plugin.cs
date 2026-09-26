@@ -15,10 +15,7 @@ namespace MapMouseSelect
         public const string PluginGuid = "com.kerbiter.mapmouseselect";
         public const string PluginName = "Map Mouse Select";
 
-        /// <summary>
-        /// Lives in three places by necessity: this constant (the BepInPlugin attribute needs a compile-time
-        /// literal), &lt;Version&gt; in the csproj, and version in meta.json. Bump all three.
-        /// </summary>
+        /// <summary>Lives in three places: this constant, &lt;Version&gt; in the csproj, and version in meta.json.</summary>
         public const string PluginVersion = "0.2.0";
 
         /// <summary>Draw order for the mod's overlay canvas, above the map UI.</summary>
@@ -50,28 +47,16 @@ namespace MapMouseSelect
         internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
-        /// <summary>
-        /// The mod actions whose default key has already been written. The mod adds a name as it deals with that
-        /// action, and it never writes that default again. A key cleared in the Controls menu therefore stays
-        /// cleared.
-        /// </summary>
+        /// <summary>The mod actions whose default key has already been written, so a cleared key stays cleared.</summary>
         internal static ConfigEntry<string> DefaultBindings { get; private set; }
 
-        /// <summary>
-        /// Whether the map drag follows the cursor. Off leaves vanilla's frame-time-scaled pan in place.
-        /// </summary>
+        /// <summary>Whether the map drag follows the cursor. Off leaves vanilla's frame-time-scaled pan in place.</summary>
         internal static ConfigEntry<bool> MapPanFix { get; private set; }
 
-        /// <summary>
-        /// How far the map moves per pixel of mouse movement while panning, when the fix is on. One is exactly under
-        /// the cursor.
-        /// </summary>
+        /// <summary>How far the map moves per pixel of mouse movement, used while MapPanFix is on. One is under the cursor.</summary>
         internal static ConfigEntry<float> MapPanSpeed { get; private set; }
 
-        /// <summary>
-        /// Whether the pan button scrolls the map like a stick while it is held, instead of dragging it. Off by default,
-        /// since the drag is what the map is for.
-        /// </summary>
+        /// <summary>Whether the pan button scrolls the map like a stick while held, instead of dragging it.</summary>
         internal static ConfigEntry<bool> MapStick { get; private set; }
 
         /// <summary>What each pixel of push buys the stick, in screen pixels per second, with no ceiling on the result.</summary>
@@ -97,7 +82,7 @@ namespace MapMouseSelect
 
             PanButton = Config.Bind("Hotkeys", "PanButton", MapPanButton.Middle,
                 "Mouse button that drags to pan the map. The game hardcodes the left button, which collides "
-                + "with the marquee. Right is already the waypoint button.");
+                + "with the marquee, and right is already the waypoint button.");
 
             ShiftAddsToSelection = Config.Bind("Behavior", "ShiftAddsToSelection", true,
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
@@ -107,16 +92,14 @@ namespace MapMouseSelect
                 + "them. Takes precedence over Shift when both are held.");
 
             SuppressModifierBindings = Config.Bind("Behavior", "SuppressModifierBindings", true,
-                "While the map is maximized, disable any keyboard binding that sits directly on one of "
-                + "ModifierKeys. Without this, Shift both adds to a selection and works the throttle.");
+                "While the map is maximized, disable any keyboard binding placed directly on one of "
+                + "ModifierKeys, so Shift does not also work the throttle.");
 
             ModifierKeys = Config.Bind("Behavior", "ModifierKeys",
                 "LeftShift, RightShift, LeftControl, RightControl",
-                "Keys that act only as map modifiers while the map is maximized. Any keyboard binding "
-                + "placed directly on one of them is disabled for that time, whatever action it belongs "
-                + "to. A binding that uses them as declared modifiers, such as Control+Shift+E, is left "
-                + "alone. Unity KeyCode names, comma separated. The marquee modifier is added on its own "
-                + "when RequireModifier is on.");
+                "Keys that act as map modifiers while the map is maximized, as Unity KeyCode names, comma "
+                + "separated. A binding placed directly on one is disabled, a declared modifier binding such as "
+                + "Control+Shift+E is left alone, and the marquee modifier joins when RequireModifier is on.");
 
             BatchTargetListWhileFlying = Config.Bind("Behavior", "BatchTargetListWhileFlying", true,
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "
@@ -137,10 +120,10 @@ namespace MapMouseSelect
                 "Draw the drag rectangle.");
 
             PanCursor = Config.Bind("Visual", "PanCursor", true,
-                "Show Windows' move cursor while the pan button is held over the map. The game never changes the "
-                + "cursor's shape itself, so off leaves it as the arrow every other button uses.");
+                "Show Windows' move cursor while the pan button is held over the map, since the game never "
+                + "changes the cursor itself.");
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
-                "Log what the marquee is doing. Useful when something does not work.");
+                "Log what the marquee is doing.");
 
             OverlaySortingOrder = Config.Bind("Visual", "OverlaySortingOrder", DefaultOverlaySortingOrder,
                 "Sorting order of this mod's overlay canvas. Raise it if the rectangle renders under the map UI.");
@@ -158,7 +141,7 @@ namespace MapMouseSelect
 
             DestroyedBuildingTint = Config.Bind("Destroyed", "Tint", 0.45f,
                 new ConfigDescription(
-                    "How much of its usual colour a wrecked building's icon keeps. 1 leaves it unchanged. "
+                    "How much of its usual colour a wrecked building's icon keeps, 1 leaving it unchanged. "
                     + "Only used when Destroyed.Enabled is on.",
                     new AcceptableValueRange<float>(0.1f, 1f)));
 
@@ -168,13 +151,13 @@ namespace MapMouseSelect
             Settings = Config;
 
             DefaultBindings = Config.Bind("Hotkeys", "DefaultBindings", string.Empty,
-                "Actions whose default key the mod has already written, added to as it does. Removing a name has its "
-                + "default written again. The record exists so a key you clear in the Controls menu stays clear.");
+                "Actions whose default key the mod has already written, added to as it does, so a key cleared in "
+                + "the Controls menu stays clear. Removing a name has its default written again.");
 
             MapPanFix = Config.Bind("Behavior", "MapPanFix", true,
-                "Make the map follow the cursor while it is dragged, instead of outrunning it. This replaces the frame "
-                + "time vanilla scales the drag by, and it reads the cursor directly, not through the game's mouse "
-                + "axes. Off leaves vanilla's pan alone, both of them.");
+                "Make the map follow the cursor while it is dragged, instead of outrunning it. This replaces the "
+                + "frame time vanilla scales the drag by and reads the cursor directly, so off leaves vanilla's "
+                + "pan alone.");
 
             MapPanSpeed = Config.Bind("Behavior", "MapPanSpeed", 1f,
                 new ConfigDescription(
@@ -183,16 +166,16 @@ namespace MapMouseSelect
                     new AcceptableValueRange<float>(0.1f, 5f)));
 
             MapStick = Config.Bind("Behavior", "MapStick", false,
-                "Scroll the map like a stick instead of dragging it. While the pan button is held, the cursor's distance "
-                + "from where you pressed sets the speed, and its direction sets the way the view scrolls. The map goes "
-                + "on moving with the mouse still. Nothing moves until the push passes the game's own drag threshold, the "
-                + "one the mod's marquee starts on. Used while MapPanFix is on, and it takes over the drag when it is.");
+                "Scroll the map like a stick instead of dragging it: while the pan button is held, the cursor's "
+                + "distance from where you pressed sets the speed and its direction sets the way the view scrolls. "
+                + "Nothing moves until the push passes the game's own drag threshold, and the stick takes over the "
+                + "drag while MapPanFix is on.");
 
             MapStickGain = Config.Bind("Behavior", "MapStickGain", 8f,
                 new ConfigDescription(
                     "Scroll speed the stick gains per pixel of push, in screen pixels per second: a 200px push is "
-                    + "1600px/s at the default. There is no ceiling, so twice the push is twice the speed and the edge of "
-                    + "the screen is the only limit. The log names the value in use, at the end of the stick's report line.",
+                    + "1600px/s at the default. There is no ceiling, so twice the push is twice the speed. The log "
+                    + "names the value in use.",
                     new AcceptableValueRange<float>(0.5f, 100f)));
 
             _harmony = new Harmony(PluginGuid);
@@ -213,12 +196,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Patches every class in this assembly, one class at a time.
-        ///
-        /// PatchAll stops at the first class it cannot patch, which takes every class after it down too. One
-        /// postfix argument named differently from the game's own once left this mod half applied. The pan gate
-        /// stayed on the left mouse button, and the Target List filter buttons were missing. Failing per class
-        /// keeps the rest working, and it says which one did not land.
+        /// Patches every class in this assembly, one at a time. PatchAll stops at the first class it cannot patch,
+        /// which takes every class after it down too, so a bad postfix argument would leave the mod half applied.
         /// </summary>
         private void ApplyPatches()
         {
@@ -240,9 +219,7 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>
-        /// Startup check so a silent no-op is distinguishable from a broken patch.
-        /// </summary>
+        /// <summary>Startup check so a silent no-op is distinguishable from a broken patch.</summary>
         private static void ReportPatchState()
         {
             var target = AccessTools.Method(typeof(DynamicMap), "MapControls");
@@ -268,9 +245,8 @@ namespace MapMouseSelect
             var exclusionsInfo =
                 exclusionsTarget != null ? PatchProcessor.GetPatchInfo(exclusionsTarget) : null;
 
-            // The patches added since this report was written are listed by the method they land on, not by what
-            // they do, because the point is to tell a silent no-op from a patch that never applied. HarmonyX
-            // resolves arguments by name, so a rename in the game can lose one without anything else failing.
+            // The patches are listed by the method they land on, because the point is to tell a silent no-op from
+            // a patch that never applied. HarmonyX resolves arguments by name, so a game-side rename loses one.
             var deselectInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.DeSelectUnit)));
             var setAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.SetAircraft)));
             var removeAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft)));
@@ -325,20 +301,13 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>
-        /// Fires before the main menu appears, because BepInEx destroys its plugin host object while the game is
-        /// still starting. Unpatching here would strip the marquee's patches before it ever ran, so this method
-        /// leaves the patches and the overlay alone.
-        /// </summary>
+        /// <summary>Fires before the main menu appears. Unpatching here would strip the marquee's patches before they ran.</summary>
         private void OnDestroy()
         {
             Log.LogInfo("Plugin host torn down by the loader. Patches left in place.");
         }
 
-        /// <summary>
-        /// Reads one of the color settings. The config default is the only place a default color is
-        /// written down, so there is no second copy here to fall back to.
-        /// </summary>
+        /// <summary>Reads one of the color settings. The config default is the only place a default is written.</summary>
         internal static Color ParseColor(ConfigEntry<string> entry)
         {
             if (entry != null && ColorUtility.TryParseHtmlString(entry.Value, out var parsed))

@@ -7,25 +7,13 @@ using UnityEngine.UI;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Adds two groups to the game's Target List filter pane: wrecks and neutrals.
-    ///
-    /// The pane keeps its filters in three lists that the selector walks in CheckExclusions. The classes behind
-    /// those lists only model what vanilla needed. The faction button carries a same-faction flag, not a faction,
-    /// so a neutral unit (neither friend nor foe) can never be filtered. Nothing knows about destroyed buildings,
-    /// because the game removes them from the map. A destroyed building is still a live, repairable Unit, so it
-    /// belongs in that pane once this mod keeps its icon on the map.
-    ///
-    /// A button added to one of those lists would never match anything, or would break the pane. SetOnlyItem
-    /// indexes listDefinitions[0] when it receives a vehicle button, so an entry with no definitions would throw.
-    /// The two buttons therefore live outside the lists. The exclusion patch below reads them, and the pane's own
-    /// behaviour stays untouched. A click toggles them. The pane's Reset button turns them back on. A toggle asks
-    /// the selector to re-check its icons exactly like a vanilla button does.
-    ///
-    /// The polarity is vanilla's: lit means the group is shown, unlit means the pane filters it out.
+    /// Adds wrecks and neutrals to the pane's Target List filters. Lit shows a group, unlit filters it out.
+    /// The two buttons sit outside the pane's three filter lists. SetOnlyItem indexes listDefinitions[0] for a
+    /// vehicle button, so an entry with no definitions would throw, and the faction button carries a
+    /// same-faction flag, not a faction, so no list entry can express a neutral unit.
     /// </summary>
     internal static class TargetFilters
     {
-        /// <summary>Prefix of every button this mod adds, so its own copies can be told from the pane's.</summary>
         private const string ClonePrefix = "MapMouseSelect_";
 
         private static TargetListSelector_ToggleButton _neutral;
@@ -45,9 +33,8 @@ namespace MapMouseSelect
                 return;
             }
 
-            // The pane places its filter buttons by hand and has no layout group. Their geometry is real only after
-            // the canvas is laid out, so the canvas is laid out first. The copies are placed against the measured
-            // edges of the free lane, not against spacing worked out from the row.
+            // The pane places its buttons by hand and has no layout group, so their geometry is only real after
+            // the canvas is laid out.
             Canvas.ForceUpdateCanvases();
 
             var items = selector.toggleFactionItems;
@@ -55,9 +42,7 @@ namespace MapMouseSelect
             var templateRect = (RectTransform)template.transform;
             var left = (RectTransform)items[items.Count - 1].transform;
 
-            // The row's edges and its spacing are measured, not assumed, and all of them are in the row's local
-            // units. Only the left edge is needed here. The pair is sized from a normal button, not from the lane,
-            // so the two of them together take the space of one button.
+            // Edges and spacing are measured, not assumed, in the row's local units. Only the left edge is needed.
             var row = (RectTransform)left.parent;
             var scale = row.lossyScale.x > 0f ? row.lossyScale.x : 1f;
             var centreWorld = row.TransformPoint(row.rect.center).x;
@@ -66,21 +51,15 @@ namespace MapMouseSelect
                 ? Mathf.Max(1f, (LeftEdge(left) - RightEdge((RectTransform)items[items.Count - 2].transform)) / scale)
                 : 4f;
 
-            // The split between the two is half the row's spacing, and it comes out of their width, not out of the
-            // row. Half a button each, less half the split, keeps the pair exactly as wide as the single button
-            // whose slot it takes. Only the balance inside the pair changes.
+            // Split is half the row's spacing, taken out of the pair's own width, so the pair fills one slot.
             var split = Mathf.Max(1f, gap * 0.5f);
             var each = Mathf.Max(1f, (templateRect.rect.width - split) * 0.5f);
 
-            // The pair takes the slot a third normal button would have taken, the opening gap included. It starts
-            // one gap past the last faction button. Gap + each + split + each is exactly one button wide, so the
-            // pair also ends where that third button would have ended.
+            // One gap past the last faction button: gap + each + split + each is exactly one button wide.
             var slot = laneStart + gap;
 
-            // The copies take the tone of the pane's type filters. That lights them in the neutral colour, not the
-            // faction colour they were copied from. That enum value is not the one called NEUTRAL: asking
-            // for NEUTRAL gave the copies the friendly blue. The context is therefore read off one of those
-            // buttons, not named.
+            // The type filters' theme context lights a button green, not in the faction colour a copy starts with.
+            // Asking for the enum value called NEUTRAL gave the friendly blue, so read it off a button.
             var toned = selector.toggleUnitTypesItems != null && selector.toggleUnitTypesItems.Count > 0
                 ? selector.toggleUnitTypesItems[0]
                 : null;
@@ -92,9 +71,8 @@ namespace MapMouseSelect
                 slot += each + split;
             }
 
-            // Wrecks start filtered out. Nothing about a wreck is worth selecting by default. An unlit filter is what
-            // stops it being selectable, through the same gate every vanilla selection path uses. Lighting the button
-            // is how a player asks to select wrecks on purpose.
+            // Wrecks start filtered out. An unlit filter is the gate every vanilla selection path uses, so a player
+            // asks for wrecks by lighting this button.
             if (Plugin.EnableDestroyedUnits.Value && _wreck == null)
             {
                 _wreck = Clone(template, toned, left, "DED", false, slot, each);
@@ -121,7 +99,6 @@ namespace MapMouseSelect
                 + " " + Tint(button);
         }
 
-        /// <summary>The colour the button's frame is drawn in, which is what its theme context decided.</summary>
         private static string Tint(TargetListSelector_ToggleButton button)
         {
             return "tint=" + (button.image != null ? button.image.color.ToString() : "none")
@@ -133,11 +110,7 @@ namespace MapMouseSelect
             return ThemeContext() != null ? ThemeContext().GetValue(button).ToString() : "unknown";
         }
 
-        /// <summary>
-        /// Dumps a button's hierarchy and the frame settings of everything in it. The filter buttons are drawn
-        /// a prefab nobody here can see. When a copy looked wrong, the log named the sprite that draws the frame,
-        /// and the rect around it. Verbose only, and it runs once, when the buttons are first added.
-        /// </summary>
+        /// <summary>Dumps a button's hierarchy and the frame settings in it, to the verbose log.</summary>
         private static void Dump(string label, RectTransform root, int depth)
         {
             if (depth < 0)
@@ -191,10 +164,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Copies one of the pane's own faction buttons. The copy is sized to the half of the lane it takes, and it
-        /// is anchored to the middle of the row horizontally. The vertical anchoring is the pane's own, so the
-        /// copies sit on the same line as the buttons they came from. Their theme context is switched to neutral,
-        /// the theme group the pane's type filters use: lit buttons come out green, not in a faction colour.
+        /// Copies a faction button at half the lane's width, on the pane's own vertical line, with the theme
+        /// context the pane's type filters use.
         /// </summary>
         private static TargetListSelector_ToggleButton Clone(
             TargetListSelector_ToggleButton template,
@@ -230,17 +201,8 @@ namespace MapMouseSelect
             // Left edge at leftEdge: the pivot sits that far in from it.
             rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
 
-            // The copies draw their own frame, generated at the copy's own size with one canvas unit to a stroke.
-            // The stroke therefore does not depend on the button's width. The pane's own frame is a plain sprite with
-            // no nine slice borders, drawn stretched over whatever width it is given. The log confirms that much: it
-            // prints type, border and aspect for the template.
-            //
-            // Unverified: why it happens. Squeezing the pane's sprite into a narrower rect is the obvious candidate,
-            // but that was a reading of a screenshot, not a measurement. That it happens is not in doubt. With the
-            // sprite assignment below taken out, a copy shows the top and bottom of a frame and nothing else.
-            //
-            // Simple with the aspect off is what the template already uses. Those two lines matter only if a future
-            // version of the pane ships a sliced frame.
+            // The copies draw their own frame at their own size, one canvas unit to a stroke. The pane's frame is a
+            // plain sprite with no nine slice borders, and squeezing one left only the top and bottom rows visible.
             if (button.image != null)
             {
                 button.image.sprite = Frame(width, rect.rect.height);
@@ -255,11 +217,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// A hollow rectangle drawn at the size of one copy, one canvas unit to a stroke. It is white, so the
-        /// Image tints it with the lit or unlit colour exactly like it tints the pane's own frame. The copy's own
-        /// size is the point: the stroke keeps its width whatever the button's width is.
-        ///
-        /// The two copies are the same size, so the result is cached and built at most once per size.
+        /// A hollow rectangle at the size of one copy, one canvas unit to a stroke, white so the Image tints it
+        /// like the pane's own frame. Cached, since both copies are the same size.
         /// </summary>
         private static Sprite Frame(float width, float height)
         {
@@ -296,8 +255,7 @@ namespace MapMouseSelect
             texture.SetPixels32(pixels);
             texture.Apply(false, false);
 
-            // The sprite's own size comes out as the button's size, so the Image draws it one to one. A stroke is
-            // then one canvas unit, not a stretched fraction of one.
+            // The sprite comes out at the button's size, so a stroke is one canvas unit, not a stretched fraction.
             _frameWidth = width;
             _frameHeight = height;
             _frame = Sprite.Create(
@@ -312,9 +270,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Tones a copy like the pane's type filters, by copying their theme context. The context is a private
-        /// serialized field, and it decides the lit colour. The theme handler must therefore run again for the
-        /// change to show.
+        /// Copies the type filters' theme context onto a button. The context is a private serialized field, and the
+        /// theme handler has to run again for the colour to show.
         /// </summary>
         private static void MatchTheme(TargetListSelector_ToggleButton button, TargetListSelector_ToggleButton source)
         {
@@ -348,10 +305,6 @@ namespace MapMouseSelect
             return _context;
         }
 
-        /// <summary>
-        /// Puts a filter back to the state it starts in. Reset returns the pane to normal, and normal is where the
-        /// pane comes up: neutrals shown, wrecks hidden.
-        /// </summary>
         private static void Restore(TargetListSelector_ToggleButton button, string who, bool startsOn)
         {
             if (button == null || button.status == startsOn)
@@ -364,13 +317,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Helps the pane's Reset button. That button walks only the three lists the pane owns, so it leaves the
-        /// two copies where they were. It still lights up for them like for any other filter.
-        ///
-        /// Wrecks go back to hidden, not to shown. Selecting a wreck is something a player opts into with that
-        /// button. A reset that quietly turned it on would be the one control in this pane that makes wrecks
-        /// targetable without being asked. Setting a filter asks the pane to rebuild its icons, which is also what
-        /// lights the Reset button. This method then greys the button again, the way the pane's own method ends.
+        /// Puts the two copies back, for the pane's Reset button, which walks only the three lists the pane owns.
+        /// Wrecks go back to hidden, since selecting one is something a player opts into.
         /// </summary>
         internal static void Reset(TargetListSelector pane)
         {
@@ -411,9 +359,7 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>
-        /// The mod's half of the pane's exclusions, added to whatever the pane itself decided.
-        /// </summary>
+        /// <summary>The mod's half of the pane's exclusions, added to whatever the pane decided.</summary>
         internal static bool Excludes(Unit unit)
         {
             if (unit == null)
@@ -430,8 +376,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Neutral is what the map treats as its default case: neither your faction nor a hostile one. Spectator
-        /// mode shows every faction in its own colour, so those units are not neutrals either.
+        /// Neutral is the map's default case: neither your faction nor a hostile one. Spectator mode draws each
+        /// faction in its own colour, so those are not neutrals either.
         /// </summary>
         private static bool IsNeutral(Unit unit)
         {
@@ -440,11 +386,7 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// Adds the two buttons once the pane has built itself. Start fills the vehicle type row, and the faction and
-    /// unit type buttons are already on the prefab. A postfix here is therefore the first moment the row exists
-    /// and is safe to copy from.
-    /// </summary>
+    /// <summary>Adds the two buttons once the pane has built itself, the first moment the filter row exists.</summary>
     [HarmonyPatch(typeof(TargetListSelector), "Start")]
     internal static class TargetListSelectorStartPatch
     {
@@ -456,9 +398,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Lets the two extra groups filter units the way the pane's own groups do. Everything that reads this method
-    /// gets it: map clicks, the Select action, the marquee, and CheckAllExclusions. CheckAllExclusions deselects
-    /// anything a filter now excludes, and it rebuilds every icon colour.
+    /// Lets the two extra groups filter units like the pane's own groups. Everything that reads this method gets
+    /// it: map clicks, the Select action, the marquee and CheckAllExclusions.
     /// </summary>
     [HarmonyPatch(typeof(TargetListSelector), nameof(TargetListSelector.CheckExclusions))]
     internal static class TargetListSelectorCheckExclusionsPatch
@@ -473,10 +414,7 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// The pane's Reset button walks the three filter lists the pane owns, and the two this mod adds are not in
-    /// them. It therefore lit up for filters it could not put back. This patch puts them back.
-    /// </summary>
+    /// <summary>Puts the mod's two filters back, which the pane's own Reset cannot, since it walks only its lists.</summary>
     [HarmonyPatch(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters))]
     internal static class TargetListSelectorResetFiltersPatch
     {

@@ -4,15 +4,9 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Decides when the map's keys stop doing their normal job, and which keys those are.
-    ///
-    /// The rule is the mod's. While the map is maximized, and unless the user has turned the behavior off, the
-    /// map takes over the keys in ModifierKeys as modifiers. It also takes the marquee's own modifier when
-    /// RequireModifier is on. That key is held while dragging on the map, so it is a map modifier by definition.
-    ///
-    /// Driven from ModHost, the only thing in the mod guaranteed to outlive the boot. The key set is rebuilt
-    /// every frame, which makes a config edit take effect without reopening the map. BindingBlocker ignores a
-    /// set it is already holding, so the steady state costs one string comparison and a handful of set writes.
+    /// Decides when the map's keys stop doing their normal job, and which keys those are: the ModifierKeys set,
+    /// plus the marquee's own modifier when RequireModifier is on. The key set is rebuilt every frame, so a config
+    /// edit takes effect without reopening the map.
     /// </summary>
     internal static class ModifierGuard
     {
@@ -35,10 +29,7 @@ namespace MapMouseSelect
             BindingBlocker.Block(Keys, Reason);
         }
 
-        /// <summary>
-        /// The configured keys go through a parsed-once cache. An unchanged ModifierKeys string then costs one
-        /// comparison per frame, not an array of substrings for the garbage collector.
-        /// </summary>
+        /// <summary>The configured keys go through a parsed-once cache, so an unchanged string avoids per-frame garbage.</summary>
         private static void CollectKeys()
         {
             var configured = Plugin.ModifierKeys.Value;

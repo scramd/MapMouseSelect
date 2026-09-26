@@ -3,19 +3,10 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Shows the cursor theme's move cursor while the pan button is held over the map.
-    ///
-    /// The game never changes the cursor's shape itself. CursorManager decides only whether the cursor is visible and
-    /// whether it is locked. So the pan looks like the plain arrow that every button and the marquee use. That arrow
-    /// is the one shape that says nothing about what the button is about to do.
-    ///
-    /// What goes up is the theme's own cursor, read by `SystemCursor`, not a shape this mod draws. The mod hands it
-    /// to Unity, and does not put it on the mouse pointer behind Unity's back. Unity applies the cursor itself, and
-    /// two writers for one pointer is a flicker. The mod reads it again at each press, so the next pan picks up a
-    /// scheme that changed while the game runs.
-    ///
-    /// The mod makes the swap only while the button is held. It puts the game's arrow back on release, so the game
-    /// keeps deciding when a cursor is shown at all.
+    /// Shows the cursor theme's move cursor while the pan button is held over the map. The game never changes the
+    /// cursor's shape itself – CursorManager only decides whether it is visible and locked – so the pan would
+    /// otherwise be the plain arrow. Unity owns the pointer, so the theme cursor is handed over as a texture rather
+    /// than set on the OS pointer, which flickers. The theme is re-read at each press.
     /// </summary>
     internal static class PanCursor
     {

@@ -5,16 +5,10 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Drag state machine for marquee selecting units on the maximized tactical map.
-    ///
-    /// Static, and driven from DynamicMap's own per-frame methods rather than from a MonoBehaviour of our own.
-    /// BepInEx destroys its plugin host object while the game starts, and every plugin gets OnDestroy at
-    /// "Chainloader startup complete". A component added in Plugin.Awake is therefore gone before gameplay.
-    /// Harmony patches survive that, so the game's own ticking methods are the reliable place to run from.
-    ///
-    /// While the map is maximized the left mouse button is the marquee button, so vanilla map controls are
-    /// suppressed from the press frame until release. A press that never passes the drag threshold is replayed as
-    /// the vanilla single click, which keeps normal clicking intact.
+    /// Drag state machine for marquee selecting units on the maximized tactical map, driven from DynamicMap's own
+    /// per-frame methods: BepInEx destroys its plugin host object at "Chainloader startup complete", so a component
+    /// added in Plugin.Awake is gone before gameplay, while a Harmony patch survives. The left mouse button is the
+    /// marquee button while the map is maximized, so vanilla controls are suppressed from press to release.
     /// </summary>
     internal static class Marquee
     {
@@ -27,16 +21,10 @@ namespace MapMouseSelect
         private static bool _hookReported;
         private static Vector2 _startScreen;
 
-        /// <summary>
-        /// True while the marquee owns the mouse, in which case vanilla MapControls must be skipped so
-        /// its click-select and left-drag panning stay out of the way.
-        /// </summary>
+        /// <summary>True while the marquee owns the mouse, when vanilla MapControls must be skipped.</summary>
         internal static bool OwnsMouse => _pending || _dragging;
 
-        /// <summary>
-        /// Advances the state machine. Called every frame from the DynamicMap.Update prefix, which runs
-        /// just before DynamicMap.Update calls MapControls, so the decision is always made in time.
-        /// </summary>
+        /// <summary>Advances the state machine, called from the DynamicMap.Update prefix before MapControls.</summary>
         internal static void Tick(DynamicMap map)
         {
             if (map == null)
@@ -91,9 +79,8 @@ namespace MapMouseSelect
             {
                 if (!Input.GetMouseButton(0))
                 {
-                    // A click, not a drag, and nothing to replay. A mouse click reaches the icons
-                    // through their EventSystem handlers, which this mod never suppresses. Suppressing
-                    // MapControls only took out the pan and the Select action.
+                    // A click, not a drag. Mouse clicks reach the icons through their EventSystem handlers, which
+                    // this mod never suppresses - MapControls only carries the pan and the Select action.
                     Plugin.Verbose("Marquee released without dragging; the click is vanilla's.");
                     Cancel();
                     return;
@@ -134,10 +121,8 @@ namespace MapMouseSelect
             return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         }
 
-        /// <summary>
-        /// What this drag will do when it ends. Control wins over Shift when both are held, because taking units
-        /// out is the more deliberate of the two. The border shows which one is in force.
-        /// </summary>
+        /// <summary>What this drag will do when it ends. Control wins over Shift when both are held, and the
+        /// border shows which one is in force.</summary>
         private static MarqueeMode CurrentMode()
         {
             if (Plugin.ControlRemovesFromSelection.Value && ControlHeld())
@@ -153,7 +138,6 @@ namespace MapMouseSelect
             return MarqueeMode.Replace;
         }
 
-        /// <summary>One colour per mode, so the border says what the release is going to do.</summary>
         private static Color BoxColor(MarqueeMode mode)
         {
             switch (mode)
@@ -227,14 +211,11 @@ namespace MapMouseSelect
                     continue;
                 }
 
-                // Dead units are not skipped here on purpose. Vanilla takes the icon away when a unit is disabled,
-                // so there is usually nothing to box. The one case where an icon does outlive the unit, a wrecked
-                // building this mod keeps on the map, is the WRECK filter's business below. What is left is exactly
-                // what vanilla's own click tests: a live icon, inside the box, and not excluded.
+                // Dead units are not skipped on purpose: vanilla removes the icon when a unit is disabled, and the
+                // one wreck this mod keeps on the map is the WRECK filter's business below.
 
-                // An icon the player has switched off in Map Options is an inactive object, and vanilla has no way
-                // to select one either. Clicking needs a raycast hit, and the range select needs the HUD marker's
-                // image to be enabled. Boxing one would be reaching through the map's own filters.
+                // An icon switched off in Map Options is an inactive object, and vanilla cannot select one either:
+                // clicking needs a raycast hit, and the range select needs the marker's image enabled.
                 if (!unitIcon.gameObject.activeInHierarchy)
                 {
                     continue;

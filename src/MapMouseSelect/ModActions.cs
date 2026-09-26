@@ -8,26 +8,13 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Registers the mod's keys as real Rewired actions.
+    /// Registers the mod's keys as real Rewired actions, so they are bindable in the Controls menu and usable
+    /// from a gamepad. They join Cancel's category, which the Controls menu already lists, and are read with the
+    /// same GetButtonTimedPressUp / GetButtonTimedPressDown calls vanilla uses for Cancel.
     ///
-    /// Being Rewired actions makes them behave like the game's own controls. They are bindable in the in-game
-    /// Controls menu, and usable from a gamepad or a stick button. Vanilla reads them with the same
-    /// GetButtonTimedPressUp / GetButtonTimedPressDown calls it uses for Cancel.
-    ///
-    /// Two things have to happen while Rewired is still loading its data, which is what InputManager_Base.Awake
-    /// is for:
-    ///
-    /// - the actions are appended to the action list and registered in the category map
-    ///
-    /// Their default keys are not written here. An ActionElementMap cannot be built before Rewired has a
-    /// keyboard to build it against. The first attempt at this got that wrong: it threw inside Rewired and took
-    /// the whole registration with it. EnsureDefaultBindings does it once Rewired is running instead, through
-    /// the same call the game's own Controls menu binds with.
-    ///
-    /// They join an existing vanilla action's category, rather than getting a category of their own. The
-    /// Controls menu lists actions per category from mapping sets baked into its prefab. Joining a category that
-    /// is already listed therefore makes the menu show them with no prefab surgery. Their bindings also land in a
-    /// map category that is already enabled in a mission.
+    /// The actions are appended during InputManager_Base.Awake, while Rewired is still loading its data. Default
+    /// keys are not written there: an ActionElementMap cannot be built before Rewired has a keyboard, and trying
+    /// threw inside Rewired and lost the whole registration. EnsureDefaultBindings writes them once Rewired runs.
     /// </summary>
     internal static class ModActions
     {
@@ -37,16 +24,10 @@ namespace MapMouseSelect
 
         internal const string DeselectLookedAtName = "MapMouseSelect::DeselectLookedAt";
 
-        /// <summary>
-        /// The safe exit key. It runs the game's landed eject and nothing else. The game's own eject is
-        /// Control+Shift+E, so Control+E is free, and it reads as the gentler half of the same idea.
-        /// </summary>
+        /// <summary>The safe exit key, which runs the game's landed eject. The game's own eject is Control+Shift+E.</summary>
         internal const string SafeExitName = "MapMouseSelect::SafeExit";
 
-        /// <summary>
-        /// Cancel is the action ExtraUiInput already uses to drop targets, so the two keys here share
-        /// its category and its keyboard map.
-        /// </summary>
+        /// <summary>Cancel's category and keyboard map, which the mod's keys share.</summary>
         private const string AnchorActionName = "Cancel";
 
         // Far above the game's own action ids, which grow upward from zero.
@@ -58,9 +39,7 @@ namespace MapMouseSelect
 
         private const int SafeExitId = 971004;
 
-        /// <summary>
-        /// False until both actions exist, so nothing polls a name Rewired cannot resolve.
-        /// </summary>
+        /// <summary>False until both actions exist, so nothing polls a name Rewired cannot resolve.</summary>
         internal static bool Registered { get; private set; }
 
         internal static void Register(InputManager_Base manager)
@@ -125,8 +104,7 @@ namespace MapMouseSelect
                 return;
             }
 
-            // Rewired keeps these setters internal, so the backing fields are written directly. That is
-            // the same route the other mods on this machine take to add actions.
+            // Rewired keeps these setters internal, so the backing fields are written directly.
             var action = (InputAction)Activator.CreateInstance(typeof(InputAction), true);
             SetField(action, "_id", id);
             SetField(action, "_name", name);
@@ -147,19 +125,12 @@ namespace MapMouseSelect
 
         private static bool _bindingsSettled;
 
-        /// <summary>
-        /// Gives each of the mod's actions its default key, once, on the first frame Rewired can answer.
-        ///
-        /// An action that already has a binding on any controller is left alone, so a player who rebound either
-        /// key keeps their layout. The binding goes onto every enabled keyboard map that already binds the anchor
-        /// action, the same reach the editor data would have had.
-        /// ControllerMap.ReplaceOrCreateElementMap does the work, the call the Controls menu itself uses.
-        ///
-        /// It happens once per action and never again, recorded by name in the config. A key the player clears in
-        /// the Controls menu therefore stays cleared. An action a later version of the mod adds still gets its
-        /// default the first time that version runs. Latching once per install would have missed that. A player who
-        /// wants a written key back either binds it again, or removes its name from that record.
-        /// </summary>
+        /// <summary>Gives each of the mod's actions its default key once, on the first frame Rewired can answer.
+        /// An action that already has a binding on any controller is left alone, so a rebound key stays rebound.
+        /// The write goes through ControllerMap.ReplaceOrCreateElementMap, as the Controls menu itself does, onto
+        /// every enabled keyboard map that already binds Cancel. It happens once per action, ever, recorded by name
+        /// in the config, so a key cleared in the menu stays cleared and an action added later still gets its
+        /// default.</summary>
         internal static void EnsureDefaultBindings()
         {
             if (_bindingsSettled || !Registered)
@@ -183,8 +154,8 @@ namespace MapMouseSelect
             KeyboardMaps.Clear();
             player.controllers.maps.GetAllMaps(ControllerType.Keyboard, KeyboardMaps);
 
-            // The player's maps are not assigned yet on the first frames, so this stays unlatched until
-            // there is something to bind into.
+            // The player's maps are not assigned yet on the first frames, so this stays unlatched until there is
+            // something to bind into.
             if (KeyboardMaps.Count == 0)
             {
                 return;
@@ -200,8 +171,7 @@ namespace MapMouseSelect
                 player, keyboard, anchorActionId, SafeExitId, KeyCode.E, SafeExitName,
                 ModifierKeyFlags.LeftControl | ModifierKeyFlags.RightControl);
 
-            // Every action this version knows about has been dealt with, so there is nothing left to look at. A later
-            // version that adds one re-enters here for that one action, which is why the record is per name.
+            // Every action this version knows about is now dealt with.
             _bindingsSettled = Written.Contains(SelectOnlyName)
                 && Written.Contains(DeselectOldestName)
                 && Written.Contains(DeselectLookedAtName)
@@ -209,9 +179,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Reads the record of actions whose default has been dealt with, once, on the first frame there is
-        /// something to bind into. Reading it before Rewired is ready would latch an empty record and rewrite
-        /// every default.
+        /// Reads the record once, on the first frame there is something to bind into. Reading it before Rewired is
+        /// ready would latch an empty record and rewrite every default.
         /// </summary>
         private static void LoadWritten()
         {
@@ -239,10 +208,6 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>
-        /// Notes that an action's default has been dealt with and writes the record out. The next launch then
-        /// leaves it alone, whether the player keeps the key or clears it.
-        /// </summary>
         private static void Record(string name)
         {
             Written.Add(name);
@@ -262,8 +227,7 @@ namespace MapMouseSelect
             string name,
             ModifierKeyFlags modifiers = ModifierKeyFlags.None)
         {
-            // Once per action, ever. A key the player has cleared is not put back, and an action a later version adds
-            // still gets its default, since it is not in the record yet.
+            // Once per action, ever: a cleared key is not put back, an action added later is not in the record yet.
             if (Written.Contains(name))
             {
                 return;
@@ -271,7 +235,7 @@ namespace MapMouseSelect
 
             if (player.controllers.maps.GetFirstElementMapWithAction(actionId, false) != null)
             {
-                // The player bound this one, so there is no default to write, now or later.
+                // The player bound this one, so there is no default to write.
                 Record(name);
                 return;
             }

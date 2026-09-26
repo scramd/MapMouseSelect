@@ -8,26 +8,15 @@ namespace MapMouseSelect
     /// <summary>
     /// Moves the map's camera jump from the middle mouse button to a double left click.
     ///
-    /// Vanilla jumps the commander's camera to the cursor when the Jump Map action goes down. That action is
-    /// on the middle mouse button by default, which this mod took for panning. The binding is what moves out of
-    /// the way: while the map is open, the action's binding on the pan button is disabled. Rewired then reports
-    /// nothing for it from that button, and the jump is answered here instead, from a double click. The action
-    /// keeps every other binding, a gamepad button included.
-    ///
-    /// A double click is the game's idea of one. uGUI counts a second press as a further click when it arrives
-    /// within 0.3s of the previous press. The two presses also have to land on the same object. This class reads
-    /// that as the game's drag threshold saying the pointer did not travel. The threshold helper compares against
-    /// the cursor as it is now. Asking it about the previous press position at the moment of the second press is
-    /// exactly "did the pointer stay where it was".
-    ///
-    /// Only commander view has the jump, which is when vanilla's branch runs at all. With a live aircraft the
-    /// Jump Map action does nothing.
-    ///
-    /// Ticked from ModHost, along with the rest of the mod's per-frame work.
+    /// Vanilla jumps the commander's camera to the cursor when the Jump Map action goes down, and that action
+    /// sits on the middle button by default, which this mod took for panning. While the map is open that binding
+    /// is disabled, so Rewired reports nothing from the button and the jump is answered here. Only commander
+    /// view has the jump. The drag threshold reports the presses by comparing its current cursor against the
+    /// previous press position.
     /// </summary>
     internal static class CameraJump
     {
-        /// <summary>uGUI's own window for counting a press as another click of the same double click.</summary>
+        /// <summary>uGUI's own window for counting a press as another click of a double click.</summary>
         private const float DoubleClickWindow = 0.3f;
 
         private const string ActionName = "Jump Map";
@@ -95,17 +84,9 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Holds the Jump Map action off the button this mod pans with, for as long as the map is open.
-        ///
-        /// Disabling that one binding is what separates the pan from the jump. Rewired then reports nothing for
-        /// the action from that button, so vanilla's own branch cannot fire. Every other binding the action has, a
-        /// gamepad button included, is left exactly as it was. Nothing has to infer where a press came from, and
-        /// the binding goes back the moment the map closes.
-        ///
-        /// The button is matched by the name Rewired gives its mouse elements, which is the HID numbering. The
-        /// middle button is element 5, "Mouse Button 3". That came out of the log, not out of any documentation,
-        /// so what the action is bound to on the mouse is logged once. If the name is not the one expected here,
-        /// the log says what it actually is, and the button keeps its binding.
+        /// Holds the Jump Map action off the pan button while the map is open, so Rewired reports nothing for it
+        /// from that button and vanilla's branch cannot fire. The button is matched by Rewired's mouse element
+        /// name, so middle is element 5, "Mouse Button 3", read off the log rather than documentation.
         /// </summary>
         private static void HoldJumpButtonOff(bool open)
         {
@@ -178,10 +159,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// The name Rewired gives the mouse button this mod pans with, in HID numbering. The middle button is
-        /// "Mouse Button 3", which is what the Jump Map binding turned out to be (element 5). Left is 1 and right
-        /// is 2. The middle one was read off this install. Left and right follow the same numbering, rather than
-        /// being observed.
+        /// The Rewired name of the pan button, in HID numbering: middle is "Mouse Button 3", which the Jump Map
+        /// binding turned out to be (element 5). Left is 1, right is 2.
         /// </summary>
         private static string PanButtonName()
         {

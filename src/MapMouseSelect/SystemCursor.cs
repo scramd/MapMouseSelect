@@ -5,27 +5,17 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// The current cursor theme's move cursor, read out of Windows as pixels this mod can hand to Unity.
-    ///
-    /// Unity is the only thing that can own the mouse pointer while the game runs. It applies the cursor itself, from
-    /// whichever texture it was given. An application that sets the cursor behind its back is fighting Unity for the
-    /// same pointer. That fight is a flicker, so this mod hands the cursor over as a texture instead. The pixels come
-    /// from the theme the player has chosen. Windows maps the standard cursor roles onto the selected scheme. Asking
-    /// it for IDC_SIZEALL gets the arrow that scheme draws for moving something, at the size the display is set to.
-    ///
-    /// A cursor comes back as a colour bitmap plus a monochrome mask. Between them they say what is opaque: the mask
-    /// marks transparency the old way, and the alpha channel marks it the newer way. A theme may use either or both. A
-    /// pixel counts as transparent only where the mask and the alpha channel agree.
-    ///
-    /// Nothing here is drawn. The shape is the theme's, at its size. Only the hotspot has to be turned around, because
-    /// Windows measures it from the top. A Unity texture is filled from the bottom.
+    /// The current Windows cursor scheme's move cursor, read out as pixels for Unity. Unity owns the pointer while
+    /// the game runs, so anything set on the OS pointer behind it flickers. A cursor arrives as a colour bitmap plus
+    /// a monochrome mask, and a pixel is transparent only where both agree. Bitmap rows are bottom-up, so the pixels
+    /// flip and the hotspot does not.
     /// </summary>
     internal static class SystemCursor
     {
-        /// <summary>IDC_SIZEALL, the cursor Windows uses for moving something in any direction.</summary>
+        /// <summary>IDC_SIZEALL, the pointer Windows uses for moving something.</summary>
         private const int MoveCursor = 32646;
 
-        /// <summary>SM_CXCURSOR, the size Windows draws its cursors at, which is larger on a scaled display.</summary>
+        /// <summary>SM_CXCURSOR – the size Windows draws cursors at, larger on a scaled display.</summary>
         private const int CursorWidth = 13;
 
         private const uint RgbColors = 0;
@@ -56,7 +46,7 @@ namespace MapMouseSelect
             public uint ColorsImportant;
         }
 
-        /// <summary>With room for the palette a one-bit format needs, which is two entries.</summary>
+        /// <summary>With room for the palette a one-bit format needs – two entries.</summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct BitmapInfo
         {
@@ -104,7 +94,6 @@ namespace MapMouseSelect
         [DllImport("gdi32.dll")]
         private static extern bool DeleteObject(IntPtr obj);
 
-        /// <summary>The size Windows draws its cursors at, or 32 when it will not say.</summary>
         internal static int Size()
         {
             try
@@ -117,16 +106,14 @@ namespace MapMouseSelect
             }
             catch
             {
-                // Falls through to a size every cursor will fit in.
+                // 32 fits any cursor.
             }
 
             return 32;
         }
 
-        /// <summary>
-        /// The theme's move cursor as a texture of this size, with the hotspot the theme gives it. Null when Windows
-        /// will not return it, which leaves the caller with the game's own arrow.
-        /// </summary>
+        /// <summary>The theme's move cursor as a texture with its hotspot. Null when Windows will not hand
+        /// it over, which leaves the caller with the game's own arrow.</summary>
         internal static Texture2D Move(int size, out Vector2 hotspot)
         {
             hotspot = Vector2.zero;
@@ -196,8 +183,7 @@ namespace MapMouseSelect
                 texture.SetPixels32(pixels);
                 texture.Apply();
 
-                // Scaled, and passed as it comes: Unity measures the hotspot from the top left, the same way Windows
-                // does. So it needs none of the turning around that the pixels above did.
+                // Unity measures the hotspot from the top left like Windows does, so it needs no flipping.
                 hotspot = new Vector2(
                     info.HotspotX * size / (float)width,
                     info.HotspotY * size / (float)height);
@@ -216,7 +202,6 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>The pixels of one of a cursor's two bitmaps, at the depth asked for.</summary>
         private static byte[] Read(IntPtr dc, IntPtr bitmap, int width, int height, ushort bits)
         {
             var stride = bits == 1 ? (width + 7) / 8 : width * (bits / 8);

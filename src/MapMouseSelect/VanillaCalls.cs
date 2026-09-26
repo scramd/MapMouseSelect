@@ -7,18 +7,11 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Wrappers over the private vanilla members the mod needs verbatim.
-    ///
-    /// They own rules that would otherwise have to be copied here and kept in step with the game.
-    /// DynamicMap.SelectFromMap is the map half of the Select action's handler. It takes the icon with the
-    /// smallest squared distance to the cursor among those its own filters allow. DynamicMap.JumpCameraTo is the
-    /// commander's camera jump. Each is resolved once and cached.
-    ///
-    /// Select is the keyboard and gamepad action, not the mouse. A mouse click reaches a map icon through its
-    /// EventSystem handler instead, so this is not the call that reproduces one.
-    ///
-    /// AccessTools returns null instead of throwing when a member is missing. A game update that renames any of
-    /// them therefore costs a logged warning rather than a crash.
+    /// Wrappers over the private vanilla members the mod needs verbatim, so their rules are not copied here and kept
+    /// in step by hand. DynamicMap.SelectFromMap is the map half of the Select action's handler: the icon with the
+    /// smallest squared distance to the cursor among those its filters allow. DynamicMap.JumpCameraTo is the
+    /// commander's camera jump. Select is the keyboard and gamepad action - a mouse click reaches a map icon through
+    /// its EventSystem handler. AccessTools returns null rather than throwing, so a rename costs a logged warning.
     /// </summary>
     internal static class VanillaCalls
     {
@@ -53,11 +46,8 @@ namespace MapMouseSelect
             Invoke(_selectFromMap, map);
         }
 
-        /// <summary>
-        /// Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this is the one
-        /// thing here that reads state rather than calling vanilla. The target designator's pick needs to walk them
-        /// to find what the player is pointing at when the map is closed.
-        /// </summary>
+        /// <summary>Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this
+        /// reads state instead of calling vanilla.</summary>
         internal static List<HUDUnitMarker> Markers(CombatHUD hud)
         {
             if (hud == null)
@@ -80,12 +70,8 @@ namespace MapMouseSelect
             return _markers != null ? _markers.GetValue(hud) as List<HUDUnitMarker> : null;
         }
 
-        /// <summary>
-        /// Vanilla's icon creation for a single unit, which its own code only reaches through the queue.
-        ///
-        /// The queue refuses a unit that is disabled. That is right for a corpse and wrong for a wreck this mod
-        /// keeps on the map, so the wreck path calls this directly instead.
-        /// </summary>
+        /// <summary>Vanilla's icon creation for a single unit, which its own code only reaches through the queue.
+        /// The queue refuses a disabled unit, which is wrong for a wreck this mod keeps on the map.</summary>
         internal static bool SpawnIconForUnit(DynamicMap map, Unit unit)
         {
             if (!_spawnIconForUnitResolved)
@@ -121,26 +107,19 @@ namespace MapMouseSelect
             return true;
         }
 
-        /// <summary>
-        /// Plays the clip CombatHUD uses for a selection. The mod plays it once for a whole gesture, which is what
-        /// CombatHUD's own multi-select does. TargetSelect adds every marker in range, then plays this once and
-        /// refreshes the target list once, rather than doing either per unit.
-        /// </summary>
+        /// <summary>Plays the clip CombatHUD uses for a selection, once for a whole gesture.</summary>
         internal static void PlaySelectSound(CombatHUD hud)
         {
             PlaySound(hud, ref _selectSound, ref _selectSoundResolved, "selectSound");
         }
 
-        /// <summary>The same for a removal, which CombatHUD.DeSelectUnit plays for a single unit.</summary>
+        /// <summary>The same for a removal. CombatHUD.DeSelectUnit plays it for a single unit.</summary>
         internal static void PlayDeselectSound(CombatHUD hud)
         {
             PlaySound(hud, ref _deselectSound, ref _deselectSoundResolved, "deselectSound");
         }
 
-        /// <summary>
-        /// Both clips are private serialized fields on CombatHUD, so they are reached the same way the private
-        /// methods above are, and each is looked up once.
-        /// </summary>
+        /// <summary>Both clips are private serialized fields on CombatHUD, each looked up once.</summary>
         private static void PlaySound(CombatHUD hud, ref FieldInfo field, ref bool resolved, string name)
         {
             if (hud == null || SoundManager.i == null)

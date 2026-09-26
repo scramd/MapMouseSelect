@@ -3,51 +3,35 @@ using UnityEngine;
 
 namespace MapMouseSelect
 {
-    /// <summary>What a finished drag does to the units inside the box.</summary>
     internal enum MarqueeMode
     {
-        /// <summary>Select the boxed units, dropping whatever was selected before.</summary>
         Replace,
 
-        /// <summary>Add the boxed units to the selection.</summary>
         Add,
 
-        /// <summary>Take the boxed units out of the selection.</summary>
         Remove
     }
 
     /// <summary>
     /// Routes a selection change to whichever system owns it, and owns the weapon target list writes itself.
-    ///
-    /// Flying, the selection is the target list of the current weapon station, and that list is networked. Every
-    /// change is a server call, and the RPC behind it has no rate limit. CombatHUD.SelectUnit and DeSelectUnit
-    /// handle one unit each and refresh the list each time, so a gesture over thirty units through them is thirty
-    /// messages. Vanilla's own multi-select does not work that way. TargetSelect marks every unit, inserts into
-    /// the list and calls TargetListChanged once, then plays one sound. That is the shape of AddToTargetList and
-    /// RemoveFromTargetList below, and every path in the mod that writes the list goes through them.
-    ///
-    /// The clear is the one thing still left to vanilla. CombatHUD.DeselectAll is already a single refresh, and
-    /// it also puts the HUD's target arrow and text away, which are private fields. Writing it again here would
-    /// buy nothing.
-    ///
-    /// With no live aircraft there is no target list at all. The selection is DynamicMap's selected icons, a
-    /// local HUD thing with no network behind it. It goes through the same calls vanilla's clicks use.
+    /// Flying, the selection is the current weapon station's networked target list, where every change is an
+    /// unthrottled server call: CombatHUD.SelectUnit and DeSelectUnit handle one unit each and refresh every time, so
+    /// a box over thirty units is thirty messages. Vanilla's own TargetSelect batches instead - inserts, one
+    /// TargetListChanged, one sound - and the writers below copy that shape. The clear stays with
+    /// CombatHUD.DeselectAll, which refreshes once and puts the HUD's target arrow and text away.
     /// </summary>
     internal static class SelectionApplier
     {
-        /// <summary>Scratch for the units a batched write is about to apply. Every path that uses it starts from a key
-        /// press or a released mouse button, one at a time, and none of them nests.</summary>
+        /// <summary>Scratch for a batched write. Every path using it runs one at a time and none nests.</summary>
         private static readonly List<Unit> Pending = new List<Unit>();
 
-        /// <summary>Scratch for the targets a change is about to take away.</summary>
         private static readonly List<Unit> Others = new List<Unit>();
 
         internal static void Apply(DynamicMap map, List<Unit> units, MarqueeMode mode)
         {
             var aircraft = GetLiveAircraft();
 
-            // The flying marquee writes to the weapon target list. That list is the one thing the user
-            // can turn the mod off from touching.
+            // The weapon target list is the one thing the user can stop the mod from writing to.
             if (aircraft != null && !Plugin.BatchTargetListWhileFlying.Value)
             {
                 return;
@@ -55,18 +39,14 @@ namespace MapMouseSelect
 
             if (units == null || units.Count == 0)
             {
-                // An empty box clears the selection, which is the usual marquee meaning. Vanilla does not clear
-                // on a click in empty space, so this is a mod choice. A box is a targeting gesture, and releasing
-                // it over nothing is how a player expects to drop what is selected. Adding or removing from an
-                // empty box has nothing to do either way.
+                // A box is a targeting gesture, so releasing it over nothing drops what is selected. Vanilla does
+                // not clear on a click in empty space, so this is a mod choice.
                 if (mode == MarqueeMode.Replace)
                 {
                     if (aircraft != null)
                     {
-                        // One clear for the whole box, which is what this gesture is. DeselectAll's argument is
-                        // its withAudio flag, and this one asks for vanilla's own deselect-all clip, the one its
-                        // Cancel-hold plays. Dropping every target is the loudest thing the target list can do,
-                        // and doing it in silence is what made an empty box feel like nothing had happened.
+                        // DeselectAll's argument is its withAudio flag. This asks for vanilla's deselect-all clip,
+                        // the one its Cancel-hold plays.
                         var hud = SceneSingleton<CombatHUD>.i;
                         if (hud != null)
                         {
@@ -75,8 +55,7 @@ namespace MapMouseSelect
                     }
                     else
                     {
-                        // Vanilla has no clip for clearing the map selection. UnselectAll is what its own
-                        // Cancel runs, and it is silent.
+                        // Vanilla has no clip for clearing the map selection. UnselectAll is silent.
                         map.UnselectAll();
                     }
                 }
@@ -112,17 +91,10 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Adds units to the target list of the current weapon station, then refreshes it and plays the select
-        /// sound once for the whole set.
-        ///
-        /// The per-unit effects are vanilla's. AddTargetList inserts at the front, so the last unit added ends up
-        /// first, which is the newest target. The HUD marker's SelectMarker is what selects the map icon as well.
-        /// A unit already in the list is skipped, which is what vanilla's callers check for before they call
-        /// SelectUnit.
-        ///
-        /// The caller decides the sound, because the sound belongs to the gesture rather than to the write. A mass
-        /// deselect that keeps one unit still reads as a deselect, and ending it on a select chime would say the
-        /// opposite of what happened.
+        /// Adds units to the current weapon station's target list, then refreshes it and plays the select sound once
+        /// for the whole set. AddTargetList inserts at the front, so the last unit added is the newest target, and the
+        /// marker's SelectMarker is what selects the map icon too. The caller decides the sound, because it belongs to
+        /// the gesture rather than the write.
         /// </summary>
         internal static void AddToTargetList(Aircraft aircraft, List<Unit> units, bool playSound = true)
         {
@@ -167,11 +139,10 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Takes units out of the target list and refreshes it once, the mirror of AddToTargetList.
-        ///
-        /// CombatHUD.DeSelectUnit is what this reproduces: the HUD marker's DeselectMarker, the map icon and the
-        /// list removal. DeselectMarker already ends in DynamicMap.DeselectIcon. The direct call is here for the
-        /// unit that has no marker at all, whose icon would otherwise stay selected on the map.
+        /// Takes units out of the target list and refreshes it once, the mirror of AddToTargetList. This reproduces
+        /// CombatHUD.DeSelectUnit: the marker's DeselectMarker, the map icon and the list removal. DeselectMarker
+        /// already ends in DynamicMap.DeselectIcon, so the direct call is here for a unit with no marker at all,
+        /// whose icon would otherwise stay selected on the map.
         /// </summary>
         internal static void RemoveFromTargetList(Aircraft aircraft, List<Unit> units, bool playSound = true)
         {
@@ -222,18 +193,12 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Takes one unit out of the selection by whichever system holds it, and says whether it was in one.
-        ///
-        /// The weapon target list and the map's own selection are separate states, and while flying they can hold
-        /// different things. A wreck never reaches the weapon list, because that needs a HUD marker. A selection
-        /// made in commander view survives the move into a cockpit. Both halves are therefore taken here, instead
-        /// of routing the whole thing to one of them. Vanilla routes by mode instead, which is why its flying
-        /// deselect branch can leave a selected icon behind. It only ever reaches the weapon list, and
-        /// CombatHUD.DeSelectUnit returns immediately when that list is empty.
-        ///
-        /// A unit in the target list leaves it, which drops its HUD marker, its map icon and its entry, and the list
-        /// is sent once. A unit that is only selected on the map is released silently, which is what vanilla's
-        /// DynamicMap.DeselectIcon does and what a commander sees.
+        /// Takes one unit out of the selection by whichever system holds it, and says whether it was in one. The
+        /// weapon target list and the map's own selection are separate states, and while flying they can hold
+        /// different things: a wreck never reaches the weapon list, because that needs a HUD marker, and a selection
+        /// made in commander view survives the move into a cockpit. Vanilla routes by mode instead, so its flying
+        /// deselect branch can leave a selected icon behind - it only reaches the weapon list, and DeSelectUnit
+        /// returns immediately when that list is empty.
         /// </summary>
         internal static bool Remove(DynamicMap map, Unit unit)
         {
@@ -255,7 +220,6 @@ namespace MapMouseSelect
                 removed = true;
             }
 
-            // The map side, which the list side above has already cleared when it owned the unit.
             if (IsSelected(map, unit))
             {
                 map.DeselectIcon(unit);
@@ -266,13 +230,9 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Drops every target except one, in a single batched remove.
-        ///
-        /// The kept unit is never handed to the writer, which is the point of the helper. Nothing that has to stay
-        /// selected is deselected, not even for the length of a call, so its marker, its map icon and the HUD's
-        /// target list entry are untouched. The server is sent the drop alone, rather than a clear and a re-add. A
-        /// unit that is not in the list at all means every target goes, which is the click that means "this one"
-        /// when the one it means is not a target yet.
+        /// Drops every target except one in a single batched remove. The kept unit is never handed to the writer,
+        /// so its marker, map icon and HUD list entry are untouched and the server is sent the drop alone, not a
+        /// clear and a re-add. A unit that is not in the list at all means every target goes.
         /// </summary>
         internal static void RemoveAllExcept(Aircraft aircraft, Unit keep, bool playSound = true)
         {
@@ -313,15 +273,9 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Takes a unit out of the target list because it is gone, not because the player asked.
-        ///
-        /// Vanilla normally does this itself. The dying unit's HUD marker handler calls CombatHUD.RemoveMarker, which
-        /// calls WeaponManager.RemoveTargetList, which drops the entry and sends the new list. It skips that whole
-        /// step when the player's own aircraft is disabled, which is the hole this covers. Whenever vanilla did get
-        /// there first this is a no-op. RemoveFromTargetList returns as soon as nothing was actually removed, so no
-        /// second list is sent and no sound plays.
-        ///
-        /// This is one refresh, and silent. No one deselected anything, the target stopped existing.
+        /// Takes a unit out of the target list because it is gone, not because the player asked. Vanilla's own
+        /// cleanup skips that step while the player's own aircraft is disabled, which is the hole this covers, and a
+        /// no-op whenever vanilla got there first. One refresh, and silent.
         /// </summary>
         internal static void Forget(Unit unit)
         {
@@ -368,10 +322,8 @@ namespace MapMouseSelect
             return count;
         }
 
-        /// <summary>
-        /// Drops the targets the box left out, in one batched remove. The units inside the box are never passed
-        /// here, so nothing that has to stay selected is deselected even for a frame.
-        /// </summary>
+        /// <summary>Drops the targets the box left out, in one batched remove. The units inside the box are never
+        /// passed here, so nothing that has to stay selected is deselected even for a frame.</summary>
         private static void RemoveTargetsOutsideBox(
             Aircraft aircraft, List<Unit> targets, List<Unit> units, bool playSound)
         {
@@ -420,15 +372,11 @@ namespace MapMouseSelect
                 return;
             }
 
-            // A replace box means the boxed units, so the targets it keeps are the boxed ones and they stay where
-            // they are. Clearing the list and adding them back would deselect them on the way. Their markers and map
-            // icons would blink out and back, and the server would be sent an empty list in between. Only the
-            // targets the box leaves out are dropped, and only once what is being added is known, since that decides
-            // whether the gesture ends on a select or on a drop.
+            // A replace box keeps the boxed targets where they are. Clearing the list and adding them back would
+            // deselect them on the way, blinking their markers and icons out and sending the server an empty list.
             var limit = Mathf.Clamp(Plugin.MaxTargets.Value, 1, Unit.MAX_STATION_TARGETS);
 
-            // Only the units that will be added are new, whenever the box keeps some of what it covers. The
-            // rest of the list is either already there or on its way out, so it does not count against the cap.
+            // Only units that will be added are new, so the rest of the list does not count against the cap.
             var baseCount = replace ? CountInBox(targets, units) : targets.Count;
 
             Pending.Clear();
@@ -441,9 +389,7 @@ namespace MapMouseSelect
             {
                 var unit = units[i];
 
-                // Vanilla map clicks only add a unit that has a HUD marker to select on. Nothing here looks at
-                // the unit's faction. The map's own filters are the player's tool for that, and the marquee is
-                // deliberately dumb about it.
+                // Vanilla map clicks only add a unit with a HUD marker. Faction is the map filters' business.
                 if (!hud.MarkerExists(unit))
                 {
                     noMarker++;
@@ -469,9 +415,8 @@ namespace MapMouseSelect
 
             if (replace)
             {
-                // Silent when something is coming in. The gesture then ends on a selection, and it should end on
-                // the select sound rather than on both. When the box only takes targets away, the drop is the
-                // gesture and keeps its own sound.
+                // Silent when something is coming in, so the gesture ends on the select sound alone. When the box
+                // only takes targets away, the drop is the gesture and keeps its own sound.
                 RemoveTargetsOutsideBox(aircraft, targets, units, added == 0);
             }
 
@@ -502,9 +447,7 @@ namespace MapMouseSelect
             {
                 var unit = units[i];
 
-                // DynamicMap.SelectIcon logs an error for a unit that is already selected, so filter. It also
-                // skips a unit the Target List filters exclude, silently and before it does anything. That is the
-                // same gate vanilla's own clicks run into.
+                // SelectIcon logs an error for an already selected unit, and skips one the Target List filters exclude.
                 if (IsSelected(map, unit))
                 {
                     alreadySelected++;
@@ -515,14 +458,11 @@ namespace MapMouseSelect
                 added++;
             }
 
-            // No sound here. Vanilla's commander path is DynamicMap.SelectIcon, which is silent. The sound
-            // belongs to the weapon target selection, which is the flying mode.
             if (Plugin.FollowFirstUnit.Value && added > 0)
             {
                 var camera = SceneSingleton<CameraStateManager>.i;
                 if (camera != null)
                 {
-                    // Follow exactly one. Following every boxed unit would just leave the last one.
                     camera.SetFollowingUnit(units[0]);
                 }
             }

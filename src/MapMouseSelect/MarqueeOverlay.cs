@@ -3,13 +3,8 @@ using UnityEngine.UI;
 
 namespace MapMouseSelect
 {
-    /// <summary>
-    /// Draws the drag box on its own screen-space overlay canvas.
-    ///
-    /// It is independent of the game's map UI hierarchy on purpose. For a ScreenSpaceOverlay canvas the scale
-    /// factor defaults to 1 and the canvas rect is the screen. Screen pixels therefore map 1:1 to canvas units,
-    /// and the box math needs no scaling or pivot guesswork.
-    /// </summary>
+    /// <summary>Draws the drag box on its own screen-space overlay canvas, where the scale factor is 1 and the rect
+    /// is the screen, so screen pixels map 1:1 to canvas units.</summary>
     internal sealed class MarqueeOverlay
     {
         /// <summary>Width of the frame, in screen pixels.</summary>
@@ -40,8 +35,8 @@ namespace MapMouseSelect
                 ? Plugin.OverlaySortingOrder.Value
                 : Plugin.DefaultOverlaySortingOrder;
 
-            // No CanvasScaler: ConstantPixelSize at scale factor 1 is what an overlay canvas already is.
-            // No GraphicRaycaster either, on purpose: the overlay must never consume pointer input.
+            // No CanvasScaler, because an overlay canvas is already ConstantPixelSize at scale 1, and no
+            // GraphicRaycaster, so the overlay never consumes pointer input.
 
             CreateEdge(root.transform, "Top", Top);
             CreateEdge(root.transform, "Bottom", Bottom);
@@ -63,15 +58,12 @@ namespace MapMouseSelect
             go.transform.SetParent(parent, false);
 
             var rect = go.AddComponent<RectTransform>();
-            // Anchor to the canvas bottom-left so anchoredPosition is directly convertible
-            // from screen pixels, matching Input.mousePosition.
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.zero;
             rect.pivot = Vector2.zero;
 
             image = go.AddComponent<Image>();
-            // No sprite: an Image with a null sprite draws a plain quad through Graphic.OnPopulateMesh,
-            // which is all a bar of the frame needs.
+            // A null sprite draws a plain quad through Graphic.OnPopulateMesh, which is all a frame bar needs.
             image.raycastTarget = false;
 
             return rect;

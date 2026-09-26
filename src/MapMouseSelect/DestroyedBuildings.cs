@@ -4,37 +4,22 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Keeps destroyed buildings on the map instead of letting them vanish.
+    /// Keeps destroyed buildings on the map as darkened wrecks.
     ///
-    /// A building is a Unit, and it stays one after it is destroyed. Building.UnitDisabled spawns the wreckage
-    /// prefab and leaves the unit in place, disabled and repairable. UnitMapIcon.UnitMapIcon_OnUnitDisabled
-    /// removes it from the map: it detaches the icon and destroys its object. Blocking that for a disabled
-    /// Building is all it takes for the wreck to keep its icon, its position and its scaling. A wreck the game
-    /// never gave an icon to gets one from DynamicMap.AddIcon instead.
-    ///
-    /// The icon is then darkened, so a wreck reads as a wreck, not as a live building. Nothing else about it
-    /// changes. It stays hoverable for its tooltip. Whether it can be selected at all is the Target List pane's
-    /// business, through the WRECK filter this mod adds, which is off by default. That filter is the same gate
-    /// vanilla's own clicks, the Select action and the marquee pass through. An unlit WRECK button therefore makes
-    /// wrecks unselectable, without any click handling of this mod's own.
-    ///
-    /// The icon's life is the unit's life. It is kept while the disabled building exists, which is where vanilla
-    /// would have dropped it, and removed when the unit itself is destroyed. Vanilla never has to handle the
-    /// second case, because its icon is long gone by then. UnitOnDestroyWreckPatch is that second half.
+    /// A building stays a live, repairable Unit after it dies, and UnitMapIcon_OnUnitDisabled removes its icon,
+    /// so blocking that keeps the icon, its position and its scaling. A wreck the game never gave an icon gets
+    /// one from DynamicMap.AddIcon. Whether a wreck can be selected is the Target List WRECK filter's business.
+    /// UnitOnDestroyWreckPatch removes the icon when the unit itself goes.
     /// </summary>
     internal static class DestroyedBuildings
     {
-        /// <summary>Whether this unit is a building that is out of action, which the mod draws as a wreck.</summary>
+        /// <summary>Whether this unit is a disabled building, which the mod draws as a wreck.</summary>
         internal static bool IsWreck(Unit unit)
         {
             return unit != null && unit is Building && unit.disabled;
         }
 
-        /// <summary>
-        /// The wreck colour: the faction colour the icon would have had, darkened towards black. Multiplication
-        /// keeps whatever the game picked (neutral grey, friendly blue, hostile red) and leaves the icon's alpha
-        /// alone. The Target List filter dimming also does this.
-        /// </summary>
+        /// <summary>Darkens the icon towards black by multiplying its faction colour, leaving alpha alone.</summary>
         internal static void ApplyTint(MapIcon icon)
         {
             if (!(icon is UnitMapIcon unitIcon) || unitIcon.iconImage == null || !IsWreck(unitIcon.unit))
@@ -55,13 +40,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Makes sure a wrecked building the game has decided to put on the map actually gets there.
-        ///
-        /// SpawnQueuedIcons refuses a disabled unit. A building that was already a wreck when the game first
-        /// mapped it therefore ends up with no icon at all. It can be a wreck at that moment because it died
-        /// before its first icon, or because this client generated its map only afterwards. Every path that
-        /// decides a unit belongs on the map asks for one through DynamicMap.AddIcon. That is where the refusal is
-        /// undone, and only for a wreck this mod is drawing.
+        /// Gives a wreck the icon the game refused it. SpawnQueuedIcons rejects a disabled unit, so a building that
+        /// was already a wreck when the map first saw it ends up with no icon at all.
         /// </summary>
         internal static void EnsureIcon(DynamicMap map, PersistentID id)
         {
@@ -75,8 +55,8 @@ namespace MapMouseSelect
                 return;
             }
 
-            // mapIconSize is the game's own way of saying a unit is not worth an icon, and a wreck does not change
-            // that: scenery stays scenery.
+            // mapIconSize is the game's own mark for scenery that is not worth an icon, and a wreck does not change
+            // that.
             if (unit.definition == null || unit.definition.mapIconSize <= 0f)
             {
                 return;
@@ -93,10 +73,7 @@ namespace MapMouseSelect
             }
         }
 
-        /// <summary>
-        /// Rebuilds one unit's map icon colour, wreck or not, so that both directions land: a building that is
-        /// destroyed darkens when the game disables it, and one that is repaired comes back.
-        /// </summary>
+        /// <summary>Rebuilds one unit's icon colour, so a wreck darkens and a repair comes back.</summary>
         internal static void Refresh(Unit unit)
         {
             if (unit == null || SceneSingleton<DynamicMap>.i == null)
@@ -112,12 +89,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Stops the map icon of a destroyed building from being taken off the map.
-    ///
-    /// Vanilla's handler is the whole removal: it detaches the icon from DynamicMap and destroys the object.
-    /// Skipping it for a disabled Building leaves the icon exactly where it was, which is what makes the wreck
-    /// visible. The handler's own icon removal still runs for everything else, and ClearMap at the end of a
-    /// mission still takes every icon with it.
+    /// Stops the map icon of a destroyed building from being taken off the map. Vanilla's handler is the whole
+    /// removal, so skipping it for a disabled Building leaves the icon in place.
     /// </summary>
     [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_OnUnitDisabled")]
     internal static class UnitMapIconKeepWreckPatch
@@ -132,11 +105,8 @@ namespace MapMouseSelect
 
             DestroyedBuildings.ApplyTint(__instance);
 
-            // Vanilla's handler is also the deselect: it takes the icon out of the map's selection and destroys its
-            // target marker. Keeping the icon must not keep that. A building that dies while selected would
-            // otherwise stay marked as a target, with nothing able to clear it. Every deselect path starts from an
-            // icon whose unit is still there. The deselect itself rebuilds the colour, which lands on the same tint
-            // through the postfix on MapIcon.UpdateColor.
+            // Vanilla's handler is also the deselect. A building that dies while selected would stay marked as a
+            // target with nothing able to clear it, so deselect explicitly.
             var map = SceneSingleton<DynamicMap>.i;
             if (map != null)
             {
@@ -149,8 +119,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Recolours a wreck after every colour rebuild, the only thing that can undo the darkening. Selection,
-    /// faction changes, theme changes and the Target List filters all come through here.
+    /// Recolours a wreck after every colour rebuild. Selection, faction changes, theme changes and the Target List
+    /// filters all come through here.
     /// </summary>
     [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_UpdateColor")]
     internal static class UnitMapIconWreckTintPatch
@@ -166,9 +136,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Follows a building in and out of the wrecked state. The icon removal patch above handles destruction.
-    /// A repair has no such event: the unit simply stops being disabled, and the icon would keep the wreck
-    /// colour until something else rebuilt it.
+    /// Follows a building in and out of the wrecked state. A repair has no event of its own beyond the disabled
+    /// flag clearing, so the icon would otherwise keep the wreck colour.
     /// </summary>
     [HarmonyPatch(typeof(Building), "UnitDisabled")]
     internal static class BuildingUnitDisabledPatch
@@ -186,20 +155,10 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Removes a unit's map icon when the unit itself is destroyed.
-    ///
-    /// Vanilla removes the icon when the unit is disabled. For an aircraft or a ship that is the same moment as
-    /// the unit being gone. A building is the one case where the wreck outlives that moment, and blocking the
-    /// removal is the whole feature. The icon must therefore be taken away when the object really goes. Vanilla
-    /// does not cover it and cannot. Unit.OnDestroy raises the disable event only for a unit that is not disabled.
-    /// A wreck's icon is therefore left in mapIcons, with a destroyed unit behind it. That icon draws a colour
-    /// picked for a unit that no longer exists. It is out of reach of every deselect path, because they all start
-    /// from the unit, and it hands a destroyed unit to the tooltip.
-    ///
-    /// Every unit passes through Unit.OnDestroy: buildings directly, and aircraft, ships and vehicles through
-    /// their own override that calls base. One postfix here therefore covers all of them. The icon is matched by
-    /// reference, not through the map's lookup. The lookup is keyed by the unit, and this runs while that unit is
-    /// being destroyed.
+    /// Removes a unit's map icon when the unit itself is destroyed, which vanilla does not cover. Unit.OnDestroy
+    /// raises the disable event only for a unit that is not already disabled, so a wreck's icon is left in
+    /// mapIcons behind a destroyed unit, out of reach of every deselect path, which all start from the unit.
+    /// Aircraft and ships reach this through their own base call.
     /// </summary>
     [HarmonyPatch(typeof(Unit), "OnDestroy")]
     internal static class UnitOnDestroyWreckPatch
@@ -233,11 +192,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Undoes the queue's refusal of a disabled unit, for wrecks only.
-    ///
-    /// AddIcon is the one door into the map's icons: UnitRegistry, FactionHQ's tracking updates, map generation
-    /// and GetOrAddIcon all call it. The icon a wreck should have is therefore created here, no matter which of
-    /// them decided the unit belongs on the map. The colour patch above tints the icon like any other.
+    /// Undoes the queue's refusal of a disabled unit, for wrecks only. AddIcon is the one door into the map's
+    /// icons: UnitRegistry, FactionHQ's tracking updates, map generation and GetOrAddIcon all call it.
     /// </summary>
     [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.AddIcon), new[] { typeof(PersistentID) })]
     internal static class DynamicMapAddIconWreckPatch
