@@ -96,8 +96,8 @@ Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmou
 | Behavior | `MapStickGain` | `8` | Scroll speed the stick gains per pixel of push, in screen pixels per second, with no ceiling |
 | Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
 | Visual | `PanCursor` | `true` | Show Windows' move cursor while the pan button is held |
-| Visual | `FrameSkipUnfocused` | `false` | Draw fewer frames while the game is not focused, leaving the GPU alone. The game loop keeps its own rate |
-| Visual | `FrameSkipInterval` | `4` | Draw one frame in this many while the game is not focused |
+| Visual | `FrameLimitUnfocused` | `true` | Cap the frame rate while the game is not focused. The world keeps real time at 10 and above |
+| Visual | `FrameLimitUnfocusedFps` | `10` | Frame rate to cap to while unfocused, 1 to 240. Measured: below 10 the world slows, and the frame rate stops falling near 11 whatever is asked |
 | Visual | `BoxOutlineColor` | `3CB4FFCC` | Outline color for a replacing selection |
 | Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Outline color for an additive selection (Shift held) |
 | Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Outline color for a deselecting marquee (Ctrl held) |

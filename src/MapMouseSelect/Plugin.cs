@@ -39,10 +39,10 @@ namespace MapMouseSelect
         /// <summary>Show Windows' move cursor while the pan button is held, instead of the game's arrow.</summary>
         internal static ConfigEntry<bool> PanCursor { get; private set; }
 
-        /// <summary>Whether the mod draws fewer frames while the game is not focused, and how few.</summary>
-        internal static ConfigEntry<bool> FrameSkipUnfocused { get; private set; }
+        /// <summary>Whether the mod caps the frame rate while the game is not focused, and at what rate.</summary>
+        internal static ConfigEntry<bool> FrameLimitUnfocused { get; private set; }
 
-        internal static ConfigEntry<int> FrameSkipInterval { get; private set; }
+        internal static ConfigEntry<int> FrameLimitUnfocusedFps { get; private set; }
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
 
@@ -128,14 +128,16 @@ namespace MapMouseSelect
                 "Show Windows' move cursor while the pan button is held over the map, since the game never "
                 + "changes the cursor itself.");
 
-            FrameSkipUnfocused = Config.Bind("Visual", "FrameSkipUnfocused", false,
-                "Draw fewer frames while the game is not focused, to leave the GPU alone. The game keeps running at its "
-                + "own rate, since this skips rendering rather than the game loop.");
+            FrameLimitUnfocused = Config.Bind("Visual", "FrameLimitUnfocused", true,
+                "Cap the frame rate while the game is not focused, to leave the machine alone. The world keeps real time "
+                + "at 10 and above. Below that it slows without the frame rate falling any further.");
 
-            FrameSkipInterval = Config.Bind("Visual", "FrameSkipInterval", 4,
+            FrameLimitUnfocusedFps = Config.Bind("Visual", "FrameLimitUnfocusedFps", 10,
                 new ConfigDescription(
-                    "Draw one frame in this many while the game is not focused. Used while FrameSkipUnfocused is on.",
-                    new AcceptableValueRange<int>(2, 8)));
+                    "Frame rate to cap to while the game is not focused. Used while FrameLimitUnfocused is on. Measured: "
+                    + "the loop bottoms out near 11 frames a second whatever is asked for below that, and the world keeps "
+                    + "the rate divided by ten, so 5 leaves it running at half speed.",
+                    new AcceptableValueRange<int>(1, 240)));
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
 

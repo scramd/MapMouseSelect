@@ -38,7 +38,7 @@ namespace MapMouseSelect
             ModifierGuard.Tick();
             CameraJump.Tick();
             PanCursor.Tick();
-            FrameSkip.Tick();
+            FrameLimit.Tick();
 
             if (!_survivalReported && Time.timeSinceLevelLoad > 60f)
             {
