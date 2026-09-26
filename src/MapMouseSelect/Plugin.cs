@@ -38,6 +38,11 @@ namespace MapMouseSelect
 
         /// <summary>Show Windows' move cursor while the pan button is held, instead of the game's arrow.</summary>
         internal static ConfigEntry<bool> PanCursor { get; private set; }
+
+        /// <summary>Whether the mod draws fewer frames while the game is not focused, and how few.</summary>
+        internal static ConfigEntry<bool> FrameSkipUnfocused { get; private set; }
+
+        internal static ConfigEntry<int> FrameSkipInterval { get; private set; }
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
 
@@ -122,6 +127,15 @@ namespace MapMouseSelect
             PanCursor = Config.Bind("Visual", "PanCursor", true,
                 "Show Windows' move cursor while the pan button is held over the map, since the game never "
                 + "changes the cursor itself.");
+
+            FrameSkipUnfocused = Config.Bind("Visual", "FrameSkipUnfocused", false,
+                "Draw fewer frames while the game is not focused, to leave the GPU alone. The game keeps running at its "
+                + "own rate, since this skips rendering rather than the game loop.");
+
+            FrameSkipInterval = Config.Bind("Visual", "FrameSkipInterval", 4,
+                new ConfigDescription(
+                    "Draw one frame in this many while the game is not focused. Used while FrameSkipUnfocused is on.",
+                    new AcceptableValueRange<int>(2, 8)));
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
 
