@@ -3,29 +3,29 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using NuclearOption.MissionEditorScripts;
 using Rewired;
 using UnityEngine;
 
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Three vanilla paths that assume every unit they are handed has a map icon, and throw when it does not.
+    /// Three vanilla paths assume that every unit they receive has a map icon. They throw when it does not.
     ///
     /// DynamicMap.GetOrAddIcon queues an icon for a unit that has none and then returns iconLookup[unit]. Nothing
-    /// creates an icon for a unit that is disabled, or for one whose definition asks for none, so the lookup
+    /// creates an icon for a unit that is disabled, or for a unit whose definition asks for none, so the lookup
     /// throws KeyNotFoundException. Its only caller, FlagIncomingMissile, dereferences the result on the next
-    /// line, which turns the incoming missile HUD warning into an exception instead of a warning about a unit
-    /// that no longer needs one. CombatHUD.HighlightMarker has the same shape against markerLookup, reached from
-    /// a radar warning.
+    /// line. The exception replaces a warning about a unit that no longer needs one. CombatHUD.HighlightMarker
+    /// does the same with markerLookup, reached from a radar warning.
     ///
-    /// All three are patched to the rule the icon spawner already uses: a live unit whose definition asks for an
-    /// icon can have one, and anything else has nothing to draw.
+    /// This mod patches all three to the rule the icon spawner already uses: a live unit whose definition asks
+    /// for an icon can have one, and anything else has nothing to draw.
     /// </summary>
     internal static class VanillaFixes
     {
         /// <summary>
         /// The wheel value a camera state should see: none at all while the cursor is up. Two of the four camera states
-        /// ask this themselves, and this is that same question for the two that do not.
+        /// ask this themselves. This is the same question for the two that do not.
         /// </summary>
         internal static float WheelWhileCursorUp(float value)
         {
@@ -36,15 +36,15 @@ namespace MapMouseSelect
         /// The pan offset one pixel of cursor movement is worth, replacing the frame time vanilla scales the drag by.
         ///
         /// Vanilla adds `axis * 150 * min(frame time, 0.03) / zoom` to the map's pan offset every frame. Frame time
-        /// belongs in a rate, which is what the keyboard pan axes above it are, not in a mouse delta: with it, the same
-        /// drag of the same length moves the map further the slower the game runs, and further than the cursor at every
-        /// frame rate. The 150 outside this value is replaced with 1 by the patch, so what this returns is the pan
-        /// itself, and switching `Behavior.MapPanFix` off multiplies the game's own 150 and frame time back in here.
+        /// belongs in a rate. The keyboard pan axes above it are a rate, and a mouse delta is not. With frame time, the
+        /// same drag of the same length moves the map further the slower the game runs. The map also moves further than
+        /// the cursor at every frame rate. The patch replaces the 150 outside this value with 1, so this returns the pan
+        /// itself. Switching `Behavior.MapPanFix` off multiplies the game's own 150 and frame time back in here.
         ///
         /// What is left to work out is the scale between a pixel of cursor movement and the offset the map is drawn
-        /// from. The image is placed at `offset * lossyScale` and the zoom is divided out again by the game after this
-        /// returns, so a pixel of movement is `zoom / lossyScale` of offset. `Behavior.MapPanSpeed` scales that, and 1
-        /// is one for one.
+        /// from. The image is placed at `offset * lossyScale`. The game divides the zoom out again after this returns.
+        /// So a pixel of movement is `zoom / lossyScale` of offset. `Behavior.MapPanSpeed` scales that, and 1 is one
+        /// for one.
         /// </summary>
         internal static float PanStep(float frameTerm)
         {
@@ -72,15 +72,16 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// The map drag's mouse axis, replaced with the movement the cursor made on this frame.
+        /// The map drag's mouse axis, replaced with what the drag asked the map to do this frame. That is the cursor's
+        /// own movement, or the push of the stick while `Behavior.MapStick` is on.
         ///
-        /// Rewired's axis value is not the pixels the cursor moved: it is in its own units, it lands on Rewired's update
-        /// rather than on the rendered frame, and the game treats a displacement as a rate. Handing the pan the cursor's
-        /// own movement leaves nothing in between, and adding it once per rendered frame is what stops the map arriving
-        /// in bursts.
+        /// Rewired's axis value is not the pixels the cursor moved. It is in its own units, and it lands on Rewired's
+        /// update rather than on the rendered frame. The game treats a displacement as a rate. Handing the pan the
+        /// cursor's own movement leaves nothing in between. Adding that movement once per rendered frame stops the map
+        /// from arriving in bursts.
         ///
-        /// The signs are the ones the game's own arithmetic expects, read off what it does with each axis: `Tilt View`
-        /// arrives already inverted, which is why only `Pan View` is negated in the game's line.
+        /// The signs are the ones the game's own arithmetic expects. They are read from what the game does with each
+        /// axis: `Tilt View` arrives already inverted. That is why the game's line negates only `Pan View`.
         /// </summary>
         internal static float PanAxis(float value, string axis)
         {
@@ -89,9 +90,54 @@ namespace MapMouseSelect
                 return value;
             }
 
-            var step = CursorStep();
+            var horizontal = axis != "Tilt View";
+            var step = Plugin.MapStick.Value ? StickStep() : CursorStep();
 
-            return axis == "Tilt View" ? -step.y : step.x;
+            return horizontal ? step.x : -step.y;
+        }
+
+        /// <summary>
+        /// What the stick asks the map to do this frame. It is the cursor's push away from where the drag started,
+        /// taken as a speed and scaled by the length of the frame. As a result, the map goes on moving while the mouse
+        /// is still.
+        ///
+        /// The push is measured from the press point, not from the map. That measurement is what makes it a stick: the
+        /// further the cursor is held from where the drag began, the faster the map travels. `MapStickGain` is what
+        /// each pixel of push buys, and there is no ceiling on it. Twice the push is twice the speed, and the edge of
+        /// the screen is the only limit.
+        ///
+        /// Nothing happens until the push passes the game's own drag threshold. That threshold is `UnitSelection`'s,
+        /// and it is the same one the mod's marquee starts on. The speed is counted from the push that passed the
+        /// threshold, not from the press point. So it starts at nothing instead of stepping.
+        ///
+        /// The map travels the other way from the push, because the stick scrolls the view. Push up, and the map's own
+        /// content goes down, which is north.
+        /// </summary>
+        private static Vector2 StickStep()
+        {
+            CursorStep();
+
+            var push = new Vector2(_cursor.x, _cursor.y) - _pressPoint;
+            var distance = push.magnitude;
+
+            _stickPush = distance;
+            _stickGain = Plugin.MapStickGain.Value;
+
+            if (!UnitSelection.DragThresholdPassed(_pressPoint))
+            {
+                _stickBase = -1f;
+                _stickSpeed = 0f;
+                return Vector2.zero;
+            }
+
+            if (_stickBase < 0f)
+            {
+                _stickBase = distance;
+            }
+
+            _stickSpeed = (distance - _stickBase) * Plugin.MapStickGain.Value;
+
+            return -push / distance * (_stickSpeed * Time.unscaledDeltaTime);
         }
 
         /// <summary>Throttle for the pan report, the frame it was last measured on, and the totals it reports.</summary>
@@ -100,17 +146,23 @@ namespace MapMouseSelect
         private static Vector2 _cursorStep;
         private static Vector3 _cursor;
         private static Vector3 _mapImage;
+        private static Vector2 _pressPoint;
+        private static float _stickBase = -1f;
+        private static float _stickPush;
+        private static float _stickGain;
+        private static float _stickSpeed;
         private static float _cursorX;
         private static float _cursorY;
         private static float _mapX;
         private static float _mapY;
 
         /// <summary>
-        /// The cursor movement since the last frame of the drag that is running, measured once per frame however often
-        /// the drag asks for it and feeding the report at the bottom of this.
+        /// The cursor movement since the last frame of the current drag. This method measures it once per frame,
+        /// however often the drag asks for it, and feeds the report below.
         ///
-        /// The movement of a frame that does not continue the drag is nothing, which is what keeps a press from being
-        /// charged with wherever the cursor has been since the last one.
+        /// A frame that does not continue the drag has no movement. So a press is not charged with wherever the cursor
+        /// has been since the last one. Such a frame is where the drag started. It is also where the stick's press
+        /// point comes from.
         /// </summary>
         private static Vector2 CursorStep()
         {
@@ -125,8 +177,8 @@ namespace MapMouseSelect
             var position = map != null && map.mapImage != null ? map.mapImage.transform.position : _mapImage;
 
             // Only a frame that follows the one the drag last used belongs to the same drag. The first frame of a new
-            // drag, and the first after the map was closed or the camera jumped, are not movement this drag asked for,
-            // and charging them with everything the cursor did since is what made the map jump on every press.
+            // drag, and the first after the map was closed or the camera jumped, are not movement this drag asked for.
+            // Charging them with everything the cursor did since is what made the map jump on every press.
             var continuing = _panFrame >= 0 && Time.frameCount == _panFrame + 1;
 
             _cursorStep = continuing ? new Vector2(cursor.x - _cursor.x, cursor.y - _cursor.y) : Vector2.zero;
@@ -142,6 +194,10 @@ namespace MapMouseSelect
 
                 Report();
             }
+            else
+            {
+                _pressPoint = cursor;
+            }
 
             _mapImage = position;
             return _cursorStep;
@@ -150,10 +206,10 @@ namespace MapMouseSelect
         /// <summary>
         /// Reports the totals the drag has run up over the last second.
         ///
-        /// The two pairs are what the cursor moved and what the map moved over the same span, so the ratio between them
-        /// is the whole answer to whether the map keeps up. A second of frames rather than one frame is what keeps the
-        /// report readable: a single frame also carries the camera follow, a clamped edge, and whatever the frame rate
-        /// did to the length of the step. One means the map moved exactly as far as the cursor.
+        /// The two pairs are what the cursor moved and what the map moved over the same span. The ratio between them
+        /// answers whether the map keeps up. A full second of frames keeps the report readable, where one frame does
+        /// not. A single frame also carries the camera follow, a clamped edge, and whatever the frame rate did to the
+        /// length of the step. A ratio of one means the map moved exactly as far as the cursor.
         /// </summary>
         private static void Report()
         {
@@ -164,10 +220,20 @@ namespace MapMouseSelect
 
             _nextPanReport = Time.timeSinceLevelLoad + 1f;
 
-            Plugin.Verbose(
-                "Map pan over the last second: cursor " + _cursorX.ToString("0.#") + ", " + _cursorY.ToString("0.#")
-                + "px, map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#") + "px, ratio "
-                + Ratio(_mapX, _cursorX) + ", " + Ratio(_mapY, _cursorY) + ".");
+            if (Plugin.MapStick.Value)
+            {
+                Plugin.Verbose(
+                    "Map pan over the last second: map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#")
+                    + "px, stick push " + _stickPush.ToString("0.#") + "px, speed " + _stickSpeed.ToString("0")
+                    + "px/s at " + _stickGain.ToString("0.##") + "px/s per px.");
+            }
+            else
+            {
+                Plugin.Verbose(
+                    "Map pan over the last second: cursor " + _cursorX.ToString("0.#") + ", " + _cursorY.ToString("0.#")
+                    + "px, map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#") + "px, ratio "
+                    + Ratio(_mapX, _cursorX) + ", " + Ratio(_mapY, _cursorY) + ".");
+            }
 
             _cursorX = 0f;
             _cursorY = 0f;
@@ -175,7 +241,7 @@ namespace MapMouseSelect
             _mapY = 0f;
         }
 
-        /// <summary>Map movement per pixel of cursor movement, or a dash when the second barely moved.</summary>
+        /// <summary>Map movement per pixel of cursor movement, or a dash when the cursor barely moved.</summary>
         private static string Ratio(float map, float cursor)
         {
             return Mathf.Abs(cursor) < 20f ? "-" : (map / cursor).ToString("0.###");
@@ -192,22 +258,26 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Fires the event DynamicMap.DeselectAllIcons forgets, so the Target List panel drops its rows with the selection.
+    /// Fires the event DynamicMap.DeselectAllIcons forgets, so the Target List panel drops its rows with the
+    /// selection.
     ///
-    /// That method is a hand-rolled clear: it deselects every icon by hand, empties selectedIcons, and fires neither
-    /// onUnitDeselected nor onAllDeselected. TargetListSelector builds its rows from those two events and nothing else,
-    /// so every row survives a clear that way, and what the panel is left showing is a target that nothing holds: no
-    /// lit icon on the map, no entry in the weapon list, and no way to tell it apart from a real one except that
-    /// clicking it does nothing. Unselect all is the gesture a player reaches for, and that is CombatHUD.DeselectAll
-    /// going through this very method, so the clear leaves the row where it was, and the row outlives the selection by
-    /// as long as the player puts up with it.
+    /// That method is a manual clear. It deselects every icon, empties selectedIcons, and fires neither
+    /// onUnitDeselected nor onAllDeselected. TargetListSelector builds its rows from those two events and nothing
+    /// else. So every row survives a clear done this way.
     ///
-    /// Vanilla reaches this by playing normally: Aircraft.OnStartClient, which is every respawn,
+    /// The panel is then left showing a target that nothing holds. There is no lit icon on the map and no entry in
+    /// the weapon list. Nothing tells the row apart from a real target, except that clicking it does nothing.
+    ///
+    /// Unselect all is the gesture a player reaches for. That gesture is CombatHUD.DeselectAll, which goes through
+    /// this same method. So the clear leaves the row where it was. The row outlives the selection for as long as the
+    /// player accepts it.
+    ///
+    /// Vanilla reaches this in normal play: Aircraft.OnStartClient, which is every respawn,
     /// AircraftSelectionMenu.OnEnable, which is the spawn screen, and AirbaseMapIcon.ClickIcon. The row is left behind
     /// for any unit, a wreck or not.
     ///
     /// Calling the event rather than the panel keeps every other subscriber of a clear in the loop, which is what the
-    /// game meant to do. The count in the log comes from a prefix because the body has already emptied the list by the
+    /// game meant to do. The count in the log comes from a prefix, because the body has already emptied the list by the
     /// time a postfix runs.
     /// </summary>
     [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.DeselectAllIcons))]
@@ -248,18 +318,20 @@ namespace MapMouseSelect
     /// <summary>
     /// Keeps the wheel out of the camera states that do not ask whether they should have it.
     ///
-    /// "Zoom View" is the wheel, and two things want it: DynamicMap.MapControls zooms the map with it, which is what it
-    /// is for while the map is up, and the camera states move their own view with it. CameraChaseState and
-    /// CameraOrbitState do their wheel work inside `if (!Cursor.visible)`, which is the question that matters - the cursor
-    /// is up for every menu, dialog and the map - while CameraCockpitState asks only whether the map is maximized, and
-    /// CameraTVState, the flyby camera, asks nothing at all. A scroll inside a dialog therefore moved the field of view of
-    /// the cockpit behind it, and the same scroll in the flyby view moved its field of view with the map open. Both cases
-    /// are the same missing question, so both reads are masked while the cursor is up, which is the question the other two
-    /// states already ask.
+    /// "Zoom View" is the wheel, and two things want it. DynamicMap.MapControls zooms the map with it, which is what
+    /// it is for while the map is up. The camera states move their own view with it.
     ///
-    /// The mask is inserted after the axis read rather than replacing the call, so the stack and the evaluation order stay
-    /// as they were and the method's own logic gets a zero instead of a scroll. The cockpit's own map check stays where it
-    /// is underneath.
+    /// CameraChaseState and CameraOrbitState do their wheel work inside `if (!Cursor.visible)`. That is the question
+    /// that matters, because the cursor is up for every menu, every dialog and the map. CameraCockpitState asks only
+    /// whether the map is maximized. CameraTVState, the flyby camera, asks nothing at all.
+    ///
+    /// So a scroll inside a dialog moved the field of view of the cockpit behind it. The same scroll in the flyby view
+    /// moved its field of view with the map open. Both cases are the same missing question. So the mask covers both
+    /// reads while the cursor is up, which is the question the other two states already ask.
+    ///
+    /// The mask is inserted after the axis read, and does not replace the call. So the stack and the evaluation order
+    /// stay as they were. The method's own logic gets a zero instead of a scroll. The cockpit's own map check stays
+    /// where it is underneath.
     /// </summary>
     internal static class CameraWheelMask
     {
@@ -306,8 +378,8 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// The cockpit camera, whose own gate only asks whether the map is maximized. A menu shows the cursor and leaves the
-    /// map minimized, which is how a scroll in a dialog used to change the field of view of a flying cockpit.
+    /// The cockpit camera, whose own gate only asks whether the map is maximized. A menu shows the cursor and leaves
+    /// the map minimized. That is how a scroll in a dialog used to change the field of view of a flying cockpit.
     /// </summary>
     [HarmonyPatch(typeof(CameraCockpitState), "UpdateState")]
     internal static class CameraCockpitStateWheelMaskPatch
@@ -347,23 +419,25 @@ namespace MapMouseSelect
     /// Makes the map follow the cursor while it is being dragged, instead of outrunning it or lagging behind it.
     ///
     /// DynamicMap.MapControls pans by `axis * 150 * min(Time.unscaledDeltaTime, 0.03) / zoom`, summed every frame. The
-    /// 150 says the pan was written as if it were a rate, but the axis carries a displacement the mouse made: multiplying
-    /// by frame time makes one drag of the same length move the map further the slower the game runs, and further than
-    /// the cursor at every frame rate, which is the bug this replaces. The axis-bound path just above, which reads
-    /// `Move Map Horizontal`, is a held axis and does want frame time; this one does not. Two things follow from that.
+    /// 150 says the pan was written as if it were a rate, but the axis carries a displacement the mouse made.
+    /// Multiplying by frame time makes one drag of the same length move the map further the slower the game runs. It
+    /// also moves the map further than the cursor at every frame rate. That is the bug this replaces. The axis-bound
+    /// path just above reads `Move Map Horizontal`. That axis is held and does want frame time. The mouse axis is not
+    /// and does not. Two things follow from that.
     ///
-    /// The frame time goes, and what the pan is left with is the scale between a pixel of cursor movement and the offset
-    /// the map is drawn from. Removing the frame time alone is not enough, which an earlier attempt at this showed: the
-    /// divisor the game uses is the map scale center's scale, the zoom the map was asked for, while the pan is turned
-    /// into a position by the map image's own drawn scale, which is a different number, since SetZoomLevel keeps the
-    /// image's world scale as it moves it between parents. `VanillaFixes.PanStep` puts that right.
+    /// The frame time goes. What the pan is left with is the scale between a pixel of cursor movement and the offset
+    /// the map is drawn from. Removing the frame time alone is not enough, as an earlier attempt showed. The divisor
+    /// the game uses is the map scale center's scale, the zoom the map was asked for. The map image's own drawn scale
+    /// turns the pan into a position. That scale is a different number, because SetZoomLevel keeps the image's world
+    /// scale as it moves the image between parents. `VanillaFixes.PanStep` puts that right.
     ///
     /// The axis itself goes too, and `VanillaFixes.PanAxis` hands the pan the cursor's own movement for the frame
-    /// instead. Rewired's axis value is smaller than the movement that produced it and lands on Rewired's update rather
-    /// than on the rendered frame, so a pan built from it moves in bursts however well it is scaled: what the report in
-    /// `VanillaFixes` measured was the axis carrying 0.44 of the cursor's movement per frame, with the per-frame ratio
-    /// scattered between 0.2 and 12. Both replacements are calls inserted after the values they replace, so the
-    /// arithmetic around them and the stack are untouched, and `Behavior.MapPanFix` off hands the game's own values back.
+    /// instead. Rewired's axis value is smaller than the movement that produced it. It lands on Rewired's update, not
+    /// on the rendered frame. So a pan built from it moves in bursts, however well it is scaled. The report in
+    /// `VanillaFixes` measured the axis carrying 0.44 of the cursor's movement per frame. The per-frame ratio was
+    /// scattered between 0.2 and 12. Both replacements are calls inserted after the values they replace. So the
+    /// arithmetic around them and the stack are untouched. With `Behavior.MapPanFix` off, the game's own values come
+    /// back.
     /// </summary>
     [HarmonyPatch(typeof(DynamicMap), "MapControls")]
     internal static class MapPanProportionPatch
@@ -388,7 +462,7 @@ namespace MapMouseSelect
 
             for (var i = 0; i < list.Count; i++)
             {
-                // ldstr "Pan View"; callvirt GetAxis
+                // ldstr "Pan View", then callvirt GetAxis
                 var axisName = list[i].operand as string;
                 if (list[i].opcode == OpCodes.Ldstr
                     && (axisName == "Pan View" || axisName == "Tilt View")
@@ -511,11 +585,11 @@ namespace MapMouseSelect
     /// <summary>
     /// Skips a radar warning highlight for a unit that has no HUD marker to highlight.
     ///
-    /// CombatHUD.CreateMarker decides once, when a unit is first mapped, whether it gets a marker, and it refuses
-    /// a unit that is disabled, that is Scenery, or that turns up while the player has no aircraft. HighlightMarker
-    /// then indexes markerLookup directly, so a radar warning about one of those units throws instead of just not
-    /// drawing anything. A radar contact that was already wrecked by the time it was detected is the everyday case:
-    /// no marker is created, and the warning for it would be the crash.
+    /// CombatHUD.CreateMarker decides once, when the game first maps a unit, whether that unit gets a marker. It
+    /// refuses a unit that is disabled, a unit that is Scenery, and a unit that turns up while the player has no
+    /// aircraft. HighlightMarker then indexes markerLookup directly, so a radar warning about one of those units throws,
+    /// where no marker exists to draw. A radar contact that was already wrecked when it was detected is the everyday
+    /// case. No marker is created for it, and the warning for it would be the crash.
     /// </summary>
     [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.HighlightMarker))]
     internal static class CombatHudHighlightMarkerPatch
@@ -536,16 +610,16 @@ namespace MapMouseSelect
     /// <summary>
     /// Releases a unit that the weapon target list has nothing to say about.
     ///
-    /// CombatHUD.DeSelectUnit starts by returning when the target list is empty, and that return skips the rest of
-    /// the method, the map icon included. An empty list is exactly the case this mod walks into: a unit selected in
-    /// commander view keeps its selection into the cockpit with no list entry, and a wreck can never be a weapon
-    /// target at all, so it is never in the list whatever selected it. Every deselect path that routes through here
-    /// then does nothing, and they are the ones a player reaches: TargetListSelector.ForceDeselect, which is the
-    /// pane's own exclusion pass, and TargetListSelector_UnitItem.ToggleSelect, which is the row in that panel.
-    /// Unselect all was the only thing left that could clear the selection.
+    /// CombatHUD.DeSelectUnit returns early when the target list is empty. That return skips the rest of the method,
+    /// the map icon included. An empty list is exactly the case this mod walks into. A unit selected in commander
+    /// view keeps its selection into the cockpit, with no list entry. A wreck can never be a weapon target at all,
+    /// so it is never in the list, whatever selected it. Every deselect path that routes through here then does
+    /// nothing, and they are the ones a player reaches. The paths are TargetListSelector.ForceDeselect, the pane's
+    /// own exclusion pass, and TargetListSelector_UnitItem.ToggleSelect, the row in that panel. Unselect all was the
+    /// only thing left that could clear the selection.
     ///
-    /// Where vanilla would give up, the map half is done instead. DynamicMap.DeselectIcon is where the rest of the
-    /// method ends anyway, and it is silent, which is what a release with no list entry should be.
+    /// Where vanilla would give up, this patch does the map half instead. DynamicMap.DeselectIcon is where the rest
+    /// of the method ends anyway. It is silent, which is what a release with no list entry should be.
     /// </summary>
     [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.DeSelectUnit))]
     internal static class CombatHudDeSelectUnitPatch
@@ -577,18 +651,20 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Makes every colour rebuild go through the unit icon's own update, which is the only one that knows about the
-    /// Target List filters and about wrecks.
+    /// Makes every colour rebuild go through the unit icon's own update. That update is the only one that knows about
+    /// the Target List filters and about wrecks.
     ///
-    /// MapIcon.UpdateColor sets the colour from the theme and stops there. The filter dimming, and this mod's wreck
-    /// tint, live one level down in UnitMapIcon.UnitMapIcon_UpdateColor, so everything that calls the base method
-    /// directly draws a filtered out unit, or a wreck, as if it were still alive: MapIcon.SelectIcon and
-    /// MapIcon.DeselectIcon do, DynamicMap.UnselectAll calls DeselectIcon on every icon on the map whether it was
-    /// selected or not, and DynamicMap.UpdateUnitFaction and DynamicMap_OnFactionChanged call UpdateColor themselves.
+    /// MapIcon.UpdateColor sets the colour from the theme and stops there. The filter dimming and this mod's wreck
+    /// tint live one level down, in UnitMapIcon.UnitMapIcon_UpdateColor. So everything that calls the base method
+    /// directly draws a filtered out unit, or a wreck, as if it were still alive. MapIcon.SelectIcon and
+    /// MapIcon.DeselectIcon call the base method directly. DynamicMap.UnselectAll calls DeselectIcon on every icon
+    /// on the map, whether it was selected or not. DynamicMap.UpdateUnitFaction and DynamicMap_OnFactionChanged call
+    /// UpdateColor themselves.
     ///
-    /// The depth counter is what keeps this from compounding: UnitMapIcon_UpdateColor calls the base method itself,
-    /// so without it the postfix would run the update again inside its own call and apply the tint twice. A finalizer
-    /// rather than a postfix, so the counter cannot be left raised by an exception and silently disable the fix.
+    /// The depth counter keeps this from compounding. UnitMapIcon_UpdateColor calls the base method itself. Without
+    /// the counter, the postfix would run the update again inside its own call and apply the tint twice. The patch
+    /// uses a finalizer rather than a postfix, so an exception cannot leave the counter raised and silently disable
+    /// the fix.
     /// </summary>
     [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_UpdateColor")]
     internal static class UnitMapIconDepthPatch

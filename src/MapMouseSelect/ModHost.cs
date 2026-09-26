@@ -5,14 +5,14 @@ namespace MapMouseSelect
     /// <summary>
     /// The mod's own per-frame component.
     ///
-    /// BepInEx attaches plugins to its own manager object, and in this game that object does not survive
-    /// startup: every plugin's OnDestroy runs right after "Chainloader startup complete". The established
-    /// mods here work around it the same way, by making a GameObject of their own and marking it
-    /// DontDestroyOnLoad, which is what this does. It is created lazily and re-created if it ever goes
-    /// missing, so it cannot be lost by whatever happens during the game's boot.
+    /// BepInEx attaches plugins to its own manager object. In this game that object does not survive startup: every
+    /// plugin's OnDestroy runs right after "Chainloader startup complete". The established mods here work around it
+    /// the same way. They make a GameObject of their own and mark it DontDestroyOnLoad. This does the same. The host
+    /// is created lazily and re-created if it ever goes missing. So whatever happens during the game's boot cannot
+    /// lose it.
     ///
-    /// Work that has to preempt vanilla input stays in Harmony patches instead, because it has to run
-    /// before the game acts on the same input in the same frame.
+    /// Work that has to preempt vanilla input stays in Harmony patches. It has to run before the game acts on the
+    /// same input in the same frame.
     /// </summary>
     internal sealed class ModHost : MonoBehaviour
     {
@@ -44,9 +44,9 @@ namespace MapMouseSelect
             TargetKeys.Tick();
             ModifierGuard.Tick();
             CameraJump.Tick();
+            PanCursor.Tick();
 
-            // One line a session answering whether this object outlived the boot, which is exactly what
-            // the plugin's own object did not.
+            // One line a session that shows whether this object outlived the boot. The plugin's own object did not.
             if (!_survivalReported && Time.timeSinceLevelLoad > 60f)
             {
                 _survivalReported = true;
