@@ -53,6 +53,17 @@ namespace MapMouseSelect
         /// </summary>
         internal static ConfigEntry<string> DefaultBindings { get; private set; }
 
+        /// <summary>
+        /// Whether the map drag follows the cursor. Off leaves vanilla's frame-time-scaled pan in place.
+        /// </summary>
+        internal static ConfigEntry<bool> MapPanFix { get; private set; }
+
+        /// <summary>
+        /// How far the map moves per pixel of mouse movement while panning, when the fix is on. One is exactly under
+        /// the cursor.
+        /// </summary>
+        internal static ConfigEntry<float> MapPanSpeed { get; private set; }
+
         /// <summary>The config file, kept reachable for that one write, which happens outside Awake.</summary>
         internal static ConfigFile Settings { get; private set; }
 
@@ -143,6 +154,17 @@ namespace MapMouseSelect
             DefaultBindings = Config.Bind("Hotkeys", "DefaultBindings", string.Empty,
                 "Actions whose default key the mod has already written, added to as it does. Removing a name has its "
                 + "default written again; the record exists so a key you clear in the Controls menu stays clear.");
+
+            MapPanFix = Config.Bind("Behavior", "MapPanFix", true,
+                "Make the map follow the cursor while it is dragged, instead of outrunning it. This replaces the frame "
+                + "time vanilla scales the drag by and reads the cursor directly rather than through the game's mouse "
+                + "axes. Off leaves vanilla's pan alone, both of them.");
+
+            MapPanSpeed = Config.Bind("Behavior", "MapPanSpeed", 1f,
+                new ConfigDescription(
+                    "How far the map moves per pixel the mouse moves while dragging it, used while MapPanFix is on. "
+                    + "One keeps the map under the cursor.",
+                    new AcceptableValueRange<float>(0.1f, 5f)));
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();
@@ -235,6 +257,8 @@ namespace MapMouseSelect
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
                 + ", wheel mask call sites=" + CameraCockpitStateWheelMaskPatch.Masked
                 + "/" + CameraTVStateWheelMaskPatch.Masked
+                + ", pan factor call sites=" + MapPanProportionPatch.CallSites
+                + ", pan axis call sites=" + MapPanProportionPatch.AxisSites
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
                 + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
@@ -251,7 +275,8 @@ namespace MapMouseSelect
                 + " | destroyedUnits=" + EnableDestroyedUnits.Value
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
-                + ", enableInMissionEditor=" + EnableInMissionEditor.Value);
+                + ", enableInMissionEditor=" + EnableInMissionEditor.Value
+                + ", mapPanFix=" + MapPanFix.Value);
         }
 
         /// <summary>How many prefixes and postfixes landed on a method, or -1 when the method is not there.</summary>

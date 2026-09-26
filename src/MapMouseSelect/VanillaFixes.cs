@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using Rewired;
@@ -29,6 +30,155 @@ namespace MapMouseSelect
         internal static float WheelWhileCursorUp(float value)
         {
             return Cursor.visible ? 0f : value;
+        }
+
+        /// <summary>
+        /// The pan offset one pixel of cursor movement is worth, replacing the frame time vanilla scales the drag by.
+        ///
+        /// Vanilla adds `axis * 150 * min(frame time, 0.03) / zoom` to the map's pan offset every frame. Frame time
+        /// belongs in a rate, which is what the keyboard pan axes above it are, not in a mouse delta: with it, the same
+        /// drag of the same length moves the map further the slower the game runs, and further than the cursor at every
+        /// frame rate. The 150 outside this value is replaced with 1 by the patch, so what this returns is the pan
+        /// itself, and switching `Behavior.MapPanFix` off multiplies the game's own 150 and frame time back in here.
+        ///
+        /// What is left to work out is the scale between a pixel of cursor movement and the offset the map is drawn
+        /// from. The image is placed at `offset * lossyScale` and the zoom is divided out again by the game after this
+        /// returns, so a pixel of movement is `zoom / lossyScale` of offset. `Behavior.MapPanSpeed` scales that, and 1
+        /// is one for one.
+        /// </summary>
+        internal static float PanStep(float frameTerm)
+        {
+            var vanilla = 150f * frameTerm;
+
+            if (!Plugin.MapPanFix.Value)
+            {
+                return vanilla;
+            }
+
+            var map = SceneSingleton<DynamicMap>.i;
+            if (map == null || map.mapImage == null || map.mapScaleCenter == null)
+            {
+                return vanilla;
+            }
+
+            var zoom = map.mapScaleCenter.localScale.x;
+            var drawn = map.mapImage.transform.lossyScale.x;
+            if (zoom <= 0f || drawn <= 0f)
+            {
+                return vanilla;
+            }
+
+            return Plugin.MapPanSpeed.Value * zoom / drawn;
+        }
+
+        /// <summary>
+        /// The map drag's mouse axis, replaced with the movement the cursor made on this frame.
+        ///
+        /// Rewired's axis value is not the pixels the cursor moved: it is in its own units, it lands on Rewired's update
+        /// rather than on the rendered frame, and the game treats a displacement as a rate. Handing the pan the cursor's
+        /// own movement leaves nothing in between, and adding it once per rendered frame is what stops the map arriving
+        /// in bursts.
+        ///
+        /// The signs are the ones the game's own arithmetic expects, read off what it does with each axis: `Tilt View`
+        /// arrives already inverted, which is why only `Pan View` is negated in the game's line.
+        /// </summary>
+        internal static float PanAxis(float value, string axis)
+        {
+            if (!Plugin.MapPanFix.Value)
+            {
+                return value;
+            }
+
+            var step = CursorStep();
+
+            return axis == "Tilt View" ? -step.y : step.x;
+        }
+
+        /// <summary>Throttle for the pan report, the frame it was last measured on, and the totals it reports.</summary>
+        private static float _nextPanReport;
+        private static int _panFrame = -1;
+        private static Vector2 _cursorStep;
+        private static Vector3 _cursor;
+        private static Vector3 _mapImage;
+        private static float _cursorX;
+        private static float _cursorY;
+        private static float _mapX;
+        private static float _mapY;
+
+        /// <summary>
+        /// The cursor movement since the last frame of the drag that is running, measured once per frame however often
+        /// the drag asks for it and feeding the report at the bottom of this.
+        ///
+        /// The movement of a frame that does not continue the drag is nothing, which is what keeps a press from being
+        /// charged with wherever the cursor has been since the last one.
+        /// </summary>
+        private static Vector2 CursorStep()
+        {
+            var cursor = Input.mousePosition;
+
+            if (Time.frameCount == _panFrame)
+            {
+                return _cursorStep;
+            }
+
+            var map = SceneSingleton<DynamicMap>.i;
+            var position = map != null && map.mapImage != null ? map.mapImage.transform.position : _mapImage;
+
+            // Only a frame that follows the one the drag last used belongs to the same drag. The first frame of a new
+            // drag, and the first after the map was closed or the camera jumped, are not movement this drag asked for,
+            // and charging them with everything the cursor did since is what made the map jump on every press.
+            var continuing = _panFrame >= 0 && Time.frameCount == _panFrame + 1;
+
+            _cursorStep = continuing ? new Vector2(cursor.x - _cursor.x, cursor.y - _cursor.y) : Vector2.zero;
+            _panFrame = Time.frameCount;
+            _cursor = cursor;
+
+            if (continuing)
+            {
+                _cursorX += _cursorStep.x;
+                _cursorY += _cursorStep.y;
+                _mapX += position.x - _mapImage.x;
+                _mapY += position.y - _mapImage.y;
+
+                Report();
+            }
+
+            _mapImage = position;
+            return _cursorStep;
+        }
+
+        /// <summary>
+        /// Reports the totals the drag has run up over the last second.
+        ///
+        /// The two pairs are what the cursor moved and what the map moved over the same span, so the ratio between them
+        /// is the whole answer to whether the map keeps up. A second of frames rather than one frame is what keeps the
+        /// report readable: a single frame also carries the camera follow, a clamped edge, and whatever the frame rate
+        /// did to the length of the step. One means the map moved exactly as far as the cursor.
+        /// </summary>
+        private static void Report()
+        {
+            if (Time.timeSinceLevelLoad <= _nextPanReport)
+            {
+                return;
+            }
+
+            _nextPanReport = Time.timeSinceLevelLoad + 1f;
+
+            Plugin.Verbose(
+                "Map pan over the last second: cursor " + _cursorX.ToString("0.#") + ", " + _cursorY.ToString("0.#")
+                + "px, map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#") + "px, ratio "
+                + Ratio(_mapX, _cursorX) + ", " + Ratio(_mapY, _cursorY) + ".");
+
+            _cursorX = 0f;
+            _cursorY = 0f;
+            _mapX = 0f;
+            _mapY = 0f;
+        }
+
+        /// <summary>Map movement per pixel of cursor movement, or a dash when the second barely moved.</summary>
+        private static string Ratio(float map, float cursor)
+        {
+            return Mathf.Abs(cursor) < 20f ? "-" : (map / cursor).ToString("0.###");
         }
 
         /// <summary>Whether an icon can exist for this unit at all, which is what the queue tests.</summary>
@@ -190,6 +340,125 @@ namespace MapMouseSelect
             var result = CameraWheelMask.Apply(instructions, "CameraTVState.UpdateState", out var masked);
             Masked = masked;
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Makes the map follow the cursor while it is being dragged, instead of outrunning it or lagging behind it.
+    ///
+    /// DynamicMap.MapControls pans by `axis * 150 * min(Time.unscaledDeltaTime, 0.03) / zoom`, summed every frame. The
+    /// 150 says the pan was written as if it were a rate, but the axis carries a displacement the mouse made: multiplying
+    /// by frame time makes one drag of the same length move the map further the slower the game runs, and further than
+    /// the cursor at every frame rate, which is the bug this replaces. The axis-bound path just above, which reads
+    /// `Move Map Horizontal`, is a held axis and does want frame time; this one does not. Two things follow from that.
+    ///
+    /// The frame time goes, and what the pan is left with is the scale between a pixel of cursor movement and the offset
+    /// the map is drawn from. Removing the frame time alone is not enough, which an earlier attempt at this showed: the
+    /// divisor the game uses is the map scale center's scale, the zoom the map was asked for, while the pan is turned
+    /// into a position by the map image's own drawn scale, which is a different number, since SetZoomLevel keeps the
+    /// image's world scale as it moves it between parents. `VanillaFixes.PanStep` puts that right.
+    ///
+    /// The axis itself goes too, and `VanillaFixes.PanAxis` hands the pan the cursor's own movement for the frame
+    /// instead. Rewired's axis value is smaller than the movement that produced it and lands on Rewired's update rather
+    /// than on the rendered frame, so a pan built from it moves in bursts however well it is scaled: what the report in
+    /// `VanillaFixes` measured was the axis carrying 0.44 of the cursor's movement per frame, with the per-frame ratio
+    /// scattered between 0.2 and 12. Both replacements are calls inserted after the values they replace, so the
+    /// arithmetic around them and the stack are untouched, and `Behavior.MapPanFix` off hands the game's own values back.
+    /// </summary>
+    [HarmonyPatch(typeof(DynamicMap), "MapControls")]
+    internal static class MapPanProportionPatch
+    {
+        /// <summary>Frame-time call sites replaced, or -1 when the method never ran through the transpiler.</summary>
+        internal static int CallSites { get; private set; } = -1;
+
+        /// <summary>Mouse axis call sites replaced, or -1 when the method never ran through the transpiler.</summary>
+        internal static int AxisSites { get; private set; } = -1;
+
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var min = AccessTools.Method(typeof(Mathf), nameof(Mathf.Min), new[] { typeof(float), typeof(float) });
+            var unscaledDeltaTime = AccessTools.PropertyGetter(typeof(Time), nameof(Time.unscaledDeltaTime));
+            var step = AccessTools.Method(typeof(VanillaFixes), nameof(VanillaFixes.PanStep));
+            var axis = AccessTools.Method(typeof(VanillaFixes), nameof(VanillaFixes.PanAxis));
+
+            var list = new List<CodeInstruction>(instructions);
+            var patched = 0;
+            var axes = 0;
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                // ldstr "Pan View"; callvirt GetAxis
+                var axisName = list[i].operand as string;
+                if (list[i].opcode == OpCodes.Ldstr
+                    && (axisName == "Pan View" || axisName == "Tilt View")
+                    && axis != null
+                    && i + 1 < list.Count
+                    && IsGetAxis(list[i + 1]))
+                {
+                    list.InsertRange(i + 2, new[]
+                    {
+                        new CodeInstruction(OpCodes.Ldstr, axisName),
+                        new CodeInstruction(OpCodes.Call, axis),
+                    });
+
+                    axes++;
+                    i += 2;
+                    continue;
+                }
+
+                // 150f * Mathf.Min(Time.unscaledDeltaTime, 0.03f)
+                if (min == null
+                    || step == null
+                    || i < 3
+                    || !list[i].Calls(min)
+                    || !IsConstant(list[i - 1], 0.03f)
+                    || unscaledDeltaTime == null
+                    || !list[i - 2].Calls(unscaledDeltaTime)
+                    || !IsConstant(list[i - 3], 150f))
+                {
+                    continue;
+                }
+
+                list[i - 3] = new CodeInstruction(OpCodes.Ldc_R4, 1f);
+                list.Insert(i + 1, new CodeInstruction(OpCodes.Call, step));
+                patched++;
+                i++;
+            }
+
+            CallSites = patched;
+            AxisSites = axes;
+
+            if (patched != 1)
+            {
+                Plugin.Log.LogWarning(
+                    "Expected exactly one frame-time pan factor in DynamicMap.MapControls but found " + patched
+                    + ". The map will go on outrunning the cursor while panning.");
+            }
+
+            if (axes != 2)
+            {
+                Plugin.Log.LogWarning(
+                    "Expected the two mouse axes in DynamicMap.MapControls but found " + axes + ". The map will go on"
+                    + " panning in bursts while one of them is dragged.");
+            }
+
+            return list;
+        }
+
+        /// <summary>Whether this instruction reads one of the game's Rewired axes.</summary>
+        private static bool IsGetAxis(CodeInstruction instruction)
+        {
+            return (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
+                && instruction.operand is MethodInfo method
+                && method.Name == "GetAxis"
+                && method.GetParameters().Length == 1
+                && method.GetParameters()[0].ParameterType == typeof(string);
+        }
+
+        private static bool IsConstant(CodeInstruction instruction, float value)
+        {
+            return instruction.opcode == OpCodes.Ldc_R4 && instruction.operand is float number && number == value;
         }
     }
 

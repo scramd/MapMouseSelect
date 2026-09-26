@@ -202,6 +202,8 @@ EventSystem one.
 | Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |
 | Behavior | `EnableInMissionEditor` | `false` | Allow the marquee in the mission editor, which has its own box select |
 | Behavior | `MaxTargets` | `128` | Cap on targets a marquee may add. The game itself refuses more than 128 |
+| Behavior | `MapPanFix` | `true` | Make the map follow the cursor while it is dragged, by reading the cursor instead of the game's mouse axes |
+| Behavior | `MapPanSpeed` | `1` | How far the map moves per pixel of mouse movement while dragging it, used while `MapPanFix` is on |
 | Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
 | Visual | `BoxOutlineColor` | blue | Outline color for a replacing selection |
 | Visual | `BoxOutlineColorAdditive` | green | Outline color for an additive selection (Shift held) |
@@ -333,6 +335,15 @@ So scrolling inside a dialog moved the field of view of the cockpit behind it an
 dialog closed, and in the flyby view a scroll that zoomed the map moved its field of view at the same time. Both
 reads are masked while the cursor is up, which is the question the other two states already ask, and the two that ask
 it themselves are left alone.
+
+A seventh is the map drag. `DynamicMap.MapControls` pans by
+`axis * 150 * min(Time.unscaledDeltaTime, 0.03) / zoom`, which treats a mouse axis as a rate: the same drag moved the
+map further the slower the game ran, and further than the cursor at every frame rate. The axis-bound path just above it
+reads `Move Map Horizontal`, a held axis, which is where the frame time belongs. The axis is Rewired's as well, and what
+the mod's own log measured was it carrying 0.44 of the movement the cursor made, on Rewired's update rather than on the
+rendered frame, so a pan built from it arrives in bursts wherever it is scaled. Both are taken out: the pan is offset by
+the cursor's own movement each frame, scaled by `zoom / lossyScale` so that a pixel of mouse is a pixel of map, and
+`MapPanSpeed` scales that. `MapPanFix` off hands the game back its own axis and its own frame time.
 
 ## Status
 
