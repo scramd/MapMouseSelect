@@ -7,27 +7,26 @@ namespace MapMouseSelect
     /// <summary>
     /// Disables keyboard bindings that sit directly on a given set of keys, and hands them back later.
     ///
-    /// Nothing here knows about the map, the marquee or the config: Block takes a key set and a phrase for
-    /// the log, and the caller decides when to use it. That keeps the mechanism usable for any key that has
-    /// to stop doing its normal job for a while, and keeps the rules about which keys those are in one
-    /// place, in ModifierGuard.
+    /// Nothing here knows about the map, the marquee or the config. Block takes a key set and a phrase for the log,
+    /// and the caller decides when to use it. That keeps the mechanism usable for any key that has to stop doing
+    /// its normal job for a while, and keeps the rules about which keys those are in one place, in ModifierGuard.
     ///
-    /// The case it was written for: the game hangs the throttle's two directions on Shift and Control, and
-    /// Shift is also the map's additive modifier, for vanilla's click-select and waypoint append and for
-    /// this mod's marquee, so holding Shift to add to a selection spools the engine. Nothing about the fix
-    /// is throttle-specific though. The rule is about the keys.
+    /// The case it was written for: the game hangs the throttle's two directions on Shift and Control. Shift is
+    /// also the map's additive modifier, for vanilla's click-select and waypoint append and for this mod's
+    /// marquee, so holding Shift to add to a selection spools the engine. Nothing about the fix is
+    /// throttle-specific though. The rule is about the keys.
     ///
-    /// Directly is the word that matters. A binding such as Eject, which is E with Control and Shift
-    /// declared as its modifiers, is left alone, because there those keys are already acting as modifiers.
-    /// Only bindings whose own key is in the set are touched.
+    /// Directly is the word that matters. A binding such as Eject, which is E with Control and Shift declared as
+    /// its modifiers, is left alone, because there those keys are already acting as modifiers. Only bindings whose
+    /// own key is in the set are touched.
     ///
-    /// Rewired has a mechanism of its own here, the key combination override, and it is what stops a bare
-    /// binding from responding when the user presses the combination it belongs to. It only engages while
-    /// a keyboard combination is held, so a mouse gesture can never trigger it, and the machinery is
-    /// internal and obfuscated. Per-binding enables are the public equivalent.
+    /// Rewired has a mechanism of its own here, the key combination override. It stops a bare binding from
+    /// responding when the user presses the combination it belongs to. It only engages while a keyboard
+    /// combination is held, so a mouse gesture can never trigger it, and the machinery is internal and obfuscated.
+    /// Per-binding enables are the public equivalent.
     ///
-    /// Bindings disabled here are tracked, so Unblock puts back only what this turned off, and nothing is
-    /// written to Rewired's saved user data.
+    /// Bindings disabled here are tracked, so Unblock puts back only what this turned off. Nothing is written to
+    /// Rewired's saved user data.
     /// </summary>
     internal static class BindingBlocker
     {
@@ -40,13 +39,12 @@ namespace MapMouseSelect
 
         /// <summary>
         /// Disables every enabled keyboard binding of the local player whose own key is in
-        /// <paramref name="keys"/>. Calling it again with the same set does nothing; calling it with a
-        /// different set swaps the block for the new one. <paramref name="reason"/> is appended to the log
-        /// lines, so it should read as the end of the sentence "blocked &lt;binding&gt; on &lt;key&gt;
-        /// &lt;reason&gt;".
+        /// <paramref name="keys"/>. Calling it again with the same set does nothing. Calling it with a different
+        /// set swaps the block for the new one. <paramref name="reason"/> is appended to the log lines, so it
+        /// should read as the end of the sentence "blocked &lt;binding&gt; on &lt;key&gt; &lt;reason&gt;".
         ///
-        /// Returns false when Rewired is not ready to be asked yet, in which case nothing was disabled and
-        /// the caller should call again. Safe to call every frame.
+        /// Returns false when Rewired is not ready to be asked yet. Nothing was disabled then, and the caller
+        /// should call again. Safe to call every frame.
         /// </summary>
         internal static bool Block(IEnumerable<KeyCode> keys, string reason)
         {
@@ -67,7 +65,7 @@ namespace MapMouseSelect
                 Keys.Add(key);
             }
 
-            // An empty set is a real answer: nothing to hold, nothing to do again until it changes.
+            // An empty set is a real answer. There is nothing to hold, and nothing to do again until it changes.
             if (Keys.Count == 0)
             {
                 _inEffect = true;
@@ -116,7 +114,7 @@ namespace MapMouseSelect
 
         /// <summary>
         /// Hands back every binding this disabled. Safe at any time, including when nothing is disabled, so
-        /// a caller that wants no block at all can simply call this every frame.
+        /// a caller that wants no block at all can call this every frame.
         /// </summary>
         internal static void Unblock()
         {

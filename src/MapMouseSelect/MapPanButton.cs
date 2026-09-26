@@ -20,9 +20,9 @@ namespace MapMouseSelect
         /// <c>DynamicMap.MapControls</c>. That gate is the only plain <c>GetMouseButton</c> call in the
         /// method, so swapping just that call moves panning without touching anything else.
         ///
-        /// The transpiler has to call a method here rather than read the config inline, so this exists
-        /// as the replacement target. The argument is whatever vanilla passed, which doubles as the
-        /// fallback for the frames before the config is read.
+        /// The transpiler must call a method here, and cannot read the config inline, so this method is the
+        /// replacement target. The argument is whatever vanilla passed. It is also the fallback for the frames
+        /// before the config is read.
         /// </summary>
         internal static bool GetMouseButton(int vanillaButtonIndex)
         {

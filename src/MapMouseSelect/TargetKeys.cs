@@ -6,13 +6,13 @@ namespace MapMouseSelect
     /// <summary>
     /// Key handling for the current target selection.
     ///
-    /// The keys are real Rewired actions registered by ModActions, so they are read with the same calls
-    /// vanilla's own target handling uses and are rebindable in the Controls menu. Tick runs from the
-    /// mod's own host object (ModHost), which is a GameObject this mod owns and marks DontDestroyOnLoad
-    /// because the plugin's own object does not outlive this game's boot.
+    /// The keys are real Rewired actions registered by ModActions. The mod therefore reads them with the same
+    /// calls vanilla's own target handling uses, and they are rebindable in the Controls menu. Tick runs from
+    /// the mod's own host object (ModHost), a GameObject this mod owns and marks DontDestroyOnLoad. The plugin's
+    /// own object does not outlive this game's boot.
     ///
-    /// Both map modes are covered because they keep the selection in different places: a live aircraft
-    /// uses CombatHUD's weapon target list, anything else uses DynamicMap's selected map icons.
+    /// Both map modes are covered, because they keep the selection in different places. A live aircraft uses
+    /// CombatHUD's weapon target list, and anything else uses DynamicMap's selected map icons.
     /// </summary>
     internal static class TargetKeys
     {
@@ -59,9 +59,9 @@ namespace MapMouseSelect
 
             if (player.GetButtonUp(ModActions.DeselectOldestName))
             {
-                // Vanilla fires both branches for a hold of between clickDelay and pressDelay, because
-                // clearing everything and then dropping the newest of nothing happens to compose. These
-                // two do not compose, so the tap is skipped once the hold has already run.
+                // Vanilla fires both branches for a hold between clickDelay and pressDelay, because clearing
+                // everything and then dropping the newest of nothing happens to compose. These two do not
+                // compose, so the tap is skipped once the hold has already run.
                 if (!_longFired)
                 {
                     DropOldest();
@@ -72,10 +72,10 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Drops the selection made first. Which end of the list that is depends on the system: the
-        /// weapon target list is built with Insert(0, ...) so the oldest sits last, while map icons are
-        /// appended, so the oldest sits first. After a network sync the target list order is whatever
-        /// the server sent, which is the same order the local list was built in.
+        /// Drops the selection made first. Which end of the list that is depends on the system. The weapon
+        /// target list is built with Insert(0, ...), so the oldest sits last. Map icons are appended, so the
+        /// oldest sits first. After a network sync the target list order is whatever the server sent, which is
+        /// the same order the local list was built in.
         /// </summary>
         private static void DropOldest()
         {
@@ -136,9 +136,9 @@ namespace MapMouseSelect
                 var newest = targets[0];
                 Plugin.Verbose("Keeping only " + (newest != null ? newest.name : "<null>") + ".");
 
-                // The kept target is never handed to the writer, so it never leaves the list: its marker, its map
-                // icon and its place in the HUD all stay put, and the server is sent the drop rather than a clear
-                // followed by a target. One refresh for the whole hold.
+                // The kept target is never handed to the writer, so it never leaves the list. Its marker, its map
+                // icon and its place in the HUD all stay put. The server is sent the drop, not a clear followed by
+                // a target. One refresh for the whole hold.
                 SelectionApplier.RemoveAllExcept(aircraft, newest);
                 return;
             }
@@ -183,12 +183,12 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Drops the unit being pointed at out of the selection: the same pick SelectOnly makes, with a removal
-        /// instead of a prune, so the two keys are each other's mirror.
+        /// Drops the unit being pointed at out of the selection. It makes the same pick SelectOnly makes, with a
+        /// removal instead of a prune, so the two keys mirror each other.
         ///
-        /// Flying, that is one unit out of the weapon target list, one refresh and one deselect sound, which is
-        /// what shift-clicking the map does. With no aircraft it is the map selection that loses the unit. Pointing
-        /// at nothing does nothing at all, and the Target List filters gate the pick, so a unit they hide cannot be
+        /// While flying, that is one unit out of the weapon target list, one refresh and one deselect sound, which
+        /// is what shift-clicking the map does. With no aircraft, the map selection loses the unit. Pointing at
+        /// nothing does nothing at all. The Target List filters gate the pick, so a unit they hide cannot be
         /// dropped this way any more than it can be selected.
         /// </summary>
         private static void DeselectLookedAt()
@@ -217,13 +217,13 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Prunes the target list down to the unit being pointed at: with the map up that is the icon under
-        /// the cursor, with it closed the marker under the target designator.
+        /// Prunes the target list down to the unit being pointed at. With the map up that is the icon under the
+        /// cursor, and with it closed the marker under the target designator.
         ///
         /// Nothing is delegated here, unlike the rest of the mod. Both of vanilla's picks refuse a unit that is
-        /// already selected, so pointing at a target and asking for only that one would do nothing, and emptying
-        /// the list first to get around that is what made the key lose the whole selection to a press that landed
-        /// on nothing. Writing the prune out is what makes the key mean what it says, and it costs one refresh.
+        /// already selected, so pointing at a target and asking for only that one would do nothing. Emptying the
+        /// list first to get around that is what made the key lose the whole selection to a press that landed on
+        /// nothing. Writing the prune out is what makes the key mean what it says, and it costs one refresh.
         ///
         /// Pointing at empty sky leaves the list alone. With nothing flying there is no target list, and
         /// vanilla's own Select already means this in commander view, so that stays delegated.
@@ -258,22 +258,22 @@ namespace MapMouseSelect
             var keep = PointedAt(map, hud);
             if (keep == null)
             {
-                Plugin.Verbose("Select-only found nothing being pointed at; the target list is unchanged.");
+                Plugin.Verbose("Select-only found nothing being pointed at. The target list is unchanged.");
                 return;
             }
 
             if (SelectionApplier.IsTarget(aircraft, keep))
             {
-                // The kept target is never handed to the writer, so it stays selected throughout: one refresh,
-                // one deselect sound, and its marker and map icon never blink.
+                // The kept target is never handed to the writer, so it stays selected throughout. That is one
+                // refresh, one deselect sound, and its marker and map icon never blink.
                 SelectionApplier.RemoveAllExcept(aircraft, keep);
                 Plugin.Verbose("Select-only kept " + keep.name + " and dropped the other target(s).");
                 return;
             }
 
             // Pointing at something that is not a target yet means "only this one", the same as a plain click
-            // does in commander view. The drops go in silently, so the press ends on the select sound rather
-            // than on both.
+            // does in commander view. The drops go in silently, so the press ends on the select sound, not on
+            // both.
             SelectionApplier.RemoveAllExcept(aircraft, keep, false);
 
             One.Clear();
@@ -285,12 +285,12 @@ namespace MapMouseSelect
 
         /// <summary>
         /// What the player is pointing at. With the map up that is the map icon nearest the cursor, the pick
-        /// DynamicMap.SelectFromMap makes; with it closed it is the HUD marker nearest the target designator,
-        /// the pick CombatHUD.TargetSelect makes. Both use a 100 pixel radius.
+        /// DynamicMap.SelectFromMap makes. With it closed it is the HUD marker nearest the target designator, the
+        /// pick CombatHUD.TargetSelect makes. Both use a 100 pixel radius.
         ///
-        /// Neither pick is called, because both skip a unit that is already selected: a selected map icon has
-        /// its raycast target cleared, and TargetSelect skips a marker marked selected. Distance alone is what
-        /// this key needs, with the same gates the rest of the mod applies.
+        /// Neither pick is called, because both skip a unit that is already selected. A selected map icon has its
+        /// raycast target cleared, and TargetSelect skips a marker marked selected. This key needs distance alone,
+        /// with the same gates the rest of the mod applies.
         /// </summary>
         private static Unit PointedAt(DynamicMap map, CombatHUD hud)
         {
@@ -368,7 +368,7 @@ namespace MapMouseSelect
         /// <summary>
         /// A unit this key may point at: not the player's own aircraft, and not excluded by the Target List
         /// filters. That is the same gate vanilla's clicks and the marquee use, so a wreck is pickable exactly
-        /// when the pane's WRECK filter says so, and not because of any rule of this key's own.
+        /// when the pane's WRECK filter says so, not because of any rule of this key's own.
         /// </summary>
         private static bool Pickable(Unit unit)
         {

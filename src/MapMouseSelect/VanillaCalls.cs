@@ -9,16 +9,16 @@ namespace MapMouseSelect
     /// <summary>
     /// Wrappers over the private vanilla members the mod needs verbatim.
     ///
-    /// They own rules that would otherwise have to be copied here and kept in step with the game:
-    /// DynamicMap.SelectFromMap is the map half of the Select action's handler, taking the icon with the
-    /// smallest squared distance to the cursor among those its own filters allow, and DynamicMap.JumpCameraTo
-    /// is the commander's camera jump. Each is resolved once and cached.
+    /// They own rules that would otherwise have to be copied here and kept in step with the game.
+    /// DynamicMap.SelectFromMap is the map half of the Select action's handler. It takes the icon with the
+    /// smallest squared distance to the cursor among those its own filters allow. DynamicMap.JumpCameraTo is the
+    /// commander's camera jump. Each is resolved once and cached.
     ///
-    /// Select is the keyboard and gamepad action, not the mouse: a mouse click reaches a map icon through
-    /// its EventSystem handler instead, so this is not the call that reproduces one.
+    /// Select is the keyboard and gamepad action, not the mouse. A mouse click reaches a map icon through its
+    /// EventSystem handler instead, so this is not the call that reproduces one.
     ///
-    /// AccessTools returns null instead of throwing when a member is missing, so a game update that
-    /// renames any of them costs a logged warning rather than a crash.
+    /// AccessTools returns null instead of throwing when a member is missing. A game update that renames any of
+    /// them therefore costs a logged warning rather than a crash.
     /// </summary>
     internal static class VanillaCalls
     {
@@ -54,9 +54,9 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this is the
-        /// one thing here that reads state rather than calling vanilla: the target designator's pick needs to
-        /// walk them to find what the player is pointing at when the map is closed.
+        /// Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this is the one
+        /// thing here that reads state rather than calling vanilla. The target designator's pick needs to walk them
+        /// to find what the player is pointing at when the map is closed.
         /// </summary>
         internal static List<HUDUnitMarker> Markers(CombatHUD hud)
         {
@@ -83,7 +83,7 @@ namespace MapMouseSelect
         /// <summary>
         /// Vanilla's icon creation for a single unit, which its own code only reaches through the queue.
         ///
-        /// The queue refuses a unit that is disabled, which is right for a corpse and wrong for a wreck this mod
+        /// The queue refuses a unit that is disabled. That is right for a corpse and wrong for a wreck this mod
         /// keeps on the map, so the wreck path calls this directly instead.
         /// </summary>
         internal static bool SpawnIconForUnit(DynamicMap map, Unit unit)
@@ -122,9 +122,9 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Plays the clip CombatHUD uses for a selection. The mod plays it once for a whole gesture, which is
-        /// what CombatHUD's own multi-select does: TargetSelect adds every marker in range, then plays this once
-        /// and refreshes the target list once, rather than doing either per unit.
+        /// Plays the clip CombatHUD uses for a selection. The mod plays it once for a whole gesture, which is what
+        /// CombatHUD's own multi-select does. TargetSelect adds every marker in range, then plays this once and
+        /// refreshes the target list once, rather than doing either per unit.
         /// </summary>
         internal static void PlaySelectSound(CombatHUD hud)
         {

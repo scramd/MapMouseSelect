@@ -6,9 +6,9 @@ namespace MapMouseSelect
     /// <summary>
     /// Draws the drag box on its own screen-space overlay canvas.
     ///
-    /// Independent of the game's map UI hierarchy on purpose: for a ScreenSpaceOverlay canvas the
-    /// scale factor defaults to 1 and the canvas rect is the screen, so screen pixels map 1:1 to
-    /// canvas units and the box math needs no scaling or pivot guesswork.
+    /// It is independent of the game's map UI hierarchy on purpose. For a ScreenSpaceOverlay canvas the scale
+    /// factor defaults to 1 and the canvas rect is the screen. Screen pixels therefore map 1:1 to canvas units,
+    /// and the box math needs no scaling or pivot guesswork.
     /// </summary>
     internal sealed class MarqueeOverlay
     {

@@ -6,16 +6,16 @@ namespace MapMouseSelect
     /// Ctrl+E: leave an aircraft the way the game leaves it when it is parked at a base, and nothing at all anywhere
     /// else.
     ///
-    /// The game has one eject key and what it does depends on where the aircraft is. PilotPlayerState.PlayerControls
+    /// The game has one eject key, and what it does depends on where the aircraft is. PilotPlayerState.PlayerControls
     /// calls aircraft.StartEjectionSequence() and then, when aircraft.IsLanded() is true, switches the pilot to its
-    /// parked state. IsLanded is `radarAlt &lt; 5 && speed &lt; 2.5`, and the server's EjectionSequence asks the same
-    /// question to decide between firing the seats and letting the crew out where they stand, so to the game a landing
-    /// at a base and a landing in a field are one case.
+    /// parked state. IsLanded is `radarAlt &lt; 5 && speed &lt; 2.5`. The server's EjectionSequence asks the same
+    /// question to decide between firing the seats and letting the crew out where they stand. To the game, a landing
+    /// at a base and a landing in a field are therefore one case.
     ///
-    /// This key takes that case and requires the base as well: it acts only when the aircraft is on the ground and
-    /// inside one of its own faction's airbases, which is the game's own test for "landed at a base" - the same pair of
-    /// conditions its landed/crashed reporting uses, through FactionHQ.AnyNearAirbase. Everywhere else it is silent,
-    /// which leaves the game's own key as the only way out of an aircraft in the air.
+    /// This key takes that case and requires the base as well. It acts only when the aircraft is on the ground and
+    /// inside one of its own faction's airbases, which is the game's own test for "landed at a base". That is the
+    /// same pair of conditions its landed/crashed reporting uses, through FactionHQ.AnyNearAirbase. Everywhere else
+    /// it is silent, which leaves the game's own key as the only way out of an aircraft in the air.
     ///
     /// Both statements it runs are the game's own, in the game's own order. Nothing here invents an exit.
     /// </summary>
@@ -23,9 +23,10 @@ namespace MapMouseSelect
     {
         /// <summary>
         /// Reads the key. Called once a frame from the postfix on PilotPlayerState.PlayerControls, which is the method
-        /// the game reads its own eject key in, so this key sits beside it rather than somewhere else in the frame and
-        /// inherits the gates that method opens with: flight controls enabled, and a pilot who is not blacked out. It
-        /// also means nothing is polled while no one is in a cockpit, since the state machine only ticks there.
+        /// the game reads its own eject key in. This key therefore sits beside it, rather than somewhere else in the
+        /// frame, and inherits the gates that method opens with: flight controls enabled, and a pilot who is not
+        /// blacked out. It also means nothing is polled while no one is in a cockpit, since the state machine only
+        /// ticks there.
         /// </summary>
         internal static void OnPlayerControls()
         {
@@ -80,9 +81,9 @@ namespace MapMouseSelect
         /// <summary>
         /// The pilot this client is flying, or null if there is none.
         ///
-        /// Pilot.playerState is entered only for the pilot whose Player is the local one, which is what makes it the
-        /// game's own marker for "this seat is being flown from here" rather than a guess at an index. The state is
-        /// asked for by value and not by type, since every Pilot carries a playerState instance of its own and an AI
+        /// Pilot.playerState is entered only for the pilot whose Player is the local one. That makes it the game's
+        /// own marker for "this seat is being flown from here", rather than a guess at an index. The state is asked
+        /// for by value and not by type, since every Pilot carries a playerState instance of its own and an AI
         /// seat's would answer a type test too.
         /// </summary>
         private static Pilot PlayerPilot(Aircraft aircraft)

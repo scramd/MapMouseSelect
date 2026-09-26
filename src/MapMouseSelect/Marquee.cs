@@ -7,14 +7,14 @@ namespace MapMouseSelect
     /// <summary>
     /// Drag state machine for marquee selecting units on the maximized tactical map.
     ///
-    /// Static, and driven from DynamicMap's own per-frame methods rather than from a MonoBehaviour of our
-    /// own. BepInEx destroys its plugin host object while the game starts (every plugin gets OnDestroy at
-    /// "Chainloader startup complete"), so a component added in Plugin.Awake is gone before gameplay.
+    /// Static, and driven from DynamicMap's own per-frame methods rather than from a MonoBehaviour of our own.
+    /// BepInEx destroys its plugin host object while the game starts, and every plugin gets OnDestroy at
+    /// "Chainloader startup complete". A component added in Plugin.Awake is therefore gone before gameplay.
     /// Harmony patches survive that, so the game's own ticking methods are the reliable place to run from.
     ///
-    /// While the map is maximized the left mouse button is the marquee button, so vanilla map controls
-    /// are suppressed from the press frame until release. A press that never passes the drag threshold
-    /// is replayed as the vanilla single click, which keeps normal clicking intact.
+    /// While the map is maximized the left mouse button is the marquee button, so vanilla map controls are
+    /// suppressed from the press frame until release. A press that never passes the drag threshold is replayed as
+    /// the vanilla single click, which keeps normal clicking intact.
     /// </summary>
     internal static class Marquee
     {
@@ -91,9 +91,9 @@ namespace MapMouseSelect
             {
                 if (!Input.GetMouseButton(0))
                 {
-                    // A click, not a drag, and nothing to replay: a mouse click reaches the icons
-                    // through their EventSystem handlers, which this mod never suppresses. All that
-                    // suppressing MapControls took out was the pan and the Select action.
+                    // A click, not a drag, and nothing to replay. A mouse click reaches the icons
+                    // through their EventSystem handlers, which this mod never suppresses. Suppressing
+                    // MapControls only took out the pan and the Select action.
                     Plugin.Verbose("Marquee released without dragging; the click is vanilla's.");
                     Cancel();
                     return;
@@ -135,8 +135,8 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// What this drag will do when it ends. Control wins over Shift when both are held: taking units out
-        /// is the more deliberate of the two, and the border shows which one is in force.
+        /// What this drag will do when it ends. Control wins over Shift when both are held, because taking units
+        /// out is the more deliberate of the two. The border shows which one is in force.
         /// </summary>
         private static MarqueeMode CurrentMode()
         {
@@ -228,13 +228,13 @@ namespace MapMouseSelect
                 }
 
                 // Dead units are not skipped here on purpose. Vanilla takes the icon away when a unit is disabled,
-                // so there is usually nothing to box, and the one case where an icon does outlive the unit, a
-                // wrecked building this mod keeps on the map, is the WRECK filter's business below. What is left
-                // is exactly what vanilla's own click tests: a live icon, inside the box, and not excluded.
+                // so there is usually nothing to box. The one case where an icon does outlive the unit, a wrecked
+                // building this mod keeps on the map, is the WRECK filter's business below. What is left is exactly
+                // what vanilla's own click tests: a live icon, inside the box, and not excluded.
 
-                // An icon the player has switched off in Map Options is an inactive object, and vanilla has no
-                // way to select one either: clicking needs a raycast hit, and the range select needs the HUD
-                // marker's image to be enabled. Boxing one would be reaching through the map's own filters.
+                // An icon the player has switched off in Map Options is an inactive object, and vanilla has no way
+                // to select one either. Clicking needs a raycast hit, and the range select needs the HUD marker's
+                // image to be enabled. Boxing one would be reaching through the map's own filters.
                 if (!unitIcon.gameObject.activeInHierarchy)
                 {
                     continue;

@@ -1,26 +1,26 @@
 # Map Mouse Select 0.2.0
 
-Mod for Nuclear Option 0.34.1. Unzip it and put the `MapMouseSelect` folder into `BepInEx\plugins`. Needs BepInEx 5 x64. Every key below is rebindable in the game's own Controls menu.
+Mod for Nuclear Option 0.34.1. Unzip the archive. Put the `MapMouseSelect` folder into `BepInEx\plugins`. It needs BepInEx 5 x64. Every key below is rebindable in the game's own Controls menu.
 
 ## English
 
 ### Added
 
 - Marquee: drag a box on the map to select in bulk, in both map modes.
-- Shift while dragging adds, Ctrl removes, and the box colour shows which one is active.
+- Shift while dragging adds to the selection, and Ctrl removes from it. The box colour shows which one is active.
 - New keys:
   - `\` keeps only the unit you are pointing at
   - `-` drops the unit you are pointing at
   - tap `Delete` drops your oldest target, hold it to keep only the newest
-  - `Ctrl+E` leaves an aircraft safely, which means parked on the ground at one of your own airbases and nothing anywhere else (vanilla's eject is still `Ctrl+Shift+E`)
+  - `Ctrl+E` leaves an aircraft safely, which means parked on the ground at one of your own airbases. It does nothing anywhere else (vanilla's eject is still `Ctrl+Shift+E`)
 - Wrecks: a destroyed building keeps its map icon, darkened, instead of vanishing.
-- Two buttons in the Target List pane: `NTL` for neutrals and `DED` for wrecks, and Reset restores them with the game's own filters.
+- Two buttons in the Target List pane: `NTL` for neutrals and `DED` for wrecks. Reset restores them with the game's own filters.
 
 ### Changed from vanilla
 
 - A plain click in flight replaces the target list instead of adding to it.
-- A drag ending on empty map clears the selection; vanilla leaves it alone.
-- Panning moved to the middle mouse button, camera jump to a double left click on the map.
+- A drag ending on empty map clears the selection. Vanilla leaves it alone.
+- Panning moved to the middle mouse button. Camera jump moved to a double left click on the map.
 - With the map open, bindings sitting on a bare Shift or Ctrl are held off, so the marquee modifiers do not fire them too.
 - A click on a unit that cannot be a target does nothing, instead of playing the selection sound and changing nothing.
 
