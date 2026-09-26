@@ -40,9 +40,11 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> PanCursor { get; private set; }
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
-        internal static ConfigEntry<string> BoxOutlineColor { get; private set; }
-        internal static ConfigEntry<string> BoxOutlineColorAdditive { get; private set; }
-        internal static ConfigEntry<string> BoxOutlineColorRemove { get; private set; }
+
+        /// <summary>Box outline colors, as colors rather than text, so the config UI shows its picker.</summary>
+        internal static ConfigEntry<Color> BoxOutlineColor { get; private set; }
+        internal static ConfigEntry<Color> BoxOutlineColorAdditive { get; private set; }
+        internal static ConfigEntry<Color> BoxOutlineColorRemove { get; private set; }
         internal static ConfigEntry<bool> EnableDestroyedUnits { get; private set; }
         internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
@@ -66,8 +68,6 @@ namespace MapMouseSelect
         internal static ConfigFile Settings { get; private set; }
 
         private Harmony _harmony;
-
-        private static string _lastRejectedColor;
 
         private void Awake()
         {
@@ -128,11 +128,11 @@ namespace MapMouseSelect
             OverlaySortingOrder = Config.Bind("Visual", "OverlaySortingOrder", DefaultOverlaySortingOrder,
                 "Sorting order of this mod's overlay canvas. Raise it if the rectangle renders under the map UI.");
 
-            BoxOutlineColor = Config.Bind("Visual", "BoxOutlineColor", "#3CB4FFCC",
-                "Outline color for a replacing selection, as #RRGGBB or #RRGGBBAA.");
-            BoxOutlineColorAdditive = Config.Bind("Visual", "BoxOutlineColorAdditive", "#7CE38BCC",
+            BoxOutlineColor = Config.Bind("Visual", "BoxOutlineColor", Hex("#3CB4FFCC"),
+                "Outline color for a replacing selection.");
+            BoxOutlineColorAdditive = Config.Bind("Visual", "BoxOutlineColorAdditive", Hex("#7CE38BCC"),
                 "Outline color for an additive selection (Shift held).");
-            BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", "#FF5A5ACC",
+            BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", Hex("#FF5A5ACC"),
                 "Outline color for a deselecting marquee (Control held).");
 
             EnableDestroyedUnits = Config.Bind("Destroyed", "Enabled", true,
@@ -307,23 +307,11 @@ namespace MapMouseSelect
             Log.LogInfo("Plugin host torn down by the loader. Patches left in place.");
         }
 
-        /// <summary>Reads one of the color settings. The config default is the only place a default is written.</summary>
-        internal static Color ParseColor(ConfigEntry<string> entry)
+        /// <summary>A color from a #RRGGBB or #RRGGBBAA literal, for the defaults above.</summary>
+        private static Color Hex(string value)
         {
-            if (entry != null && ColorUtility.TryParseHtmlString(entry.Value, out var parsed))
-            {
-                return parsed;
-            }
-
-            // Mention a bad value once rather than on every frame the box is drawn.
-            var bad = entry != null ? entry.Value : "<unbound>";
-            if (_lastRejectedColor != bad)
-            {
-                _lastRejectedColor = bad;
-                Log.LogWarning("Could not read '" + bad + "' as #RRGGBB or #RRGGBBAA. The box is drawn white.");
-            }
-
-            return Color.white;
+            ColorUtility.TryParseHtmlString(value, out var parsed);
+            return parsed;
         }
     }
 }

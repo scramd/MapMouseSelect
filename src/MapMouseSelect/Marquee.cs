@@ -143,11 +143,11 @@ namespace MapMouseSelect
             switch (mode)
             {
                 case MarqueeMode.Add:
-                    return Plugin.ParseColor(Plugin.BoxOutlineColorAdditive);
+                    return Plugin.BoxOutlineColorAdditive.Value;
                 case MarqueeMode.Remove:
-                    return Plugin.ParseColor(Plugin.BoxOutlineColorRemove);
+                    return Plugin.BoxOutlineColorRemove.Value;
                 default:
-                    return Plugin.ParseColor(Plugin.BoxOutlineColor);
+                    return Plugin.BoxOutlineColor.Value;
             }
         }
 

@@ -74,6 +74,8 @@ Requires BepInEx 5 x64 in the game directory.
 
 ## Configuration
 
+Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmouseselect.cfg`, and in the Configuration Manager window (F1) while the game runs. The three outline colours open a colour picker there, with the red, green, blue and alpha sliders, a hex field and a reset button. In the file they are `RRGGBBAA` hex, so `FF5A5ACC` is a mostly opaque red.
+
 | Section | Key | Default | Meaning |
 |---|---|---|---|
 | Hotkeys | `PanButton` | `Middle` | Mouse button that drags to pan the map |
@@ -94,9 +96,9 @@ Requires BepInEx 5 x64 in the game directory.
 | Behavior | `MapStickGain` | `8` | Scroll speed the stick gains per pixel of push, in screen pixels per second, with no ceiling |
 | Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
 | Visual | `PanCursor` | `true` | Show Windows' move cursor while the pan button is held |
-| Visual | `BoxOutlineColor` | blue | Outline color for a replacing selection |
-| Visual | `BoxOutlineColorAdditive` | green | Outline color for an additive selection (Shift held) |
-| Visual | `BoxOutlineColorRemove` | red | Outline color for a deselecting marquee (Ctrl held) |
+| Visual | `BoxOutlineColor` | `3CB4FFCC` | Outline color for a replacing selection |
+| Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Outline color for an additive selection (Shift held) |
+| Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Outline color for a deselecting marquee (Ctrl held) |
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
 | Destroyed | `Enabled` | `true` | Keep destroyed buildings on the map as darkened wrecks, and add the `DED` filter |
 | Destroyed | `Tint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
