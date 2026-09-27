@@ -17,7 +17,7 @@ namespace MapMouseSelect
         public const string PluginName = "Map Mouse Select";
 
         /// <summary>Lives in three places: this constant, &lt;Version&gt; in the csproj, and version in meta.json.</summary>
-        public const string PluginVersion = "0.2.0";
+        public const string PluginVersion = "0.3.0";
 
         /// <summary>Draw order for the mod's overlay canvas, above the map UI.</summary>
         internal const int DefaultOverlaySortingOrder = 32000;
