@@ -10,11 +10,11 @@ namespace MapMouseSelect
     /// where it was. A cap is the lever that does settle it.
     ///
     /// The world slows with the cap, and a frame's delta is what decides by how much. Unity spends at most
-    /// Time.maximumDeltaTime of game time on one frame, so once a frame is longer than that the world falls behind by
-    /// the difference. Measured, with the ratio of Time.time to real time read once a second: a cap of 1 kept 0.10 of
-    /// real time, a cap of 5 kept 0.50, and a cap of 10 kept 1.00, which is that limit at about 0.1s a frame. At 10 and
-    /// above the world advances in real time, and below it the world slows while the frame rate and the GPU load fall
-    /// with the cap.
+    /// Time.maximumDeltaTime of game time on one frame, so a frame longer than that loses the surplus. It logs as 0.1s
+    /// here, which puts the threshold at 10 frames a second. Measured, reading the ratio of Time.time to real time once
+    /// a second: a cap of 1 kept 0.10 of real time, a cap of 5 kept 0.50, a cap of 10 kept 0.95 to 1.05, a cap of 11
+    /// kept 0.98 to 1.01, and a cap of 12 kept 0.99 to 1.01. Ten sits on the threshold with no margin, so the default
+    /// is 12, which leaves a frame of headroom for a hitch at the cost of two frames a second.
     ///
     /// vsync comes off for the cap to mean anything, since Unity ignores targetFrameRate while vSyncCount is above
     /// zero. Both values are kept on the way out of focus and put back on the way in, and re-asserted while unfocused,
