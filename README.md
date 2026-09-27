@@ -51,7 +51,7 @@ Needs BepInEx 5 x64 in the game directory.
 2. Put it in `Nuclear Option\BepInEx\plugins\MapMouseSelect\`.
 3. Start the game. The mod writes its config to `BepInEx\config\com.kerbiter.mapmouseselect.cfg`.
 
-Releases also ship an archive with the DLL, the release notes and the licence, if you would rather not build anything.
+Releases also ship an archive with the DLL, the readme and the licence, if you would rather not build anything.
 
 NOMM entry pending, so for now the DLL goes in by hand as above.
 
@@ -82,4 +82,6 @@ I really hope such improvements will appear in vanilla. However, if there are st
 ## Licence
 
 GPL-3.0. See [LICENSE](LICENSE). Copyright (C) 2026 Metadorius.
+
+GPL-3.0 wants the source to travel with the binary, and this repository is that source for every release.
 
