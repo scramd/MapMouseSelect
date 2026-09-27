@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using NuclearOption.MissionEditorScripts;
+using NuclearOption.Networking;
 using Rewired;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -282,6 +283,38 @@ namespace MapMouseSelect
             }
 
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Writes the mod's default keys back after the Controls menu's Restore Defaults.
+    ///
+    /// That button reloads the maps authored in Rewired and clears the rest, and the mod's actions were added to
+    /// Rewired at runtime, so its keys go with them. A postfix runs after either branch of the method, the map reload
+    /// and the delegate the game may set in its place.
+    /// </summary>
+    [HarmonyPatch(typeof(Rewired.UI.ControlMapper.ControlMapper), "OnRestoreDefaultsConfirmed")]
+    internal static class RestoreDefaultsPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix()
+        {
+            ModActions.ForgetDefaults();
+        }
+    }
+
+    /// <summary>
+    /// Hands the frame limit the network manager, which it reads to tell a host with players from a lone offline one.
+    /// NetworkManagerNuclearOption.i logs an error on every read until the game has preloaded the manager, and the
+    /// frame limit would be reading it every frame from plugin load.
+    /// </summary>
+    [HarmonyPatch(typeof(NetworkManagerNuclearOption), "Awake")]
+    internal static class NetworkManagerAwakePatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(NetworkManagerNuclearOption __instance)
+        {
+            FrameLimit.Keep(__instance);
         }
     }
 }

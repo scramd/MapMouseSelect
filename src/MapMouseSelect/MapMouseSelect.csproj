@@ -71,6 +71,12 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The Controls menu's Restore Defaults button, which wipes the mod's runtime key bindings. -->
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(ManagedDir)\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
     <!-- BepInEx 5 + HarmonyX, both shipped with the loader. -->
     <Reference Include="BepInEx">
       <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>

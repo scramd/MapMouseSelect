@@ -4,6 +4,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using NuclearOption.Networking;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -290,6 +291,9 @@ namespace MapMouseSelect
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
             var playerControlsInfo = PatchInfo(AccessTools.Method(typeof(PilotPlayerState), "PlayerControls"));
+            var restoreDefaultsInfo = PatchInfo(AccessTools.Method(
+                typeof(Rewired.UI.ControlMapper.ControlMapper), "OnRestoreDefaultsConfirmed"));
+            var networkManagerInfo = PatchInfo(AccessTools.Method(typeof(NetworkManagerNuclearOption), "Awake"));
 
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
@@ -312,6 +316,8 @@ namespace MapMouseSelect
                 + ", unit destroy postfixes=" + unitDestroyInfo
                 + ", player controls postfixes=" + playerControlsInfo
                 + ", reset postfixes=" + resetInfo
+                + ", restore defaults postfixes=" + restoreDefaultsInfo
+                + ", network manager postfixes=" + networkManagerInfo
                 + " | destroyedUnits=" + EnableDestroyedUnits.Value
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value

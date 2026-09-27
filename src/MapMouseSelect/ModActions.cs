@@ -30,6 +30,12 @@ namespace MapMouseSelect
         /// <summary>Cancel's category and keyboard map, which the mod's keys share.</summary>
         private const string AnchorActionName = "Cancel";
 
+        /// <summary>The actions this version gives a default key to, and so the ones a record drop has to cover.</summary>
+        private static readonly string[] DefaultNames =
+        {
+            SelectOnlyName, DeselectOldestName, DeselectLookedAtName, SafeExitName
+        };
+
         // Far above the game's own action ids, which grow upward from zero.
         private const int SelectOnlyId = 971001;
 
@@ -179,6 +185,43 @@ namespace MapMouseSelect
         }
 
         /// <summary>
+        /// Drops the mod's actions from the record so the defaults are written again, for the game's Restore Defaults
+        /// button.
+        ///
+        /// That button calls LoadDefaultMaps, which clears the player's Controller Maps and reloads the ones authored
+        /// in Rewired. The mod adds its actions to Rewired at runtime, so those maps hold no elements for them and the
+        /// record would otherwise keep the keys gone for good. Anything the player rebound before the button was
+        /// pressed is cleared by it too, so the defaults are the right thing to write back.
+        ///
+        /// The write itself is left to the next frame's EnsureDefaultBindings, so this stays a flag flip.
+        /// </summary>
+        internal static void ForgetDefaults()
+        {
+            // The Controls menu can be reached before a mission has run the bind pass, so the record is read here
+            // rather than left until then. It is only ever read once.
+            LoadWritten();
+
+            var dropped = false;
+
+            for (var i = 0; i < DefaultNames.Length; i++)
+            {
+                if (Written.Remove(DefaultNames[i]))
+                {
+                    dropped = true;
+                }
+            }
+
+            if (!dropped)
+            {
+                return;
+            }
+
+            _bindingsSettled = false;
+            SaveWritten();
+            Plugin.Verbose("Restore Defaults was used, so the mod's default keys are written again.");
+        }
+
+        /// <summary>
         /// Reads the record once, on the first frame there is something to bind into. Reading it before Rewired is
         /// ready would latch an empty record and rewrite every default.
         /// </summary>
@@ -211,7 +254,11 @@ namespace MapMouseSelect
         private static void Record(string name)
         {
             Written.Add(name);
+            SaveWritten();
+        }
 
+        private static void SaveWritten()
+        {
             var names = new List<string>(Written);
             names.Sort(StringComparer.Ordinal);
             Plugin.DefaultBindings.Value = string.Join(", ", names);

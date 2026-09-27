@@ -33,6 +33,8 @@ namespace MapMouseSelect
         private static int _gameFrameRate;
         private static int _gameVsync;
 
+        private static NetworkManagerNuclearOption _manager;
+
         private static int _frames;
         private static float _nextReport;
         private static float _worldTime;
@@ -126,17 +128,23 @@ namespace MapMouseSelect
             return Mathf.Min(MaxRate, Mathf.CeilToInt(1f / limit) + 1);
         }
 
+        /// <summary>Keeps the network manager reachable, from its Awake. Null until the game preloads it.</summary>
+        internal static void Keep(NetworkManagerNuclearOption manager)
+        {
+            _manager = manager;
+        }
+
         /// <summary>
         /// True while this process runs a game server that someone other than the host is connected to. This is the
         /// server-with-players test the game's own debug panel uses, which covers a host with a client and a headless
         /// server with one, and leaves a single-player offline host alone.
         ///
-        /// A null manager means the game has not preloaded one yet, and reading it in that state logs an error, so this
-        /// is only called while the cap is on and the caller has not opted out.
+        /// The manager arrives from an Awake postfix rather than from NetworkManagerNuclearOption.i, whose accessor
+        /// logs an error on every read before the game has preloaded it. Null here means it has not awoken yet.
         /// </summary>
         private static bool Hosting()
         {
-            var manager = NetworkManagerNuclearOption.i;
+            var manager = _manager;
             if (manager == null)
             {
                 return false;
