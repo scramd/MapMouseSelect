@@ -1,12 +1,16 @@
 # Dumps the IL of the CombatHUD / WeaponManager members the mod replicates, so the
 # claims in the mod's comments can be checked against the shipped assembly.
 param(
-    [string]$GameRoot = 'D:\SteamLibrary\steamapps\common\Nuclear Option'
+    [string]$NuclearOptionRoot = $env:NUCLEAR_OPTION_ROOT
 )
 
-Add-Type -Path (Join-Path $GameRoot 'BepInEx\core\Mono.Cecil.dll')
+if (-not $NuclearOptionRoot) {
+    throw "Set NUCLEAR_OPTION_ROOT, or pass -NuclearOptionRoot (path to the Nuclear Option install)."
+}
 
-$managed = Join-Path $GameRoot 'NuclearOption_Data\Managed\Assembly-CSharp.dll'
+Add-Type -Path (Join-Path $NuclearOptionRoot 'BepInEx\core\Mono.Cecil.dll')
+
+$managed = Join-Path $NuclearOptionRoot 'NuclearOption_Data\Managed\Assembly-CSharp.dll'
 $asm = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($managed)
 
 function Dump-Method([string]$TypeName, [string]$MethodName) {
