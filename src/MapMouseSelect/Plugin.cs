@@ -43,6 +43,12 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> FrameLimitUnfocused { get; private set; }
 
         internal static ConfigEntry<int> FrameLimitUnfocusedFps { get; private set; }
+
+        /// <summary>Whether the cap may go below the rate that keeps the world in real time, down to 1.</summary>
+        internal static ConfigEntry<bool> FrameLimitAllowWorldSlowdown { get; private set; }
+
+        /// <summary>Whether the cap also holds while this process hosts a game other players are connected to.</summary>
+        internal static ConfigEntry<bool> FrameLimitWhileHosting { get; private set; }
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
 
@@ -129,16 +135,28 @@ namespace MapMouseSelect
                 + "changes the cursor itself.");
 
             FrameLimitUnfocused = Config.Bind("Visual", "FrameLimitUnfocused", true,
-                "Cap the frame rate while the game is not focused, to leave the machine alone. The world keeps real time "
-                + "at 10 and above. Below that it slows without the frame rate falling any further.");
+                "Cap the frame rate while the game is not focused, to leave the machine alone. A host holds the cap "
+                + "back while players are connected, unless FrameLimitWhileHosting is on.");
 
             FrameLimitUnfocusedFps = Config.Bind("Visual", "FrameLimitUnfocusedFps", 12,
                 new ConfigDescription(
                     "Frame rate to cap to while the game is not focused. Used while FrameLimitUnfocused is on. A frame "
-                    + "spends at most Time.maximumDeltaTime of game time, about 0.1s here, so the world keeps real time "
-                    + "from 11 up and falls behind below that. 12 is the threshold with a frame of margin. The GPU load "
-                    + "falls with the rate.",
+                    + "spends at most Time.maximumDeltaTime of game time and a longer frame loses the surplus, so the "
+                    + "lowest rate that keeps the world in real time is one above 1 / Time.maximumDeltaTime, 11 here. "
+                    + "12 leaves a frame of margin for a hitch. A value below that floor is held at it, unless "
+                    + "FrameLimitAllowWorldSlowdown is on. The GPU load falls with the rate.",
                     new AcceptableValueRange<int>(1, 240)));
+
+            FrameLimitAllowWorldSlowdown = Config.Bind("Visual", "FrameLimitAllowWorldSlowdown", false,
+                "Let the frame limit go below the rate that keeps the world in real time, down to 1. Off holds the "
+                + "floor at one above 1 / Time.maximumDeltaTime, 11 here, so the world runs at real speed at any rate "
+                + "the slider allows. On takes a lower rate and a world that slows with it, for the smaller GPU load "
+                + "and quieter machine. Leave it off while connected to someone else's game.");
+
+            FrameLimitWhileHosting = Config.Bind("Visual", "FrameLimitWhileHosting", false,
+                "Cap the frame rate while hosting a game that other players are connected to. Off by default, because "
+                + "a host answers its players on the frames it takes.");
+
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
 

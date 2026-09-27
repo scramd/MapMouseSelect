@@ -1,3 +1,4 @@
+using NuclearOption.Networking;
 using UnityEngine;
 
 namespace MapMouseSelect
@@ -13,8 +14,12 @@ namespace MapMouseSelect
     /// Time.maximumDeltaTime of game time on one frame, so a frame longer than that loses the surplus. It logs as 0.1s
     /// here, which puts the threshold at 10 frames a second. Measured, reading the ratio of Time.time to real time once
     /// a second: a cap of 1 kept 0.10 of real time, a cap of 5 kept 0.50, a cap of 10 kept 0.95 to 1.05, a cap of 11
-    /// kept 0.98 to 1.01, and a cap of 12 kept 0.99 to 1.01. Ten sits on the threshold with no margin, so the default
-    /// is 12, which leaves a frame of headroom for a hitch at the cost of two frames a second.
+    /// kept 0.98 to 1.01, and a cap of 12 kept 0.99 to 1.01. Ten sits on the threshold with no margin, so the floor is
+    /// one above it, 11 here, and the default is 12, a frame of headroom for a hitch at the cost of a frame a second.
+    /// FrameLimitAllowWorldSlowdown lifts the floor and takes the slow world.
+    ///
+    /// A host hands the cap back while players are connected, since it answers them on the frames it takes. A client
+    /// is left to the floor, which is what keeps its world clock straight.
     ///
     /// vsync comes off for the cap to mean anything, since Unity ignores targetFrameRate while vSyncCount is above
     /// zero. Both values are kept on the way out of focus and put back on the way in, and re-asserted while unfocused,
@@ -22,6 +27,8 @@ namespace MapMouseSelect
     /// </summary>
     internal static class FrameLimit
     {
+        private const int MaxRate = 240;
+
         private static bool _capped;
         private static int _gameFrameRate;
         private static int _gameVsync;
@@ -35,7 +42,8 @@ namespace MapMouseSelect
 
         internal static void Tick()
         {
-            var wanted = Plugin.FrameLimitUnfocused.Value && !Application.isFocused;
+            var unfocused = Plugin.FrameLimitUnfocused.Value && !Application.isFocused;
+            var wanted = unfocused && (Plugin.FrameLimitWhileHosting.Value || !Hosting());
 
             if (wanted && !_capped)
             {
@@ -63,7 +71,8 @@ namespace MapMouseSelect
                 QualitySettings.vSyncCount = _gameVsync;
 
                 Plugin.Verbose(
-                    "Frame limit: off, back to " + _gameFrameRate + " and vsync " + _gameVsync + ".");
+                    "Frame limit: off" + (unfocused ? " while hosting with players connected" : "")
+                    + ", back to " + _gameFrameRate + " and vsync " + _gameVsync + ".");
             }
             else if (wanted)
             {
@@ -78,7 +87,7 @@ namespace MapMouseSelect
         /// </summary>
         private static void Apply()
         {
-            var rate = Mathf.Clamp(Plugin.FrameLimitUnfocusedFps.Value, 1, 240);
+            var rate = Mathf.Clamp(Plugin.FrameLimitUnfocusedFps.Value, Floor(), MaxRate);
 
             if (Application.targetFrameRate != rate)
             {
@@ -89,6 +98,71 @@ namespace MapMouseSelect
             {
                 QualitySettings.vSyncCount = 0;
             }
+        }
+
+        /// <summary>
+        /// Lowest rate the limiter applies.
+        ///
+        /// A frame spends at most Time.maximumDeltaTime of game time, so one above the reciprocal of it is the lowest
+        /// rate that keeps the world in real time: 11 at the 0.1s this game logs. FrameLimitAllowWorldSlowdown drops
+        /// the floor to 1 and takes the slow world that follows.
+        ///
+        /// The config range cannot carry this, because Bind fixes it at startup and the game has not set its own
+        /// value that early. The file may hold anything, and this clamp is what decides.
+        /// </summary>
+        private static int Floor()
+        {
+            if (Plugin.FrameLimitAllowWorldSlowdown.Value)
+            {
+                return 1;
+            }
+
+            var limit = Time.maximumDeltaTime;
+            if (limit <= 0f)
+            {
+                return MaxRate;
+            }
+
+            return Mathf.Min(MaxRate, Mathf.CeilToInt(1f / limit) + 1);
+        }
+
+        /// <summary>
+        /// True while this process runs a game server that someone other than the host is connected to. This is the
+        /// server-with-players test the game's own debug panel uses, which covers a host with a client and a headless
+        /// server with one, and leaves a single-player offline host alone.
+        ///
+        /// A null manager means the game has not preloaded one yet, and reading it in that state logs an error, so this
+        /// is only called while the cap is on and the caller has not opted out.
+        /// </summary>
+        private static bool Hosting()
+        {
+            var manager = NetworkManagerNuclearOption.i;
+            if (manager == null)
+            {
+                return false;
+            }
+
+            var server = manager.Server;
+            if (server == null || !server.Active)
+            {
+                return false;
+            }
+
+            var players = server.AllPlayers;
+            if (players.Count >= 2)
+            {
+                return true;
+            }
+
+            foreach (var player in players)
+            {
+                if (!player.IsHost)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -135,8 +209,8 @@ namespace MapMouseSelect
                 _warned = true;
                 Plugin.Log.LogWarning(
                     "Frame limit: the world kept " + kept.ToString("0.00") + " of real time at a cap of "
-                    + Application.targetFrameRate + ". Below 10 the world falls behind, and the GPU load falls with the "
-                    + "frame rate.");
+                    + Application.targetFrameRate + ". A frame longer than Time.maximumDeltaTime loses the surplus it "
+                    + "should have carried, which is what FrameLimitAllowWorldSlowdown permits.");
             }
 
             _frames = 0;
