@@ -134,9 +134,9 @@ namespace MapMouseSelect
 
             FrameLimitUnfocusedFps = Config.Bind("Visual", "FrameLimitUnfocusedFps", 10,
                 new ConfigDescription(
-                    "Frame rate to cap to while the game is not focused. Used while FrameLimitUnfocused is on. Measured: "
-                    + "the loop bottoms out near 11 frames a second whatever is asked for below that, and the world keeps "
-                    + "the rate divided by ten, so 5 leaves it running at half speed.",
+                    "Frame rate to cap to while the game is not focused. Used while FrameLimitUnfocused is on. A frame "
+                    + "spends at most Time.maximumDeltaTime of game time, about 0.1s, so at 10 and above the world "
+                    + "advances in real time, and below it the world falls behind while the GPU load falls with the rate.",
                     new AcceptableValueRange<int>(1, 240)));
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
