@@ -43,17 +43,15 @@ Many of those things have configurations if you have BepInEx config manager inst
 - The mouse wheel no longer moves the camera's field of view behind menus, or in the flyby view while the map is open.
 - Dragging the map moves it exactly as far as the mouse, instead of further the slower the game runs and in bursts (`MapPanSpeed` scales it).
 
-## Install
+## Download and install
 
 Needs BepInEx 5 x64 in the game directory.
 
-1. Take `MapMouseSelect.dll` from a release, or [build it](#build).
-2. Put it in `Nuclear Option\BepInEx\plugins\MapMouseSelect\`.
+1. Take the archive from the [latest release](https://github.com/Metadorius/MapMouseSelect/releases/latest), or [build it](#build) yourself.
+2. Unzip it and put the `MapMouseSelect` folder into `Nuclear Option\BepInEx\plugins\`.
 3. Start the game. The mod writes its config to `BepInEx\config\com.kerbiter.mapmouseselect.cfg`.
 
-Releases also ship an archive with the DLL, the readme and the licence, if you would rather not build anything.
-
-NOMM entry pending, so for now the DLL goes in by hand as above.
+The archive holds the DLL, the readme and the licence. NOMM entry pending, so for now the folder goes in by hand as above.
 
 Every setting is documented in that file and in the Configuration Manager window (F1) while the game runs. [The full list](docs/configuration.md).
 
