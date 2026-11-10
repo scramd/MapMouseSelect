@@ -28,7 +28,7 @@ Method $game TargetListSelector Start ''
 Method $game TargetListSelector CheckExclusions 'Unit u' 'System.Boolean'
 Method $game TargetListSelector ResetFilters ''
 Method $game TargetListSelector_ToggleButton TargetListSelector_ToggleButton_OnThemeGroupChanged ''
-foreach ($item in @(@($game,'DynamicMap','onAllDeselected'),@($game,'CombatHUD','markers'),@($game,'CombatHUD','selectSound'),@($game,'CombatHUD','deselectSound'),@($game,'TargetListSelector_ToggleButton','context'),@($game,'TargetListSelector','resetButtonImage'),@($game,'TargetListSelector','resetButtonLabel'),@($rewired,'Rewired.Data.UserData','actions'),@($rewired,'Rewired.Data.UserData','actionCategoryMap'),@($rewired,'Rewired.Data.UserData','actionCategories'))) {
+foreach ($item in @(@($game,'DynamicMap','onAllDeselected'),@($game,'CombatHUD','markers'),@($game,'CombatHUD','selectSound'),@($game,'CombatHUD','deselectSound'),@($game,'TargetListSelector_ToggleButton','context'),@($game,'TargetListSelector','resetButtonImage'),@($game,'TargetListSelector','resetButtonLabel'),@($rewired,'Rewired.Data.UserData','actions'),@($rewired,'Rewired.Data.UserData','actionCategoryMap'))) {
     $f = $item[0].MainModule.GetType($item[1]).Fields | Where-Object Name -eq $item[2]
     if (!$f) { throw "Missing $($item[1]).$($item[2])" }
     Write-Output "Field OK: $($item[1]).$($item[2]): $($f.FieldType.FullName)"

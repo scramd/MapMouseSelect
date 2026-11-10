@@ -384,23 +384,6 @@ namespace MapMouseSelect
             return null;
         }
 
-        private static string CategoryName(object userData, int categoryId)
-        {
-            var categories = Field<List<InputActionCategory>>(userData, "actionCategories");
-            if (categories != null)
-            {
-                for (var i = 0; i < categories.Count; i++)
-                {
-                    if (categories[i] != null && categories[i].id == categoryId)
-                    {
-                        return categories[i].name;
-                    }
-                }
-            }
-
-            return categoryId.ToString();
-        }
-
         private static T Field<T>(object instance, string name) where T : class
         {
             var field = AccessTools.Field(instance.GetType(), name);
