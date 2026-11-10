@@ -1,29 +1,36 @@
-# Configuration
+# Configuration reference
 
-Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmouseselect.cfg`, and in the Configuration Manager window (F1) while the game runs. The three outline colours open a colour picker there, with the red, green, blue and alpha sliders, a hex field and a reset button. In the file they are `RRGGBBAA` hex, so `FF5A5ACC` is a mostly opaque red.
+Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepInEx ConfigurationManager exposes them in F1. Colours are RGBA values. No controller binding migration is included in this fork.
 
-| Section | Key | Default | Meaning |
-|---|---|---|---|
-| Hotkeys | `PanButton` | `Middle` | Mouse button that drags to pan the map |
-| Hotkeys | `RequireModifier` | `false` | Require `MarqueeModifier` to start a marquee |
-| Hotkeys | `MarqueeModifier` | `LeftAlt` | Modifier used when `RequireModifier` is on |
-| Hotkeys | `DefaultBindings` | empty, then one name per action | Actions whose default key the mod has already written. Removing a name has it written again, which is there so a key you clear stays clear. The Controls menu's Restore Defaults clears the relevant names for you |
-| Behavior | `ShiftAddsToSelection` | `true` | Shift extends the selection |
-| Behavior | `ControlRemovesFromSelection` | `true` | Ctrl takes the boxed units out of the selection |
-| Behavior | `SuppressModifierBindings` | `true` | While the map is open, disable keyboard bindings that sit directly on `ModifierKeys` |
-| Behavior | `ModifierKeys` | Shift, Control | Keys that act only as map modifiers while the map is open |
-| Behavior | `BatchTargetListWhileFlying` | `true` | Allow the box select while flying (weapon targets). Off disables it in that mode |
-| Behavior | `FollowFirstUnit` | `false` | In commander view, move the camera to the first boxed unit |
-| Behavior | `EnableInMissionEditor` | `false` | Allow the box select in the mission editor, which has its own box select |
-| Behavior | `MaxTargets` | `128` | Cap on targets one box may add. The game itself refuses more than 128 |
-| Behavior | `MapPanFix` | `true` | Make the map follow the cursor while it is dragged, by reading the cursor instead of the game's mouse axes |
-| Behavior | `MapPanSpeed` | `1` | How far the map moves per pixel of mouse movement while dragging it, used while `MapPanFix` is on |
-| Behavior | `MapStick` | `false` | Scroll the map like a stick while the pan button is held, instead of dragging it |
-| Behavior | `MapStickGain` | `8` | Scroll speed the stick gains per pixel of push, in screen pixels per second, with no ceiling |
-| Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
-| Visual | `PanCursor` | `true` | Show Windows' move cursor while the pan button is held |
-| Visual | `BoxOutlineColor` | `3CB4FFCC` | Outline color for a replacing selection |
-| Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Outline color for an additive selection (Shift held) |
-| Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Outline color for a deselecting box (Ctrl held) |
-| Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
-| Target list | `FilterNeutral` | `true` | Add the `NTL` button to the Target List filter pane |
+| Section | Key | Default | Effect and limit |
+| --- | --- | --- | --- |
+| Hotkeys | `PanButton` | `Middle` | `Left`, `Right` or `Middle`. Left conflicts with unmodified marquee ownership; right also triggers stock waypoints. Middle is the intended separation. |
+| Hotkeys | `RequireModifier` | `false` | Require the shortcut at the start of a box. Releasing it does not cancel an active box. KeyboardShortcut rejects extra held non-mouse keys, so default Alt does not arm with Shift/Ctrl or flight keys already held; choose a matching combination or press mode keys after starting. |
+| Hotkeys | `MarqueeModifier` | `LeftAlt` | BepInEx KeyboardShortcut. Used only with RequireModifier. Not the owner's multi-device binding type. |
+| Hotkeys | `DefaultBindings` | empty | Internal record of the three target actions whose defaults were handled. Removing an action name allows its default to be written again. Restore Defaults clears these names. |
+| Behavior | `ShiftAddsToSelection` | `true` | Shift chooses an additive box. Does not disable native Shift-click behaviour. |
+| Behavior | `ControlRemovesFromSelection` | `true` | Ctrl chooses a removing box and takes precedence over Shift. |
+| Behavior | `SuppressModifierBindings` | `true` | Temporarily disables enabled bare-key mappings on ModifierKeys while the expanded map is open. It is not a general input reservation system. |
+| Behavior | `ModifierKeys` | `LeftShift, RightShift, LeftControl, RightControl` | Comma-separated Unity KeyCode names, parsed case-insensitively. Unknown names log a warning. The marquee shortcut's MainKey joins when RequireModifier is on; extra shortcut modifiers do not automatically join. |
+| Behavior | `BatchTargetListWhileFlying` | `true` | Allows a box to change flying targets. False suppresses its application, not the drag state or its input blocking. Click and target-key changes remain active. |
+| Behavior | `FollowFirstUnit` | `false` | Commander box follows the first collected unit when at least one unit was newly selected. |
+| Behavior | `EnableInMissionEditor` | `false` | Allows marquee and target keys in the editor. Does not coordinate the editor's own box or multi-selection store. Other click, pan and suppression patches still operate with this false. |
+| Behavior | `MaxTargets` | `128` | Range 1 to 128. Caps flying box additions against retained targets. Does not prune already retained targets to a newly lowered cap. Not used for commander boxes or target keys. |
+| Behavior | `MapPanFix` | `true` | Uses raw pointer displacement and scale correction instead of native mouse axes and frame-time factor. The transpiler remains installed when false and returns native values. |
+| Behavior | `MapPanSpeed` | `1` | Range 0.1 to 5. Multiplier while MapPanFix is on; 1 aims for one screen pixel per pointer pixel. |
+| Behavior | `MapStick` | `false` | With MapPanFix, uses displacement from pan press as scrolling velocity. This is mouse stick mode, not controller stick support. |
+| Behavior | `MapStickGain` | `8` | Range 0.5 to 100. Pixels/second per pixel of push beyond the initial drag-threshold distance. No speed ceiling. |
+| Visual | `ShowSelectionBox` | `true` | Draws the outline; false still selects. |
+| Visual | `PanCursor` | `true` | Uses the Windows move cursor while the configured pan button is held and the expanded map/cursor are visible. No map-rectangle test is made here. |
+| Visual | `BoxOutlineColor` | `3CB4FFCC` | Replace outline. |
+| Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Add outline. |
+| Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Remove outline. |
+| Visual | `OverlaySortingOrder` | `32000` | Order for the mod's screen overlay canvas, read only when created. Restart to change an existing overlay. |
+| Target list | `FilterNeutral` | `true` | Creates NTL when the Target List starts. Restart after changing this setting; it is not a live enable/disable gate for an existing button. |
+| Diagnostics | `VerboseLogging` | `true` | Selection, input and navigation details. Startup patch errors still log when false. |
+
+NTL starts lit, meaning neutrals pass through unless another filter excludes them. Left click toggles it. Reset restores it lit. As a cloned native button outside the stock lists, its right click turns it on but does not isolate neutrals. Exclusion adds dimming and blocks selection; it does not hide the icon GameObject. Layout retains the inherited half-width button.
+
+The target actions use the game's Controls menu, not these settings. Select Target Only defaults to Backslash; Deselect Oldest Target to Delete; Deselect Target Looked At to Minus. Defaults are written only where the action is unbound and not already recorded, on enabled keyboard maps that bind Cancel. Rebinding or deliberately clearing an action is preserved by the record. The hard-coded action IDs and names are shared with upstream.
+
+Old configuration files can retain orphaned entries for removed features. The plugin no longer binds or reads them. No migration deletes those saved values or native saved input maps.

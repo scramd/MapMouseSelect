@@ -45,5 +45,5 @@ for ($i = 0; $i -lt $il.Count; $i++) {
     if ($il[$i].OpCode.Name -eq 'ldstr' -and $il[$i].Operand -in @('Pan View','Tilt View') -and $il[$i+1].Operand.FullName -eq 'System.Single Rewired.Player::GetAxis(System.String)') { $axes++ }
     if ($i -ge 3 -and $il[$i].Operand -is [Mono.Cecil.MethodReference] -and $il[$i].Operand.FullName -eq 'System.Single UnityEngine.Mathf::Min(System.Single,System.Single)' -and $il[$i-1].OpCode.Name -eq 'ldc.r4' -and [math]::Abs($il[$i-1].Operand - 0.03) -lt 0.000001 -and $il[$i-2].Operand.FullName -eq 'System.Single UnityEngine.Time::get_unscaledDeltaTime()' -and $il[$i-3].Operand -eq 150) { $factors++ }
 }
-if ($mouse -ne 1 -or $leftGate -ne 1 -or $axes -ne 2 -or $factors -ne 1) { throw "IL mismatch: mouse=$mouse axes=$axes factors=$factors" }
+if ($mouse -ne 1 -or $leftGate -ne 1 -or $axes -ne 2 -or $factors -ne 1) { throw "IL mismatch: mouse=$mouse leftGate=$leftGate axes=$axes factors=$factors" }
 Write-Output 'IL patterns OK: one pan gate, two mouse axes, one pan factor. This does not run Harmony or the game.'

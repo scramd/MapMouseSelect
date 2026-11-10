@@ -200,7 +200,8 @@ namespace MapMouseSelect
 
         /// <summary>
         /// Prunes the target list down to the unit being pointed at. Vanilla's picks are not called here, because
-        /// both refuse a unit that is already selected. Empty sky leaves the list alone.
+        /// the own pick deliberately includes selected units. The native map picker
+        /// is separately affected by this mod restoring selected-icon raycasts. Empty sky leaves the list alone.
         /// </summary>
         private static void SelectOnly()
         {
@@ -256,7 +257,7 @@ namespace MapMouseSelect
 
         /// <summary>
         /// What the player is pointing at, with the same 100 pixel radius the two vanilla picks use. Neither pick
-        /// is called: both skip a unit that is already selected.
+        /// is called here; this pick explicitly includes selected units.
         /// </summary>
         private static Unit PointedAt(DynamicMap map, CombatHUD hud)
         {

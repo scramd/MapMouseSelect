@@ -270,7 +270,7 @@ namespace MapMouseSelect
             if (context == null || source == null)
             {
                 Plugin.Log.LogWarning(
-                    "Could not read the Target List button theme, so the new filters keep the faction colour they "
+                    "Could not read the Target List button theme, so the NTL filter keeps the faction colour it "
                     + "were copied from.");
                 return;
             }

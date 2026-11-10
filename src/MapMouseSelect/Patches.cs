@@ -148,7 +148,6 @@ namespace MapMouseSelect
             if (__instance is UnitMapIcon icon && icon.iconImage != null)
             {
                 icon.iconImage.raycastTarget = true;
-
             }
         }
     }

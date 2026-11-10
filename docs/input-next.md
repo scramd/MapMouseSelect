@@ -1,0 +1,47 @@
+# Prepare the next input step
+
+The current code combines three input systems: native Rewired actions, one BepInEx KeyboardShortcut, and raw Unity mouse/key reads. No bindings-library migration or new mouse/controller interaction is implemented here. Read the owner's `nuclear-option-bindings/README.md` before doing that work. Its source-only `NuclearOption.Bindings` package compiles into a mod; players do not install another plugin DLL.
+
+## Input reads and ownership today
+
+| Location | Reads or changes |
+| --- | --- |
+| `Marquee.Tick`, `ScreenRect`, `ControlHeld`, `CurrentMode` | Unity left down/held/release-by-not-held, mouse position, Ctrl; `KeyboardShortcut.IsPressed` for optional LeftAlt; Shift via VanillaCalls. |
+| `VanillaCalls.ShiftHeld` | Both Unity Shift keys; used by marquee and click routing. |
+| `MapIconPointerClickPatch` | EventSystem left button and press position, Unity current pointer, native drag threshold. |
+| `UnitMapIconClickPatch` | Mouse versus Controller ClickSource, Shift and cursor-in-map. It does not implement Ctrl-click removal. |
+| `PanButtonCompat.GetMouseButton` | Configured Unity Left/Right/Middle held button; replaces the stock pan gate. |
+| `VanillaFixes.PanAxis`, `CursorStep`, `StickStep` | Stock Rewired Pan View/Tilt View axis values, raw mouse position, frame time, drag threshold. |
+| `CameraJump.Tick` | Left down, pointer, unscaled time and drag threshold to detect a second press within 0.3 s; checks map and aircraft. |
+| `CameraJump.HoldJumpButtonOff` | Looks up native Jump Map; disables mouse mappings whose element name matches the pan button. Restores held-off mappings when map closes. |
+| `ModifierGuard`, `BindingBlocker` | Parses configured Unity modifier keys; reads the marquee shortcut's MainKey; disables bare-key Rewired elements on enabled keyboard maps while expanded. It does not disable declared modifier combinations. |
+| `PanCursor.Tick` | Configured pan button, expanded-map state and cursor visibility. Windows helper fetches a cursor image; it does not read an action. |
+| `TargetKeys.Tick`, `PointedAt` | Rewired down for SelectOnly and DeselectLookedAt; timed press-down plus up for DeselectOldest. Uses PlayerSettings.pressDelay, then a local hold latch. Pointer with map open; HUD designator with map closed. |
+| `ModActions.Register` | Adds three Button actions to Cancel's category during InputManager_Base.Awake. IDs 971001, 971002, 971003 and names `MapMouseSelect::SelectOnly`, `MapMouseSelect::DeselectOldest`, `MapMouseSelect::DeselectLookedAt`. |
+| `ModActions.EnsureDefaultBindings`, `ForgetDefaults` | Writes keyboard defaults Backslash/Delete/Minus onto enabled Cancel keyboard maps if unbound and not recorded. Config records names. Controls Restore Defaults clears that record for these actions. |
+| NTL cloned `TargetListSelector_ToggleButton` | Native pointer callbacks handle left toggle and right-click SetOnlyItem. Theme/layout and right-click semantics are coupled to the stock control. |
+
+Panning also leaves native `Move Map Horizontal/Vertical`, `Zoom View`, Select, Jump Map and right-click waypoint branches in `MapControls`. All are skipped during marquee ownership. Those are native reads, not new mod actions, but their arbitration must be included in a redesign. CombatHUD.LateUpdate also reads a timed Select release for HUD TargetSelect even with the map expanded; only its held paint branch checks the map state.
+
+## What migration would change
+
+Use `InputBinding.Bind` for semantic actions. The three target keys would move from the game Controls menu to F1 rows. Map actions need `allowFullMap: true`; the library otherwise blocks them with the expanded map open. It supplies keyboard/mouse/gamepad/HOTAS rows, F1 capture, context blocking and neutral rearming. Existing MarqueeModifier can use the documented KeyboardShortcut migration, with an explicit saved-setting policy.
+
+Remove runtime action creation, private Rewired UserData writes, default-key insertion and the Controls Restore Defaults patch only after deciding how to import saved game Controls bindings. Their existing maps are not BepInEx shortcut strings. Preserve user choices, including intentionally cleared keys, and do not silently put back defaults.
+
+The public library exposes `IsDown` and `IsHeld`, not `IsUp`. Tap/hold actions need previous-held state and a cancelled-context policy, or the documented per-row interface. Do not read a held binding intermittently: release-first rearming depends on frame reads. The library advises reads from the mod's own Update/LateUpdate rather than another persistent host; reconcile this with the inherited host lifecycle using runtime evidence. NuclearMinimap uses plugin Update/LateUpdate, so do not assume every plugin host is destroyed; inspect loader settings before choosing a host.
+
+The library rejects extra Shift/Ctrl/Alt on ordinary key rows. That changes how the three target keys behave during modifier gestures and needs a migration/design decision. The library is additive. It does not reserve native controls, supply pointer positions, move a virtual cursor or make a controller marquee. Keep gesture geometry separate from action bindings. Modifier suppression and Jump Map suppression need their own reviewed ownership policy. The F1 capture UI reserves left/right mouse clicks for itself, so generic capture does not solve rebinding the left-button drag.
+
+## Open design questions
+
+- Which actions stay map-only, and should the target keys keep closed-map HUD behaviour?
+- Does a controller use a virtual cursor with two corners, a growing rectangle, a radius, or a unit list? What provides coordinates, drag threshold and feedback?
+- How do replace/add/remove work without simultaneously holding multiple buttons? Which action cancels a gesture?
+- Should zoom, stick pan and waypoints remain available during a marquee? Which controls are consumed, and how do tap/hold and menu transitions restore them?
+- Should mouse panning, stick panning, camera jump, NTL and FollowFirstUnit remain in this plugin?
+- How should focus loss, chat, F1, pause, loading, device disconnect and aircraft/scene changes cancel and rearm gestures?
+- How are old shortcuts, Controls bindings and DefaultBindings migrated without losing intentional unbound settings?
+- How should selected-unit clicks, controller Select, neutral exclusion and already selected targets follow one consistent rule?
+
+Do not choose defaults or controller interactions solely to preserve this implementation. The owner wants the functionality and accepts replacement code.

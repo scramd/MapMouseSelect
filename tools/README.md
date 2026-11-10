@@ -1,6 +1,6 @@
 # Tools
 
-Read-only scripts that answer questions about the shipped game build, so a change to it can be traced without opening a decompiler. They read `NuclearOption_Data\Managed\Assembly-CSharp.dll` through the Mono.Cecil that BepInEx ships, and they need the game path, from `NUCLEAR_OPTION_ROOT` or from `-NuclearOptionRoot`.
+Read-only scripts that answer questions about the shipped game build, so a change to it can be traced without opening a decompiler. They read `NuclearOption_Data\Managed\Assembly-CSharp.dll` through the Mono.Cecil that BepInEx ships, and the inherited exploration scripts need the game path, from `NUCLEAR_OPTION_ROOT` or from `-NuclearOptionRoot`. `Check-GameApi.ps1` instead takes explicit `ManagedDir` and `BepInExCore` folders and stops at the first mismatch.
 
 | Script | What it answers |
 |---|---|
