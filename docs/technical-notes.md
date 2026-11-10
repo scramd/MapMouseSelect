@@ -50,7 +50,6 @@ Behaviour worth knowing, and what vanilla does instead.
 
 - `DynamicMap.GetOrAddIcon` queues an icon and then returns `iconLookup[unit]`, which throws `KeyNotFoundException` for a unit that gets no icon, such as a disabled one or one whose definition asks for none. It returns no icon now.
 - `DynamicMap.FlagIncomingMissile` calls that and dereferences the result, so it skips a unit with no icon.
-- Wheel in menus and in the flyby view: `Zoom View` is the wheel, and `DynamicMap.MapControls` reads it to zoom the map, as do other camera states. `CameraChaseState` and `CameraOrbitState` only do their wheel work inside `if (!Cursor.visible)`, and `CameraCockpitState` only asks whether the map is maximized, so a scroll inside a dialog moved the cockpit's field of view behind it. `CameraTVState`, the flyby camera, asks nothing, so a scroll that zoomed the map moved its field of view too. The mod masks both reads while the cursor is up and leaves the two states that already ask that alone.
 - Cursor: the game never changes the cursor's shape, since `CursorManager` decides only whether it is visible and whether it is locked. While the pan button is held over the map, the mod reads the cursor theme's move cursor out of Windows at the size the display uses and hands it to Unity, so it matches the player's scheme. `Visual.PanCursor` turns that off.
 
 ## Limitations

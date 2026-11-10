@@ -266,8 +266,6 @@ namespace MapMouseSelect
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
-                + ", wheel mask call sites=" + CameraCockpitStateWheelMaskPatch.Masked
-                + "/" + CameraTVStateWheelMaskPatch.Masked
                 + ", pan factor call sites=" + MapPanProportionPatch.CallSites
                 + ", pan axis call sites=" + MapPanProportionPatch.AxisSites
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)

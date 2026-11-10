@@ -17,12 +17,6 @@ namespace MapMouseSelect
     /// </summary>
     internal static class VanillaFixes
     {
-        /// <summary>Zeroes the wheel while the cursor is up, the gate two of the four camera states
-        /// apply themselves.</summary>
-        internal static float WheelWhileCursorUp(float value)
-        {
-            return Cursor.visible ? 0f : value;
-        }
 
         /// <summary>
         /// The pan offset one pixel of cursor movement is worth, replacing the frame time vanilla scales the drag by.
@@ -260,89 +254,8 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// Keeps the wheel out of the camera states that never ask whether they should have it. "Zoom View" is the wheel
-    /// they share with the map zoom. CameraChaseState and CameraOrbitState gate theirs on Cursor.visible, up for
-    /// every menu, dialog and the map, while CameraCockpitState asks only about the maximized map and CameraTVState
-    /// asks nothing. The mask goes in after the axis read, so the stack and the evaluation order stay as they were.
-    /// </summary>
-    internal static class CameraWheelMask
-    {
-        internal static IEnumerable<CodeInstruction> Apply(
-            IEnumerable<CodeInstruction> instructions, string method, out int masked)
-        {
-            var getAxis = AccessTools.Method(typeof(Player), nameof(Player.GetAxis), new[] { typeof(string) });
-            var mask = AccessTools.Method(typeof(VanillaFixes), nameof(VanillaFixes.WheelWhileCursorUp));
 
-            var patched = 0;
-            var result = new List<CodeInstruction>();
-            string axis = null;
 
-            foreach (var instruction in instructions)
-            {
-                result.Add(instruction);
-
-                if (instruction.opcode == OpCodes.Ldstr)
-                {
-                    axis = instruction.operand as string;
-                    continue;
-                }
-
-                if (getAxis != null && mask != null && instruction.Calls(getAxis) && axis == "Zoom View")
-                {
-                    result.Add(new CodeInstruction(OpCodes.Call, mask));
-                    patched++;
-                }
-
-                axis = null;
-            }
-
-            masked = patched;
-
-            if (patched != 1)
-            {
-                Plugin.Log.LogWarning(
-                    "Expected exactly one Zoom View read in " + method + " but found " + patched
-                    + ". Scrolling with a menu open, or with the map open in the flyby view, will go on moving the camera.");
-            }
-
-            return result;
-        }
-    }
-
-    /// <summary>The cockpit camera, whose gate asks only whether the map is maximized – a dialog shows the cursor
-    /// and leaves the map minimized.</summary>
-    [HarmonyPatch(typeof(CameraCockpitState), "UpdateState")]
-    internal static class CameraCockpitStateWheelMaskPatch
-    {
-        /// <summary>Call sites masked, or -1 when the transpiler never ran.</summary>
-        internal static int Masked { get; private set; } = -1;
-
-        [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var result = CameraWheelMask.Apply(instructions, "CameraCockpitState.UpdateState", out var masked);
-            Masked = masked;
-            return result;
-        }
-    }
-
-    /// <summary>The flyby camera, which reads the wheel with no gate at all – with the map open, a scroll moved its
-    /// field of view as well as zooming the map (confirmed in play 2026-09-21).</summary>
-    [HarmonyPatch(typeof(CameraTVState), "UpdateState")]
-    internal static class CameraTVStateWheelMaskPatch
-    {
-        /// <summary>Call sites masked, or -1 when the transpiler never ran.</summary>
-        internal static int Masked { get; private set; } = -1;
-
-        [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var result = CameraWheelMask.Apply(instructions, "CameraTVState.UpdateState", out var masked);
-            Masked = masked;
-            return result;
-        }
-    }
 
     /// <summary>
     /// Makes the map follow the cursor while it is dragged. DynamicMap.MapControls scales the pan by the frame time,

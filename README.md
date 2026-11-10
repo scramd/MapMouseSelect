@@ -35,7 +35,6 @@ Many of those things have configurations if you have BepInEx config manager inst
 - A selected unit's icon stays clickable, so its tooltip and the Shift-click deselect work again.
 - Filter dimming is no longer lost after a deselect.
 - Target List rows no longer outlive the selection (unselect all, respawn, spawn screen).
-- The mouse wheel no longer moves the camera's field of view behind menus, or in the flyby view while the map is open.
 - Dragging the map moves it exactly as far as the mouse, instead of further the slower the game runs and in bursts (`MapPanSpeed` scales it).
 
 ## Download and install
