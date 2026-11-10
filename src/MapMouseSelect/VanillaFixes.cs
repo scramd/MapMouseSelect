@@ -201,14 +201,7 @@ namespace MapMouseSelect
             return Mathf.Abs(cursor) < 20f ? "-" : (map / cursor).ToString("0.###");
         }
 
-        /// <summary>Whether an icon can exist for this unit – the rule the icon queue tests.</summary>
-        internal static bool CanHaveIcon(Unit unit)
-        {
-            return unit != null
-                && !unit.disabled
-                && unit.definition != null
-                && unit.definition.mapIconSize > 0f;
-        }
+
     }
 
     /// <summary>
@@ -362,68 +355,11 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>Returns no icon instead of throwing when the unit cannot have one. Callers that need an icon still
-    /// get the cached one, or a fresh one.</summary>
-    [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.GetOrAddIcon))]
-    internal static class DynamicMapGetOrAddIconPatch
-    {
-        [HarmonyPrefix]
-        private static bool Prefix(DynamicMap __instance, Unit unit, ref UnitMapIcon __result)
-        {
-            if (unit == null || DynamicMap.TryGetMapIcon(unit, out _) || VanillaFixes.CanHaveIcon(unit))
-            {
-                return true;
-            }
 
-            // Vanilla would queue the icon, get nothing back, and throw on iconLookup[unit].
-            __result = null;
-            Plugin.Verbose("No map icon for " + unit.name + ", which cannot have one.");
-            return false;
-        }
-    }
 
-    [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.FlagIncomingMissile))]
-    internal static class DynamicMapFlagIncomingMissilePatch
-    {
-        [HarmonyPrefix]
-        private static bool Prefix(Unit missileUnit)
-        {
-            if (missileUnit == null)
-            {
-                return false;
-            }
 
-            if (DynamicMap.TryGetMapIcon(missileUnit, out _) || VanillaFixes.CanHaveIcon(missileUnit))
-            {
-                return true;
-            }
 
-            Plugin.Verbose("Skipped the incoming missile flag for " + missileUnit.name + ": no map icon for it.");
-            return false;
-        }
-    }
 
-    /// <summary>
-    /// Skips a radar warning highlight for a unit that has no HUD marker. CombatHUD.CreateMarker decides once, when
-    /// the game first maps a unit, and refuses a disabled unit, a Scenery unit, and a unit that appears while the
-    /// player has no aircraft. HighlightMarker indexes markerLookup directly, so a warning about one of those throws
-    /// – the everyday case is a contact already wrecked when it was detected.
-    /// </summary>
-    [HarmonyPatch(typeof(CombatHUD), nameof(CombatHUD.HighlightMarker))]
-    internal static class CombatHudHighlightMarkerPatch
-    {
-        [HarmonyPrefix]
-        private static bool Prefix(CombatHUD __instance, Unit unit)
-        {
-            if (unit != null && !__instance.TryGetMarker(unit, out _))
-            {
-                Plugin.Verbose("Skipped the highlight for " + unit.name + ": it has no HUD marker.");
-                return false;
-            }
-
-            return true;
-        }
-    }
 
     /// <summary>
     /// Releases a unit the weapon target list has nothing to say about. CombatHUD.DeSelectUnit returns early when the

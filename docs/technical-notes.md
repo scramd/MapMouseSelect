@@ -48,8 +48,6 @@ Behaviour worth knowing, and what vanilla does instead.
 ## Vanilla fixes
 
 
-- `DynamicMap.GetOrAddIcon` queues an icon and then returns `iconLookup[unit]`, which throws `KeyNotFoundException` for a unit that gets no icon, such as a disabled one or one whose definition asks for none. It returns no icon now.
-- `DynamicMap.FlagIncomingMissile` calls that and dereferences the result, so it skips a unit with no icon.
 - Cursor: the game never changes the cursor's shape, since `CursorManager` decides only whether it is visible and whether it is locked. While the pan button is held over the map, the mod reads the cursor theme's move cursor out of Windows at the size the display uses and hands it to Unity, so it matches the player's scheme. `Visual.PanCursor` turns that off.
 
 ## Limitations
