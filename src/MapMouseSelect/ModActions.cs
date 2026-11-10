@@ -24,8 +24,6 @@ namespace MapMouseSelect
 
         internal const string DeselectLookedAtName = "MapMouseSelect::DeselectLookedAt";
 
-        /// <summary>The safe exit key, which runs the game's landed eject. The game's own eject is Control+Shift+E.</summary>
-        internal const string SafeExitName = "MapMouseSelect::SafeExit";
 
         /// <summary>Cancel's category and keyboard map, which the mod's keys share.</summary>
         private const string AnchorActionName = "Cancel";
@@ -33,7 +31,7 @@ namespace MapMouseSelect
         /// <summary>The actions this version gives a default key to, and so the ones a record drop has to cover.</summary>
         private static readonly string[] DefaultNames =
         {
-            SelectOnlyName, DeselectOldestName, DeselectLookedAtName, SafeExitName
+            SelectOnlyName, DeselectOldestName, DeselectLookedAtName
         };
 
         // Far above the game's own action ids, which grow upward from zero.
@@ -43,7 +41,6 @@ namespace MapMouseSelect
 
         private const int DeselectLookedAtId = 971003;
 
-        private const int SafeExitId = 971004;
 
         /// <summary>False until both actions exist, so nothing polls a name Rewired cannot resolve.</summary>
         internal static bool Registered { get; private set; }
@@ -87,12 +84,8 @@ namespace MapMouseSelect
             EnsureAction(
                 actions, categoryMap, anchor.categoryId, DeselectLookedAtId, DeselectLookedAtName,
                 "Deselect Target Looked At");
-            EnsureAction(actions, categoryMap, anchor.categoryId, SafeExitId, SafeExitName, "Safe Exit Aircraft");
 
-            Plugin.Log.LogInfo(
-                "Registered " + SelectOnlyName + ", " + DeselectOldestName + ", " + DeselectLookedAtName + " and "
-                + SafeExitName + " in the Rewired '" + CategoryName(userData, anchor.categoryId) + "' category, matching the '"
-                + AnchorActionName + "' action. All four are rebindable in the Controls menu.");
+            Plugin.Log.LogInfo("Registered three map selection actions in the Rewired Controls menu.");
             return true;
         }
 
@@ -173,15 +166,11 @@ namespace MapMouseSelect
             BindIfUnbound(player, keyboard, anchorActionId, DeselectOldestId, KeyCode.Delete, DeselectOldestName);
             BindIfUnbound(
                 player, keyboard, anchorActionId, DeselectLookedAtId, KeyCode.Minus, DeselectLookedAtName);
-            BindIfUnbound(
-                player, keyboard, anchorActionId, SafeExitId, KeyCode.E, SafeExitName,
-                ModifierKeyFlags.LeftControl | ModifierKeyFlags.RightControl);
 
             // Every action this version knows about is now dealt with.
             _bindingsSettled = Written.Contains(SelectOnlyName)
                 && Written.Contains(DeselectOldestName)
-                && Written.Contains(DeselectLookedAtName)
-                && Written.Contains(SafeExitName);
+                && Written.Contains(DeselectLookedAtName);
         }
 
         /// <summary>

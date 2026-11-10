@@ -18,7 +18,6 @@ Many of those things have configurations if you have BepInEx config manager inst
   - `\` selects/keeps only the unit you are pointing at
   - `-` drops the unit you are pointing at
   - `Delete` drops your oldest target, hold it to keep only the newest
-  - `Ctrl+E` leaves an aircraft safely (only when parked on the ground at one of your own airbases)
 - Wrecks: a destroyed but repairable building keeps its map icon, darkened, instead of vanishing. They stay unselectable (unless in commander mode where this does nothing) and they can't be targeted still.
 - Two buttons in the Target List pane:
   - `NTL` for toggling neutrals on the map;

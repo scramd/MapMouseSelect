@@ -184,21 +184,6 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// Reads the mod's safe exit key in the one place the game reads its own eject key.
-    /// PilotPlayerState.PlayerControls is where "Eject" is asked for and where the landed branch runs, once a frame
-    /// while the local player is in a ticking cockpit. Its gates are flight controls enabled and a pilot who is not
-    /// blacked out, and an eject key is deliberately inert while they do not hold.
-    /// </summary>
-    [HarmonyPatch(typeof(PilotPlayerState), "PlayerControls")]
-    internal static class PilotPlayerStateControlsPatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix()
-        {
-            SafeExit.OnPlayerControls();
-        }
-    }
 
     /// <summary>
     /// Logs entering a cockpit. Diagnostics only, one line per transition. Aircraft.OnStartClient calls SetAircraft

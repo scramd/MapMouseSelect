@@ -270,7 +270,6 @@ namespace MapMouseSelect
             var unitDestroyInfo = PatchInfo(AccessTools.Method(typeof(Unit), "OnDestroy"));
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
-            var playerControlsInfo = PatchInfo(AccessTools.Method(typeof(PilotPlayerState), "PlayerControls"));
             var restoreDefaultsInfo = PatchInfo(AccessTools.Method(
                 typeof(Rewired.UI.ControlMapper.ControlMapper), "OnRestoreDefaultsConfirmed"));
 
@@ -293,7 +292,6 @@ namespace MapMouseSelect
                 + ", updateColor postfixes=" + updateColorInfo
                 + ", selectIcon postfixes=" + selectIconInfo
                 + ", unit destroy postfixes=" + unitDestroyInfo
-                + ", player controls postfixes=" + playerControlsInfo
                 + ", reset postfixes=" + resetInfo
                 + ", restore defaults postfixes=" + restoreDefaultsInfo
                 + " | destroyedUnits=" + EnableDestroyedUnits.Value
