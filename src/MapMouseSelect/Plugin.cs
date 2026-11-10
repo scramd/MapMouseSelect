@@ -39,12 +39,6 @@ namespace MapMouseSelect
         /// <summary>Show Windows' move cursor while the pan button is held, instead of the game's arrow.</summary>
         internal static ConfigEntry<bool> PanCursor { get; private set; }
 
-        /// <summary>Whether the mod caps the frame rate while the game is not focused, and at what rate.</summary>
-
-
-        /// <summary>Whether the cap may go below the rate that keeps the world in real time, down to 1.</summary>
-
-        /// <summary>Whether the cap also holds while this process hosts a game other players are connected to.</summary>
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
 
@@ -128,14 +122,6 @@ namespace MapMouseSelect
                 "Show Windows' move cursor while the pan button is held over the map, since the game never "
                 + "changes the cursor itself.");
 
-
-
-
-
-
-
-
-
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
 
@@ -148,10 +134,6 @@ namespace MapMouseSelect
                 "Outline color for an additive selection (Shift held).");
             BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", Hex("#FF5A5ACC"),
                 "Outline color for a deselecting marquee (Control held).");
-
-
-
-
 
             FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
                 "Add a NTL button to the Target List pane, for units that are neither friendly nor hostile.");
@@ -256,7 +238,6 @@ namespace MapMouseSelect
             var deselectInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.DeSelectUnit)));
             var setAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.SetAircraft)));
             var removeAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft)));
-            var updateColorInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.UpdateColor)));
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
             var restoreDefaultsInfo = PatchInfo(AccessTools.Method(
@@ -275,7 +256,6 @@ namespace MapMouseSelect
                 + " | deselect prefixes=" + deselectInfo
                 + ", setAircraft postfixes=" + setAircraftInfo
                 + ", removeAircraft postfixes=" + removeAircraftInfo
-                + ", updateColor postfixes=" + updateColorInfo
                 + ", selectIcon postfixes=" + selectIconInfo
                 + ", reset postfixes=" + resetInfo
                 + ", restore defaults postfixes=" + restoreDefaultsInfo

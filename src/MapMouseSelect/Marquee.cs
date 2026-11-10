@@ -211,9 +211,6 @@ namespace MapMouseSelect
                     continue;
                 }
 
-                // Dead units are not skipped on purpose: vanilla removes the icon when a unit is disabled, and the
-                // one wreck this mod keeps on the map is the WRECK filter's business below.
-
                 // An icon switched off in Map Options is an inactive object, and vanilla cannot select one either:
                 // clicking needs a raycast hit, and the range select needs the marker's image enabled.
                 if (!unitIcon.gameObject.activeInHierarchy)

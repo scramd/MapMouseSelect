@@ -24,7 +24,6 @@ namespace MapMouseSelect
 
         internal const string DeselectLookedAtName = "MapMouseSelect::DeselectLookedAt";
 
-
         /// <summary>Cancel's category and keyboard map, which the mod's keys share.</summary>
         private const string AnchorActionName = "Cancel";
 
@@ -41,8 +40,7 @@ namespace MapMouseSelect
 
         private const int DeselectLookedAtId = 971003;
 
-
-        /// <summary>False until both actions exist, so nothing polls a name Rewired cannot resolve.</summary>
+        /// <summary>False until all three actions exist, so nothing polls a name Rewired cannot resolve.</summary>
         internal static bool Registered { get; private set; }
 
         internal static void Register(InputManager_Base manager)

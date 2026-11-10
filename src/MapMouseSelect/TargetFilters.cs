@@ -7,8 +7,8 @@ using UnityEngine.UI;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Adds wrecks and neutrals to the pane's Target List filters. Lit shows a group, unlit filters it out.
-    /// The two buttons sit outside the pane's three filter lists. SetOnlyItem indexes listDefinitions[0] for a
+    /// Adds neutrals to the pane's Target List filters. Lit shows a group, unlit filters it out.
+    /// The button sit outside the pane's three filter lists. SetOnlyItem indexes listDefinitions[0] for a
     /// vehicle button, so an entry with no definitions would throw, and the faction button carries a
     /// same-faction flag, not a faction, so no list entry can express a neutral unit.
     /// </summary>
@@ -50,11 +50,11 @@ namespace MapMouseSelect
                 ? Mathf.Max(1f, (LeftEdge(left) - RightEdge((RectTransform)items[items.Count - 2].transform)) / scale)
                 : 4f;
 
-            // Split is half the row's spacing, taken out of the pair's own width, so the pair fills one slot.
+            // Retain the upstream half-width slot and spacing.
             var split = Mathf.Max(1f, gap * 0.5f);
             var each = Mathf.Max(1f, (templateRect.rect.width - split) * 0.5f);
 
-            // One gap past the last faction button: gap + each + split + each is exactly one button wide.
+            // One gap past the last faction button.
             var slot = laneStart + gap;
 
             // The type filters' theme context lights a button green, not in the faction colour a copy starts with.
@@ -67,7 +67,6 @@ namespace MapMouseSelect
             {
                 Dump("filter template: ", templateRect, 2);
                 _neutral = Clone(template, toned, left, "NTL", true, slot, each);
-                slot += each + split;
             }
 
             Plugin.Verbose(
@@ -193,7 +192,7 @@ namespace MapMouseSelect
             // Left edge at leftEdge: the pivot sits that far in from it.
             rect.anchoredPosition = new Vector2(leftEdge + rect.pivot.x * width, anchorRect.anchoredPosition.y);
 
-            // The copies draw their own frame at their own size, one canvas unit to a stroke. The pane's frame is a
+            // The copy draws its own frame at their own size, one canvas unit to a stroke. The pane's frame is a
             // plain sprite with no nine slice borders, and squeezing one left only the top and bottom rows visible.
             if (button.image != null)
             {
@@ -210,7 +209,7 @@ namespace MapMouseSelect
 
         /// <summary>
         /// A hollow rectangle at the size of one copy, one canvas unit to a stroke, white so the Image tints it
-        /// like the pane's own frame. Cached, since both copies are the same size.
+        /// like the pane's own frame. Cached, since the generated frame can be reused.
         /// </summary>
         private static Sprite Frame(float width, float height)
         {
@@ -309,8 +308,7 @@ namespace MapMouseSelect
         }
 
         /// <summary>
-        /// Puts the two copies back, for the pane's Reset button, which walks only the three lists the pane owns.
-        /// Wrecks go back to hidden, since selecting one is something a player opts into.
+        /// Restores NTL for the pane's Reset button, which walks only the three lists the pane owns.
         /// </summary>
         internal static void Reset(TargetListSelector pane)
         {
@@ -372,7 +370,7 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>Adds the two buttons once the pane has built itself, the first moment the filter row exists.</summary>
+    /// <summary>Adds NTL once the pane has built itself, the first moment the filter row exists.</summary>
     [HarmonyPatch(typeof(TargetListSelector), "Start")]
     internal static class TargetListSelectorStartPatch
     {
@@ -384,7 +382,7 @@ namespace MapMouseSelect
     }
 
     /// <summary>
-    /// Lets the two extra groups filter units like the pane's own groups. Everything that reads this method gets
+    /// Lets the extra group filter units like the pane's own groups. Everything that reads this method gets
     /// it: map clicks, the Select action, the marquee and CheckAllExclusions.
     /// </summary>
     [HarmonyPatch(typeof(TargetListSelector), nameof(TargetListSelector.CheckExclusions))]
@@ -400,7 +398,7 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>Puts the mod's two filters back, which the pane's own Reset cannot, since it walks only its lists.</summary>
+    /// <summary>Puts the mod's filter back, which the pane's own Reset cannot, since it walks only its lists.</summary>
     [HarmonyPatch(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters))]
     internal static class TargetListSelectorResetFiltersPatch
     {

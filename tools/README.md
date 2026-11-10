@@ -4,6 +4,7 @@ Read-only scripts that answer questions about the shipped game build, so a chang
 
 | Script | What it answers |
 |---|---|
+| `Check-GameApi.ps1` | Checks remaining patch signatures, named fields and MapControls IL shapes from explicit ManagedDir and BepInExCore paths; see docs/updating.md |
 | `Find-GameTypes.ps1` | Which types match a regex, with `-Methods` for their methods |
 | `Find-MemberUsage.ps1` | Who reads a field or calls a method, given only the name, with the type that declares it. Built for the obfuscated parts of Rewired |
 | `Find-StringUsage.ps1` | Which method loads a string constant that matches a regex |

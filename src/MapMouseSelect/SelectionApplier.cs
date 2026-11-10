@@ -195,8 +195,7 @@ namespace MapMouseSelect
         /// <summary>
         /// Takes one unit out of the selection by whichever system holds it, and says whether it was in one. The
         /// weapon target list and the map's own selection are separate states, and while flying they can hold
-        /// different things: a wreck never reaches the weapon list, because that needs a HUD marker, and a selection
-        /// made in commander view survives the move into a cockpit. Vanilla routes by mode instead, so its flying
+        /// different things: a map selection need not have a weapon target entry. Vanilla routes by mode instead, so its flying
         /// deselect branch can leave a selected icon behind - it only reaches the weapon list, and DeSelectUnit
         /// returns immediately when that list is empty.
         /// </summary>
@@ -271,7 +270,6 @@ namespace MapMouseSelect
             var targets = TargetList(aircraft);
             return targets != null && unit != null && targets.Contains(unit);
         }
-
 
         /// <summary>The target list of the current weapon station, or null when nothing is flying.</summary>
         private static List<Unit> TargetList(Aircraft aircraft)

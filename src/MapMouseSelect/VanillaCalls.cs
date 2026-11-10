@@ -68,7 +68,6 @@ namespace MapMouseSelect
             return _markers != null ? _markers.GetValue(hud) as List<HUDUnitMarker> : null;
         }
 
-
         /// <summary>Vanilla's commander camera jump, the call its own Jump Map branch makes.</summary>
         internal static bool JumpCameraTo(DynamicMap map, GlobalPosition position)
         {

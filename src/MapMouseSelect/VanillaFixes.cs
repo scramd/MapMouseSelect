@@ -9,12 +9,7 @@ using UnityEngine;
 
 namespace MapMouseSelect
 {
-    /// <summary>
-    /// Patches the three vanilla paths that assume every unit has a map icon and throw when it does not.
-    /// DynamicMap.GetOrAddIcon queues an icon then returns iconLookup[unit], and nothing creates one for a disabled
-    /// unit or a unit whose definition asks for none – its caller FlagIncomingMissile dereferences the result.
-    /// CombatHUD.HighlightMarker does the same with markerLookup, from a radar warning.
-    /// </summary>
+    /// <summary>Mouse pan conversion used by MapPanProportionPatch.</summary>
     internal static class VanillaFixes
     {
 
@@ -201,7 +196,6 @@ namespace MapMouseSelect
             return Mathf.Abs(cursor) < 20f ? "-" : (map / cursor).ToString("0.###");
         }
 
-
     }
 
     /// <summary>
@@ -247,16 +241,12 @@ namespace MapMouseSelect
         }
     }
 
-
-
-
     /// <summary>
     /// Makes the map follow the cursor while it is dragged. DynamicMap.MapControls scales the pan by the frame time,
     /// on a formula written for the keyboard axes just above, which are a rate – a mouse axis is a displacement, so
     /// the same drag moves the map further the slower the game runs and further than the cursor at any frame rate.
     /// Dropping the frame time alone is not enough, because the divisor is the map scale center's scale while
-    /// SetZoomLevel keeps the image's world scale different as it moves it between parents. The axis carried 0.44 of
-    /// the cursor's movement per frame, with the ratio spread between 0.2 and 12, so it is replaced too.
+    /// SetZoomLevel keeps the image's world scale different as it moves it between parents.
     /// </summary>
     [HarmonyPatch(typeof(DynamicMap), "MapControls")]
     internal static class MapPanProportionPatch
@@ -355,17 +345,10 @@ namespace MapMouseSelect
         }
     }
 
-
-
-
-
-
-
     /// <summary>
     /// Releases a unit the weapon target list has nothing to say about. CombatHUD.DeSelectUnit returns early when the
     /// target list is empty, skipping the rest of the method, the map icon included. That is this mod's case: a unit
-    /// selected in commander view keeps its selection into the cockpit with no list entry, and a wreck can never be a
-    /// weapon target. TargetListSelector.ForceDeselect, the pane's exclusion pass and
+    /// selected on the map can have no weapon target entry. TargetListSelector.ForceDeselect, the pane's exclusion pass and
     /// TargetListSelector_UnitItem.ToggleSelect all route through here and then do nothing. The patch does the map
     /// half instead, through DynamicMap.DeselectIcon.
     /// </summary>

@@ -68,8 +68,8 @@ namespace MapMouseSelect
     [HarmonyPatch(typeof(UnitMapIcon), nameof(UnitMapIcon.ClickIcon))]
     internal static class UnitMapIconClickPatch
     {
-        /// <summary>Returns false only for shift+click on an already selected unit. The Select key is not
-        /// touched.</summary>
+        /// <summary>Rejects excluded new selections and handles Shift removal. Mouse clicks replace targets;
+        /// the native Select action keeps its additive selecting branch.</summary>
         [HarmonyPrefix]
         private static bool Prefix(UnitMapIcon __instance, MapIcon.ClickSource clickSource)
         {
@@ -85,20 +85,16 @@ namespace MapMouseSelect
                 return true;
             }
 
-            // The selecting half of a click only: vanilla tests its filters in the select branch and nowhere else,
-            // which lets a player put down a unit the filters hide. A deselect while flying goes through
-            // CombatHUD.DeSelectUnit, which gives up when the weapon list is empty, and a wreck is never in that
-            // list, so filtering the release as well would strand it selected with only unselect all able to clear it.
+            // Reject an excluded new selection before vanilla clears the old selection or moves the camera.
+            // An already selected unit must remain removable even when its filters now exclude it.
             if (Excluded(__instance.unit) && !SelectionApplier.IsSelected(map, __instance.unit))
             {
                 Plugin.Verbose("Ignored a click on " + __instance.unit.name + ": the filters exclude it.");
                 return false;
             }
 
-            // The HUD accepts a target only when it has a marker, and CombatHUD.SelectUnit checks the marker but
-            // plays the select sound regardless, so a unit without one would get a sound and nothing else. Such a
-            // unit is on the map at all only because this mod keeps a wreck's icon where vanilla removes it. The
-            // marquee skips these units the same way, through MarkerExists.
+            // Reject an unmarkable new target before the plain-click replace drops existing targets.
+            // CreateMarker can refuse scenery or units first seen with no local aircraft.
             if (SelectionApplier.GetLiveAircraft() != null
                 && !hud.MarkerExists(__instance.unit)
                 && !SelectionApplier.IsSelected(map, __instance.unit))
@@ -156,8 +152,6 @@ namespace MapMouseSelect
             }
         }
     }
-
-
 
     /// <summary>
     /// Logs entering a cockpit. Diagnostics only, one line per transition. Aircraft.OnStartClient calls SetAircraft
