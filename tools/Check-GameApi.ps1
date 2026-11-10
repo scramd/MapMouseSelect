@@ -39,10 +39,11 @@ foreach ($name in '_id','_name','_type','_descriptiveName','_categoryId','_userA
 }
 $il = ($game.MainModule.GetType('DynamicMap').Methods | Where-Object Name -eq MapControls).Body.Instructions
 $mouse = @($il | Where-Object { $_.Operand -is [Mono.Cecil.MethodReference] -and $_.Operand.FullName -eq 'System.Boolean UnityEngine.Input::GetMouseButton(System.Int32)' }).Count
-$axes = 0; $factors = 0
+$axes = 0; $factors = 0; $leftGate = 0
 for ($i = 0; $i -lt $il.Count; $i++) {
+    if ($i -gt 0 -and $il[$i].Operand -is [Mono.Cecil.MethodReference] -and $il[$i].Operand.FullName -eq 'System.Boolean UnityEngine.Input::GetMouseButton(System.Int32)' -and $il[$i-1].OpCode.Name -eq 'ldc.i4.0') { $leftGate++ }
     if ($il[$i].OpCode.Name -eq 'ldstr' -and $il[$i].Operand -in @('Pan View','Tilt View') -and $il[$i+1].Operand.FullName -eq 'System.Single Rewired.Player::GetAxis(System.String)') { $axes++ }
     if ($i -ge 3 -and $il[$i].Operand -is [Mono.Cecil.MethodReference] -and $il[$i].Operand.FullName -eq 'System.Single UnityEngine.Mathf::Min(System.Single,System.Single)' -and $il[$i-1].OpCode.Name -eq 'ldc.r4' -and [math]::Abs($il[$i-1].Operand - 0.03) -lt 0.000001 -and $il[$i-2].Operand.FullName -eq 'System.Single UnityEngine.Time::get_unscaledDeltaTime()' -and $il[$i-3].Operand -eq 150) { $factors++ }
 }
-if ($mouse -ne 1 -or $axes -ne 2 -or $factors -ne 1) { throw "IL mismatch: mouse=$mouse axes=$axes factors=$factors" }
+if ($mouse -ne 1 -or $leftGate -ne 1 -or $axes -ne 2 -or $factors -ne 1) { throw "IL mismatch: mouse=$mouse axes=$axes factors=$factors" }
 Write-Output 'IL patterns OK: one pan gate, two mouse axes, one pan factor. This does not run Harmony or the game.'
