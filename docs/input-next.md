@@ -1,6 +1,6 @@
 # Prepare the next input step
 
-The current code combines two input systems: one BepInEx KeyboardShortcut and raw Unity mouse/key reads. It also disables some native Rewired mappings while the map is open. No bindings-library migration or new mouse/controller interaction is implemented here. Read the owner's `nuclear-option-bindings/README.md` before doing that work. Its source-only `NuclearOption.Bindings` package compiles into a mod; players do not install another plugin DLL.
+The current code combines two input systems: one BepInEx KeyboardShortcut and raw Unity mouse/key reads. It also disables some native Rewired mappings while the map is open. No bindings-library migration or new mouse/controller interaction is implemented here. Read the `NuclearOption.Bindings` README (github.com/clankagent/nuclear-option-bindings) before doing that work. Its source-only `NuclearOption.Bindings` package compiles into a mod; players do not install another plugin DLL.
 
 ## Input reads and ownership today
 
@@ -11,11 +11,10 @@ The current code combines two input systems: one BepInEx KeyboardShortcut and ra
 | `MapIconPointerClickPatch` | EventSystem left button and press position, Unity current pointer, native drag threshold. |
 | `UnitMapIconClickPatch` | Mouse versus Controller ClickSource, Shift and cursor-in-map. It does not implement Ctrl-click removal. |
 | `PanButtonCompat.GetMouseButton` | Configured Unity Left/Right/Middle held button; replaces the stock pan gate. |
-| `VanillaFixes.PanAxis`, `CursorStep`, `StickStep` | Stock Rewired Pan View/Tilt View axis values, raw mouse position, frame time, drag threshold. |
-| `CameraJump.Tick` | Left down, pointer, unscaled time and drag threshold to detect a second press within 0.3 s; checks map and aircraft. |
+| `VanillaFixes.PanAxis`, `CursorStep` | Stock Rewired Pan View/Tilt View axis values, raw mouse position, frame time, drag threshold. |
+| `CameraJump.Tick` | Pan button down and up, pointer and drag threshold. A press and release without a drag jumps the camera; checks map rectangle and aircraft. Active only while a Jump Map mapping on the pan button is held off. |
 | `CameraJump.HoldJumpButtonOff` | Looks up native Jump Map; disables mouse mappings whose element name matches the pan button. Restores held-off mappings when map closes. |
 | `ModifierGuard`, `BindingBlocker` | Parses configured Unity modifier keys; reads the marquee shortcut's MainKey; disables bare-key Rewired elements on enabled keyboard maps while expanded. It does not disable declared modifier combinations. |
-| `PanCursor.Tick` | Configured pan button, expanded-map state and cursor visibility. Windows helper fetches a cursor image; it does not read an action. |
 | NTL cloned `TargetListSelector_ToggleButton` | Native pointer callbacks handle left toggle and right-click SetOnlyItem. Theme/layout and right-click semantics are coupled to the stock control. |
 
 Panning also leaves native `Move Map Horizontal/Vertical`, `Zoom View`, Select, Jump Map and right-click waypoint branches in `MapControls`. All are skipped during marquee ownership. Those are native reads, not new mod actions, but their arbitration must be included in a redesign. CombatHUD.LateUpdate also reads a timed Select release for HUD TargetSelect even with the map expanded; only its held paint branch checks the map state.
@@ -35,9 +34,7 @@ The library rejects extra Shift/Ctrl/Alt on ordinary key rows. The library is ad
 - Does a controller use a virtual cursor with two corners, a growing rectangle, a radius, or a unit list? What provides coordinates, drag threshold and feedback?
 - How do replace/add/remove work without simultaneously holding multiple buttons? Which action cancels a gesture?
 - Should zoom, stick pan and waypoints remain available during a marquee? Which controls are consumed, and how do tap/hold and menu transitions restore them?
-- Should mouse panning, stick panning, camera jump and NTL remain in this plugin?
+- Should mouse panning, camera jump and NTL remain in this plugin?
 - How should focus loss, chat, F1, pause, loading, device disconnect and aircraft/scene changes cancel and rearm gestures?
 - How are old shortcuts migrated without losing intentional unbound settings?
 - How should selected-unit clicks, controller Select, neutral exclusion and already selected targets follow one consistent rule?
-
-Do not choose defaults or controller interactions solely to preserve this implementation. The owner wants the functionality and accepts replacement code.

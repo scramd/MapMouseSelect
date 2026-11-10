@@ -27,7 +27,7 @@ A postfix on `MapIcon.SelectIcon` restores raycasting for unit icons. It does no
 
 ## Supporting systems
 
-`ModHost.Update` suppresses bare modifier bindings, handles double-click camera jumps and draws the pan cursor. Native map pan remains in `MapControls`, changed by two transpilers. `TargetFilters` adds NTL outside stock filter lists and extends `CheckExclusions`.
+`ModHost.Update` suppresses bare modifier bindings, and turns a pan-button click into the camera jump. `CameraWheelPatch` keeps the wheel from zooming the camera under the map. Native map pan remains in `MapControls`, changed by two transpilers. `TargetFilters` adds NTL outside stock filter lists and extends `CheckExclusions`.
 
 `Plugin.ApplyPatches` processes patch classes separately and logs failures. This lets unrelated classes apply after a failure; it can also leave a partly active mod. `ReportPatchState` reports patch totals, including other owners' patches, and transpiler match counts. Counts alone do not prove that a hook executes correctly.
 

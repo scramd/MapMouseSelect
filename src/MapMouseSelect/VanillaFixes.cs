@@ -46,7 +46,7 @@ namespace MapMouseSelect
 
         /// <summary>
         /// The map drag's mouse axis, replaced with what the drag asked the map to do this frame – the cursor's own
-        /// movement, or the stick push while Behavior.MapStick is on. Rewired's value is in its own units and lands on
+        /// movement. Rewired's value is in its own units and lands on
         /// Rewired's update rather than the rendered frame, so a pan built from it arrives in bursts. Tilt View
         /// arrives already inverted, which is why the game negates only Pan View.
         /// </summary>
@@ -58,43 +58,9 @@ namespace MapMouseSelect
             }
 
             var horizontal = axis != "Tilt View";
-            var step = Plugin.MapStick.Value ? StickStep() : CursorStep();
+            var step = CursorStep();
 
             return horizontal ? step.x : -step.y;
-        }
-
-        /// <summary>
-        /// What the stick asks the map to do this frame: the cursor's push away from the press point, taken as a speed
-        /// and scaled by the frame, so the map keeps moving while the mouse is still. MapStickGain is what each pixel
-        /// of push buys, with no ceiling. Nothing moves until the push passes UnitSelection's drag threshold, the same
-        /// one the marquee starts on, and the speed counts from that push so it starts at zero rather than stepping.
-        /// The map travels opposite the push, because the stick scrolls the view.
-        /// </summary>
-        private static Vector2 StickStep()
-        {
-            CursorStep();
-
-            var push = new Vector2(_cursor.x, _cursor.y) - _pressPoint;
-            var distance = push.magnitude;
-
-            _stickPush = distance;
-            _stickGain = Plugin.MapStickGain.Value;
-
-            if (!UnitSelection.DragThresholdPassed(_pressPoint))
-            {
-                _stickBase = -1f;
-                _stickSpeed = 0f;
-                return Vector2.zero;
-            }
-
-            if (_stickBase < 0f)
-            {
-                _stickBase = distance;
-            }
-
-            _stickSpeed = (distance - _stickBase) * Plugin.MapStickGain.Value;
-
-            return -push / distance * (_stickSpeed * Time.unscaledDeltaTime);
         }
 
         /// <summary>Pan report throttle, the frame it was last measured on, and the totals it reports.</summary>
@@ -103,11 +69,6 @@ namespace MapMouseSelect
         private static Vector2 _cursorStep;
         private static Vector3 _cursor;
         private static Vector3 _mapImage;
-        private static Vector2 _pressPoint;
-        private static float _stickBase = -1f;
-        private static float _stickPush;
-        private static float _stickGain;
-        private static float _stickSpeed;
         private static float _cursorX;
         private static float _cursorY;
         private static float _mapX;
@@ -117,7 +78,7 @@ namespace MapMouseSelect
         /// The cursor movement since the last frame of the current drag, measured once per frame however often the
         /// drag asks. A frame that does not continue the drag has no movement, so a press is not charged with
         /// everywhere the cursor has been – the first frame of a drag, and the first after the map closed or the
-        /// camera jumped, are not movement this drag asked for. The stick's press point comes from such a frame.
+        /// camera jumped, are not movement this drag asked for.
         /// </summary>
         private static Vector2 CursorStep()
         {
@@ -146,10 +107,6 @@ namespace MapMouseSelect
 
                 Report();
             }
-            else
-            {
-                _pressPoint = cursor;
-            }
 
             _mapImage = position;
             return _cursorStep;
@@ -169,20 +126,10 @@ namespace MapMouseSelect
 
             _nextPanReport = Time.timeSinceLevelLoad + 1f;
 
-            if (Plugin.MapStick.Value)
-            {
-                Plugin.Verbose(
-                    "Map pan over the last second: map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#")
-                    + "px, stick push " + _stickPush.ToString("0.#") + "px, speed " + _stickSpeed.ToString("0")
-                    + "px/s at " + _stickGain.ToString("0.##") + "px/s per px.");
-            }
-            else
-            {
-                Plugin.Verbose(
-                    "Map pan over the last second: cursor " + _cursorX.ToString("0.#") + ", " + _cursorY.ToString("0.#")
-                    + "px, map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#") + "px, ratio "
-                    + Ratio(_mapX, _cursorX) + ", " + Ratio(_mapY, _cursorY) + ".");
-            }
+            Plugin.Verbose(
+                "Map pan over the last second: cursor " + _cursorX.ToString("0.#") + ", " + _cursorY.ToString("0.#")
+                + "px, map " + _mapX.ToString("0.#") + ", " + _mapY.ToString("0.#") + "px, ratio "
+                + Ratio(_mapX, _cursorX) + ", " + Ratio(_mapY, _cursorY) + ".");
 
             _cursorX = 0f;
             _cursorY = 0f;

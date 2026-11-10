@@ -22,7 +22,7 @@ The process-local execution-policy switch does not change machine policy. The sc
 
 ## Runtime acceptance still needed
 
-Only launch/install when the owner authorizes it. Capture startup patch errors and mismatch warnings. Exercise each control with no aircraft, a live aircraft, and a destroyed own aircraft still referenced by the HUD. Check plain, additive and removing boxes, empty boxes, selected and excluded clicks, missing markers, target cap, airbase clicks, Target List rows, respawn and spawn screen.
+Capture startup patch errors and mismatch warnings. Exercise each control with no aircraft, a live aircraft, and a destroyed own aircraft still referenced by the HUD. Check plain, additive and removing boxes, empty boxes, selected and excluded clicks, missing markers, target cap, airbase clicks, Target List rows, respawn and spawn screen.
 
 Try drags returning to the starting icon; pan/zoom/waypoints during presses; Shift/Ctrl native bindings; editor opt-in; camera jump; NTL left/right click and Reset. Exercise focus loss, menus, F1, chat, scenes, settings changes and disconnects. Inspect saved controls after closing/reopening the game: temporary disabled mappings have no save/copy guard in this mod. Compare all four companion mods together, especially Move Map during a pending box. Check different canvas scales and the selection outline's placement.
 

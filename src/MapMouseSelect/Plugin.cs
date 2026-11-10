@@ -35,9 +35,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<int> MaxTargets { get; private set; }
         internal static ConfigEntry<bool> ShowSelectionBox { get; private set; }
 
-        /// <summary>Show Windows' move cursor while the pan button is held, instead of the game's arrow.</summary>
-        internal static ConfigEntry<bool> PanCursor { get; private set; }
-
         internal static ConfigEntry<bool> VerboseLogging { get; private set; }
         internal static ConfigEntry<int> OverlaySortingOrder { get; private set; }
 
@@ -53,11 +50,9 @@ namespace MapMouseSelect
         /// <summary>How far the map moves per pixel of mouse movement, used while MapPanFix is on. One is under the cursor.</summary>
         internal static ConfigEntry<float> MapPanSpeed { get; private set; }
 
-        /// <summary>Whether the pan button scrolls the map like a stick while held, instead of dragging it.</summary>
-        internal static ConfigEntry<bool> MapStick { get; private set; }
 
-        /// <summary>What each pixel of push buys the stick, in screen pixels per second, with no ceiling on the result.</summary>
-        internal static ConfigEntry<float> MapStickGain { get; private set; }
+        /// <summary>Whether the wheel is kept from zooming the camera under the map, a menu or the F1 window.</summary>
+        internal static ConfigEntry<bool> CameraWheelFix { get; private set; }
 
         private Harmony _harmony;
 
@@ -108,10 +103,6 @@ namespace MapMouseSelect
             ShowSelectionBox = Config.Bind("Visual", "ShowSelectionBox", true,
                 "Draw the drag rectangle.");
 
-            PanCursor = Config.Bind("Visual", "PanCursor", true,
-                "Show Windows' move cursor while the pan button is held over the map, since the game never "
-                + "changes the cursor itself.");
-
             VerboseLogging = Config.Bind("Diagnostics", "VerboseLogging", true,
                 "Log what the marquee is doing.");
 
@@ -139,18 +130,9 @@ namespace MapMouseSelect
                     + "One keeps the map under the cursor.",
                     new AcceptableValueRange<float>(0.1f, 5f)));
 
-            MapStick = Config.Bind("Behavior", "MapStick", false,
-                "Scroll the map like a stick instead of dragging it: while the pan button is held, the cursor's "
-                + "distance from where you pressed sets the speed and its direction sets the way the view scrolls. "
-                + "Nothing moves until the push passes the game's own drag threshold, and the stick takes over the "
-                + "drag while MapPanFix is on.");
-
-            MapStickGain = Config.Bind("Behavior", "MapStickGain", 8f,
-                new ConfigDescription(
-                    "Scroll speed the stick gains per pixel of push, in screen pixels per second: a 200px push is "
-                    + "1600px/s at the default. There is no ceiling, so twice the push is twice the speed. The log "
-                    + "names the value in use.",
-                    new AcceptableValueRange<float>(0.5f, 100f)));
+            CameraWheelFix = Config.Bind("Behavior", "CameraWheelFix", true,
+                "Stop the mouse wheel from zooming the camera while the map is open, while a menu or dialog shows "
+                + "the cursor, and while the ConfigurationManager window (F1) is open.");
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();
@@ -243,9 +225,7 @@ namespace MapMouseSelect
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value
-                + ", mapPanFix=" + MapPanFix.Value
-                + ", mapStick=" + MapStick.Value
-                + ", panCursor=" + PanCursor.Value);
+                + ", mapPanFix=" + MapPanFix.Value);
         }
 
         /// <summary>How many prefixes and postfixes landed on a method, or -1 when the method is not there.</summary>
