@@ -258,8 +258,7 @@ namespace MapMouseSelect
             int anchorActionId,
             int actionId,
             KeyCode key,
-            string name,
-            ModifierKeyFlags modifiers = ModifierKeyFlags.None)
+            string name)
         {
             // Once per action, ever: a cleared key is not put back, an action added later is not in the record yet.
             if (Written.Contains(name))
@@ -288,7 +287,7 @@ namespace MapMouseSelect
                 identifier.id,
                 AxisRange.Full,
                 key,
-                modifiers,
+                ModifierKeyFlags.None,
                 actionId,
                 Pole.Positive,
                 false);
@@ -311,36 +310,13 @@ namespace MapMouseSelect
             if (added == 0)
             {
                 Plugin.Log.LogWarning(
-                    "No keyboard map took a default " + Describe(key, modifiers) + " binding for " + name
+                    "No keyboard map took a default " + key + " binding for " + name
                     + ", so it has to be bound in the Controls menu. The game may have changed.");
                 return;
             }
 
-            Plugin.Verbose("Bound " + name + " to " + Describe(key, modifiers) + " on " + added + " keyboard map(s).");
+            Plugin.Verbose("Bound " + name + " to " + key + " on " + added + " keyboard map(s).");
             Record(name);
-        }
-
-        /// <summary>The key as the Controls menu would write it, for the log lines.</summary>
-        private static string Describe(KeyCode key, ModifierKeyFlags modifiers)
-        {
-            var text = string.Empty;
-
-            if ((modifiers & (ModifierKeyFlags.LeftShift | ModifierKeyFlags.RightShift)) != ModifierKeyFlags.None)
-            {
-                text += "Shift+";
-            }
-
-            if ((modifiers & (ModifierKeyFlags.LeftControl | ModifierKeyFlags.RightControl)) != ModifierKeyFlags.None)
-            {
-                text += "Ctrl+";
-            }
-
-            if ((modifiers & (ModifierKeyFlags.LeftAlt | ModifierKeyFlags.RightAlt)) != ModifierKeyFlags.None)
-            {
-                text += "Alt+";
-            }
-
-            return text + key;
         }
 
         private static bool BindsAction(ControllerMap map, int actionId)
