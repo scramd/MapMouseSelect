@@ -83,7 +83,7 @@ namespace MapMouseSelect
 
             if (DynamicMap.TryGetMapIcon(unit, out var icon) && icon is UnitMapIcon unitIcon)
             {
-                unitIcon.UnitMapIcon_UpdateColor();
+                unitIcon.UpdateColor();
             }
         }
     }
@@ -122,7 +122,7 @@ namespace MapMouseSelect
     /// Recolours a wreck after every colour rebuild. Selection, faction changes, theme changes and the Target List
     /// filters all come through here.
     /// </summary>
-    [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_UpdateColor")]
+    [HarmonyPatch(typeof(UnitMapIcon), nameof(UnitMapIcon.UpdateColor))]
     internal static class UnitMapIconWreckTintPatch
     {
         [HarmonyPostfix]

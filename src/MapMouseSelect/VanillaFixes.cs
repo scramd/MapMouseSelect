@@ -549,45 +549,4 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// Sends every colour rebuild through the unit icon's own update, the only one that knows about the Target List
-    /// filters and about wrecks. MapIcon.UpdateColor sets the theme colour and stops, and the filter dimming and wreck
-    /// tint live one level down in UnitMapIcon.UnitMapIcon_UpdateColor – so MapIcon.SelectIcon, MapIcon.DeselectIcon,
-    /// DynamicMap.UnselectAll, DynamicMap.UpdateUnitFaction and DynamicMap_OnFactionChanged all draw a filtered-out
-    /// unit, or a wreck, as if it were alive. The counter stops the update running into itself, and a finalizer rather
-    /// than a postfix means an exception cannot leave it raised.
-    /// </summary>
-    [HarmonyPatch(typeof(UnitMapIcon), "UnitMapIcon_UpdateColor")]
-    internal static class UnitMapIconDepthPatch
-    {
-        internal static int Depth;
-
-        [HarmonyPrefix]
-        private static void Prefix()
-        {
-            Depth++;
-        }
-
-        [HarmonyFinalizer]
-        private static void Finalizer()
-        {
-            Depth--;
-        }
-    }
-
-    /// <summary>
-    /// Sends a colour rebuild that bypassed the unit icon's update back through it.
-    /// </summary>
-    [HarmonyPatch(typeof(MapIcon), nameof(MapIcon.UpdateColor))]
-    internal static class MapIconUpdateColorPatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix(MapIcon __instance)
-        {
-            if (UnitMapIconDepthPatch.Depth == 0 && __instance is UnitMapIcon icon)
-            {
-                icon.UnitMapIcon_UpdateColor();
-            }
-        }
-    }
 }
