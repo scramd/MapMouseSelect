@@ -22,10 +22,6 @@ Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmou
 | Behavior | `MapStickGain` | `8` | Scroll speed the stick gains per pixel of push, in screen pixels per second, with no ceiling |
 | Visual | `ShowSelectionBox` | `true` | Draw the drag box outline |
 | Visual | `PanCursor` | `true` | Show Windows' move cursor while the pan button is held |
-| Visual | `FrameLimitUnfocused` | `true` | Cap the frame rate while the game is not focused. A host hands the cap back while players are connected |
-| Visual | `FrameLimitUnfocusedFps` | `12` | Frame rate to cap to while unfocused, 1 to 240. The GPU load falls with the rate |
-| Visual | `FrameLimitAllowWorldSlowdown` | `false` | Let the rate go below the floor that keeps the world in real time (`1 / Time.maximumDeltaTime` plus one, 11 here), down to 1 |
-| Visual | `FrameLimitWhileHosting` | `false` | Cap the frame rate while hosting a game other players are connected to. A host answers its players on the frames it takes, so the cap stands down by default |
 | Visual | `BoxOutlineColor` | `3CB4FFCC` | Outline color for a replacing selection |
 | Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Outline color for an additive selection (Shift held) |
 | Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Outline color for a deselecting box (Ctrl held) |
@@ -33,21 +29,3 @@ Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmou
 | Destroyed | `Enabled` | `true` | Keep destroyed buildings on the map as darkened wrecks, and add the `DED` filter |
 | Destroyed | `Tint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
 | Target list | `FilterNeutral` | `true` | Add the `NTL` button to the Target List filter pane |
-
-## The frame rate cap
-
-An unfocused window keeps the whole game loop at full rate, which holds the CPU and the GPU for a session nobody is looking at. The mod caps it instead, and takes vsync off while the cap is on, since Unity ignores `targetFrameRate` while `vsyncCount` is above zero. Both values go back the way the game had them when you focus the window again.
-
-The cap slows the world with it, because Unity spends at most `Time.maximumDeltaTime` of game time on one frame and a longer frame loses the surplus. That value logs as 0.1s in this game, so 10 frames a second is the point where the world stops keeping real time. Measured against the same build, reading the ratio of game time to real time once a second:
-
-| Cap | World kept |
-|---|---|
-| 1 | 0.10 of real time |
-| 5 | 0.50 |
-| 10 | 0.95 to 1.05 |
-| 11 | 0.98 to 1.01 |
-| 12 | 0.99 to 1.01 |
-
-The floor is worked out from `Time.maximumDeltaTime` at runtime, so it reads 11 here and follows the game if that ever changes. A value below the floor is held at it, unless `FrameLimitAllowWorldSlowdown` is on, which is for anyone who wants the smaller GPU load and does not mind a world that runs slow with it. Leave that one off while connected to someone else's game.
-
-While hosting a game that another player is connected to, the cap releases, because a host answers its players on the frames it takes. `FrameLimitWhileHosting` overrides that and caps anyway.

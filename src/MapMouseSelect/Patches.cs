@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using NuclearOption.MissionEditorScripts;
-using NuclearOption.Networking;
 using Rewired;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -303,18 +302,4 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>
-    /// Hands the frame limit the network manager, which it reads to tell a host with players from a lone offline one.
-    /// NetworkManagerNuclearOption.i logs an error on every read until the game has preloaded the manager, and the
-    /// frame limit would be reading it every frame from plugin load.
-    /// </summary>
-    [HarmonyPatch(typeof(NetworkManagerNuclearOption), "Awake")]
-    internal static class NetworkManagerAwakePatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix(NetworkManagerNuclearOption __instance)
-        {
-            FrameLimit.Keep(__instance);
-        }
-    }
 }

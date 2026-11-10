@@ -25,7 +25,6 @@ Many of those things have configurations if you have BepInEx config manager inst
   - `DED` for repairable wrecks.
 - Optional joystick mode for the pan button: hold it, push the cursor away from where you pressed, and the map scrolls at a speed that grows with the push (`MapStick`, off by default, requires map pan fix to be enabled).
 - The cursor changes to move cursor while you pan the map.
-- Optional frame rate cap while the game is not focused (off for hosts and doesn't allow going to framerates which slow down the world by default).
 
 ### Changed from vanilla
 
@@ -84,4 +83,3 @@ GPL-3.0. See [LICENSE](LICENSE). Copyright (C) 2026 Metadorius.
 GPL-3.0 wants the source to travel with the binary, and this repository is that source for every release.
 
 *This project is an unofficial community modification and is not affiliated with, sponsored by, or endorsed by Shockfront Studios Pty Ltd. Original Nuclear Option assets, vehicle designs, audio, and code are Copyright (c) 2026 Shockfront Studios Pty Ltd. All rights reserved. Nuclear Option and Shockfront Studios are trademarks or registered trademarks of Shockfront Studios Pty Ltd. Original mod content and all other trademarks belong to their respective owners.*
-
