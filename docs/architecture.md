@@ -10,7 +10,7 @@ This describes the remaining source against a read-only inspection of the 0.34.6
 4. Each frame, `UnitSelection.DragThresholdPassed` compares the pointer to the press. Crossing it starts dragging. The mod draws a non-raycasting outline on its own screen overlay canvas. Shift chooses add; Ctrl chooses remove and wins. The mode is sampled during the drag, including release.
 5. On release, the screen rectangle is compared with `UnitMapIcon.transform.position` in `map.mapIcons`. The collector ignores inactive icons, your own aircraft, and units excluded by `TargetListSelector.CheckExclusions`. It does not box airbase icons. Root-transform screen coordinates are an inherited assumption about the UI prefab; static source inspection alone cannot validate every prefab/layout.
 6. `SelectionApplier` treats a non-disabled HUD aircraft as flying. In flight it rejects new entries without HUD markers and applies `MaxTargets` to additions. It writes the current weapon target list directly, updates markers/map selection, then calls `TargetListChanged` per changed batch. A replace may have one removal batch and one addition batch. It does not guarantee one network update for the entire gesture.
-7. Without a live aircraft it uses `DynamicMap.UnselectAll`, `SelectIcon` and `DeselectIcon`. Additive boxes preserve the previous selection. `FollowFirstUnit` can follow the first collected unit when something was added. The editor opt-in does not populate the editor's separate multi-selection store.
+7. Without a live aircraft it uses `DynamicMap.UnselectAll`, `SelectIcon` and `DeselectIcon`. Additive boxes preserve the previous selection. The editor opt-in does not populate the editor's separate multi-selection store.
 8. Empty replace uses native deselect-all; other empty modes leave selection alone. Cancellation hides the outline and clears the state. Closing the expanded map and the editor gate cancel it. There is no complete focus-loss, menu or aircraft-change cancellation system. Cancellation itself needs DynamicMap.Update. If the map disables or unloads mid-drag, static state and the persistent outline can remain until another map updates.
 
 `CombatHUD.TargetSelect` and `WeaponManager.TargetListChanged` supply the source model for batching. The latter sends station targets only under its network/weapon-station conditions and limits the transmitted count to 128. Do not equate direct list writes with a general public bulk-selection API.
@@ -27,7 +27,7 @@ A postfix on `MapIcon.SelectIcon` restores raycasting for unit icons. It does no
 
 ## Supporting systems
 
-`ModHost.Update` reads target keys, sets their defaults, suppresses bare modifier bindings, handles double-click camera jumps and draws the pan cursor. Native map pan remains in `MapControls`, changed by two transpilers. `TargetFilters` adds NTL outside stock filter lists and extends `CheckExclusions`.
+`ModHost.Update` suppresses bare modifier bindings, handles double-click camera jumps and draws the pan cursor. Native map pan remains in `MapControls`, changed by two transpilers. `TargetFilters` adds NTL outside stock filter lists and extends `CheckExclusions`.
 
 `Plugin.ApplyPatches` processes patch classes separately and logs failures. This lets unrelated classes apply after a failure; it can also leave a partly active mod. `ReportPatchState` reports patch totals, including other owners' patches, and transpiler match counts. Counts alone do not prove that a hook executes correctly.
 
@@ -35,4 +35,3 @@ See [scope](scope.md), [coupling](coupling.md) and [input preparation](input-nex
 
 ## Target-key exceptions
 
-The commander Select Target Only key calls native SelectFromMap as changed by this plugin. Restored raycasts mean a selected icon can win; Shift can remove it and a plain selection can follow it. In flight its own map picker lacks the ordinary-click/box HUD-marker guard, so it can replace good targets with a markerless unit. This inherited key limit is documented, not changed here. The keys also lack a chat/menu gate.

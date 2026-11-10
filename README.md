@@ -15,14 +15,10 @@ This fork focuses on selection. It still keeps some navigation and target-key fe
 | Shift + left click a selected unit | Deselect it, including its weapon target entry |
 | Middle drag | Pan the map |
 | Double left click | Jump the commander camera to the cursor; not while you have an aircraft |
-| `\` | Select Target Only, with a 100-pixel pick near the cursor or HUD designator |
-| `-` | Deselect Target Looked At, using the same pick |
-| Tap Delete | Deselect the oldest selection |
-| Hold Delete | Keep only the newest selection; uses the game's press-delay setting |
 
-The three target keys appear in the game's Controls menu. They can be rebound there, including to controllers. The box itself still needs a mouse. Without a live aircraft, Select Target Only delegates to the native map picker as changed by this plugin. It can pick a selected icon again. Without Shift it selects that unit and follows it; with Shift it can remove it.
+The box needs a mouse.
 
-A replacing box containing no eligible units clears the selection. An empty additive or removing box does nothing. A click on empty map space does not clear it. The box respects the Target List filters and inactive map icons. It excludes your own aircraft. For boxes and ordinary clicks in flight, a new target also needs a HUD marker. The Select Target Only key lacks that check: it can replace valid targets with a unit that has no HUD marker or selected map icon. Airbases are not box-selected. In commander view, stock right click can order selected friendly commandable units, but only when the first selected icon is friendly and commandable. A mixed box may therefore accept no order. A replacing commander box also clears existing waypoints.
+A replacing box containing no eligible units clears the selection. An empty additive or removing box does nothing. A click on empty map space does not clear it. The box respects the Target List filters and inactive map icons. It excludes your own aircraft. For boxes and ordinary clicks in flight, a new target also needs a HUD marker. Airbases are not box-selected. In commander view, stock right click can order selected friendly commandable units, but only when the first selected icon is friendly and commandable. A mixed box may therefore accept no order. A replacing commander box also clears existing waypoints.
 
 `NTL`, an extra Target List filter, excludes neutral units when unlit. It starts lit. Stock faction filters only cover friendly and enemy units. The filter dims excluded icons and affects both map selection and HUD target designation. It does not remove those icons from the map. When the map has no viewing faction, the native Spectator mode makes NTL ineffective.
 
@@ -42,8 +38,8 @@ Compared with stock controls, left drag selects and middle drag pans. A plain mo
 - If the map stops updating during a drag, static gesture state and the persistent outline can remain until another map updates. There is no independent teardown cancellation.
 - With RequireModifier on, the default Alt shortcut does not arm while an extra non-mouse key is held. Press Shift/Ctrl after starting the box, or configure a shortcut that includes the desired keys.
 - The release click guard checks distance from the press at release. A drag that returns to its starting icon can still produce a second click.
-- Target keys have no chat/menu gate: Backslash, Minus and Delete may act while typing. This needs runtime verification. Input has no complete focus/menu cancellation policy. Modifier and camera-jump suppression temporarily change Rewired bindings. Avoid treating this as an isolated input layer.
-- The editor option gates only boxes and target keys. Pan relocation, click patches, modifier suppression and camera jump remain active in the editor. Shift-click can change map selection without updating editor multi-selection; enabling boxes does not coordinate the systems.
+- Input has no complete focus/menu cancellation policy. Modifier and camera-jump suppression temporarily change Rewired bindings. Avoid treating this as an isolated input layer.
+- The editor option gates only boxes. Pan relocation, click patches, modifier suppression and camera jump remain active in the editor. Shift-click can change map selection without updating editor multi-selection; enabling boxes does not coordinate the systems.
 - The move cursor uses Windows APIs. Other platforms should turn `Visual.PanCursor` off; cross-platform cursor behaviour is not established.
 - An upstream airbase-selection report has no confirmed cause or current-game reproduction here. The colour API fix does not prove that report resolved.
 - Static inspection finds no direct patch conflict with NuclearMinimap, NuclearMapMarkings or NuclearMapTrails. This does not establish runtime compatibility. See the [coupling study](docs/coupling.md).
@@ -52,7 +48,7 @@ Compared with stock controls, left drag selects and middle drag pans. A plain mo
 
 This is a fork of **Map Mouse Select (& more)** by **Kerbiter (Metadorius)**, [Metadorius/MapMouseSelect](https://github.com/Metadorius/MapMouseSelect). The fork starts from upstream commit [`6e08c30fd6d5315d6ce84650c2f91956e2cb7ab7`](https://github.com/Metadorius/MapMouseSelect/commit/6e08c30fd6d5315d6ce84650c2f91956e2cb7ab7). Its history and copyright remain here. This modified version is maintained in `scramd/MapMouseSelect`; the selection-scope and compatibility changes are dated **2026-11-10**.
 
-The marquee, overlay, click changes, target batching, target keys, input registration, map navigation changes and neutral filter come from Kerbiter's mod. This fork removes the unfocused frame-rate cap, safe aircraft exit, destroyed-building icons and DED filter, camera-wheel masking, and unrelated radar icon/HUD-marker guards. They do not supply map selection. It also removes the obsolete colour rerouting now handled by the game's virtual colour update. [Feature decisions and borderline items](docs/scope.md).
+The marquee, overlay, click changes, target batching, map navigation changes and neutral filter come from Kerbiter's mod. This fork removes the unfocused frame-rate cap, safe aircraft exit, destroyed-building icons and DED filter, camera-wheel masking, unrelated radar icon/HUD-marker guards, the three target keys with their Controls menu entries, and the option that made the camera follow the first boxed unit. They do not supply map selection. It also removes the obsolete colour rerouting now handled by the game's virtual colour update. [Feature decisions and borderline items](docs/scope.md).
 
 The original code was written with heavy AI assistance. AI assistance also contributed to this fork's edits and documentation; a build and static review do not establish in-game behaviour.
 

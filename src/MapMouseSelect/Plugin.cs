@@ -31,7 +31,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<bool> SuppressModifierBindings { get; private set; }
         internal static ConfigEntry<string> ModifierKeys { get; private set; }
         internal static ConfigEntry<bool> BatchTargetListWhileFlying { get; private set; }
-        internal static ConfigEntry<bool> FollowFirstUnit { get; private set; }
         internal static ConfigEntry<bool> EnableInMissionEditor { get; private set; }
         internal static ConfigEntry<int> MaxTargets { get; private set; }
         internal static ConfigEntry<bool> ShowSelectionBox { get; private set; }
@@ -48,9 +47,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<Color> BoxOutlineColorRemove { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
-        /// <summary>The mod actions whose default key has already been written, so a cleared key stays cleared.</summary>
-        internal static ConfigEntry<string> DefaultBindings { get; private set; }
-
         /// <summary>Whether the map drag follows the cursor. Off leaves vanilla's frame-time-scaled pan in place.</summary>
         internal static ConfigEntry<bool> MapPanFix { get; private set; }
 
@@ -62,9 +58,6 @@ namespace MapMouseSelect
 
         /// <summary>What each pixel of push buys the stick, in screen pixels per second, with no ceiling on the result.</summary>
         internal static ConfigEntry<float> MapStickGain { get; private set; }
-
-        /// <summary>The config file, kept reachable for that one write, which happens outside Awake.</summary>
-        internal static ConfigFile Settings { get; private set; }
 
         private Harmony _harmony;
 
@@ -104,9 +97,6 @@ namespace MapMouseSelect
                 "While flying, a marquee adds the boxed units to your weapon target list, matching a map click. "
                 + "Off disables the marquee in that mode.");
 
-            FollowFirstUnit = Config.Bind("Behavior", "FollowFirstUnit", false,
-                "In commander view, move the camera to the first boxed unit.");
-
             EnableInMissionEditor = Config.Bind("Behavior", "EnableInMissionEditor", false,
                 "Allow the marquee in the mission editor, which has its own drag box select.");
 
@@ -137,12 +127,6 @@ namespace MapMouseSelect
 
             FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
                 "Add a NTL button to the Target List pane, for units that are neither friendly nor hostile.");
-
-            Settings = Config;
-
-            DefaultBindings = Config.Bind("Hotkeys", "DefaultBindings", string.Empty,
-                "Actions whose default key the mod has already written, added to as it does, so a key cleared in "
-                + "the Controls menu stays clear. Removing a name has its default written again.");
 
             MapPanFix = Config.Bind("Behavior", "MapPanFix", true,
                 "Make the map follow the cursor while it is dragged, instead of outrunning it. This replaces the "
@@ -240,8 +224,6 @@ namespace MapMouseSelect
             var removeAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft)));
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
-            var restoreDefaultsInfo = PatchInfo(AccessTools.Method(
-                typeof(Rewired.UI.ControlMapper.ControlMapper), "OnRestoreDefaultsConfirmed"));
 
             Log.LogInfo(
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
@@ -258,7 +240,6 @@ namespace MapMouseSelect
                 + ", removeAircraft postfixes=" + removeAircraftInfo
                 + ", selectIcon postfixes=" + selectIconInfo
                 + ", reset postfixes=" + resetInfo
-                + ", restore defaults postfixes=" + restoreDefaultsInfo
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value

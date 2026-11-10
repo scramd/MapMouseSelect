@@ -179,17 +179,6 @@ namespace MapMouseSelect
         }
     }
 
-    /// <summary>Adds the mod's actions to Rewired while it is still loading the game's input data.</summary>
-    [HarmonyPatch(typeof(InputManager_Base), "Awake")]
-    internal static class RewiredInputManagerAwakePatch
-    {
-        [HarmonyPrefix]
-        private static void Prefix(InputManager_Base __instance)
-        {
-            ModActions.Register(__instance);
-        }
-    }
-
     [HarmonyPatch(typeof(DynamicMap), "MapControls")]
     internal static class DynamicMapMapControlsPatch
     {
@@ -234,23 +223,6 @@ namespace MapMouseSelect
             }
 
             return result;
-        }
-    }
-
-    /// <summary>
-    /// Writes the mod's default keys back after the Controls menu's Restore Defaults.
-    ///
-    /// That button reloads the maps authored in Rewired and clears the rest, and the mod's actions were added to
-    /// Rewired at runtime, so its keys go with them. A postfix runs after either branch of the method, the map reload
-    /// and the delegate the game may set in its place.
-    /// </summary>
-    [HarmonyPatch(typeof(Rewired.UI.ControlMapper.ControlMapper), "OnRestoreDefaultsConfirmed")]
-    internal static class RestoreDefaultsPatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix()
-        {
-            ModActions.ForgetDefaults();
         }
     }
 

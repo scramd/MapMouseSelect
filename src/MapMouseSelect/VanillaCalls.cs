@@ -8,64 +8,21 @@ namespace MapMouseSelect
 {
     /// <summary>
     /// Wrappers over the private vanilla members the mod needs verbatim, so their rules are not copied here and kept
-    /// in step by hand. DynamicMap.SelectFromMap is the map half of the Select action's handler: the icon with the
-    /// smallest squared distance to the cursor among those its filters allow. DynamicMap.JumpCameraTo is the
-    /// commander's camera jump. Select is the keyboard and gamepad action - a mouse click reaches a map icon through
-    /// its EventSystem handler. AccessTools returns null rather than throwing, so a rename costs a logged warning.
+    /// in step by hand. DynamicMap.JumpCameraTo is the commander's camera jump. AccessTools returns null rather than throwing, so a rename costs a logged warning.
     /// </summary>
     internal static class VanillaCalls
     {
-        private static MethodInfo _selectFromMap;
         private static MethodInfo _jumpCameraTo;
         private static FieldInfo _selectSound;
         private static FieldInfo _deselectSound;
-        private static FieldInfo _markers;
-        private static bool _selectFromMapResolved;
         private static bool _jumpCameraToResolved;
         private static bool _selectSoundResolved;
         private static bool _deselectSoundResolved;
-        private static bool _markersResolved;
 
         /// <summary>Vanilla's own "shift is held" test, both keys, as UnitMapIcon.ClickIcon writes it.</summary>
         internal static bool ShiftHeld()
         {
             return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-        }
-
-        /// <summary>Vanilla's map selection for the Select action, including the click it issues.</summary>
-        internal static void SelectFromMap(DynamicMap map)
-        {
-            if (!_selectFromMapResolved)
-            {
-                _selectFromMapResolved = true;
-                _selectFromMap = Resolve(typeof(DynamicMap), "SelectFromMap", null);
-            }
-
-            Invoke(_selectFromMap, map);
-        }
-
-        /// <summary>Every HUD marker on screen. CombatHUD keeps them in a field rather than an accessor, so this
-        /// reads state instead of calling vanilla.</summary>
-        internal static List<HUDUnitMarker> Markers(CombatHUD hud)
-        {
-            if (hud == null)
-            {
-                return null;
-            }
-
-            if (!_markersResolved)
-            {
-                _markersResolved = true;
-                _markers = AccessTools.Field(typeof(CombatHUD), "markers");
-                if (_markers == null)
-                {
-                    Plugin.Log.LogWarning(
-                        "Could not find CombatHUD.markers, so the select-only key will not see the target "
-                        + "designator. The game may have changed.");
-                }
-            }
-
-            return _markers != null ? _markers.GetValue(hud) as List<HUDUnitMarker> : null;
         }
 
         /// <summary>Vanilla's commander camera jump, the call its own Jump Map branch makes.</summary>

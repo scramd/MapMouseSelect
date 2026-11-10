@@ -2,8 +2,6 @@ param([Parameter(Mandatory=$true)][string]$ManagedDir, [Parameter(Mandatory=$tru
 $ErrorActionPreference = 'Stop'
 Add-Type -Path (Join-Path $BepInExCore 'Mono.Cecil.dll')
 $game = [Mono.Cecil.AssemblyDefinition]::ReadAssembly((Join-Path $ManagedDir 'Assembly-CSharp.dll'))
-$rewired = [Mono.Cecil.AssemblyDefinition]::ReadAssembly((Join-Path $ManagedDir 'Rewired_Core.dll'))
-$firstpass = [Mono.Cecil.AssemblyDefinition]::ReadAssembly((Join-Path $ManagedDir 'Assembly-CSharp-firstpass.dll'))
 function Method($asm, $type, $name, $argsExpected, $returnExpected = 'System.Void') {
     $t = $asm.MainModule.GetType($type)
     if (!$t) { throw "Missing type $type" }
@@ -15,27 +13,20 @@ Method $game DynamicMap Update ''
 Method $game DynamicMap MapControls ''
 Method $game DynamicMap DeselectAllIcons ''
 Method $game DynamicMap SelectFromMap ''
-Method $game DynamicMap JumpCameraTo 'GlobalPosition pos'
 Method $game MapIcon 'UnityEngine.EventSystems.IPointerClickHandler.OnPointerClick' 'UnityEngine.EventSystems.PointerEventData eventData'
 Method $game MapIcon SelectIcon ''
 Method $game UnitMapIcon ClickIcon 'MapIcon/ClickSource clickSource'
 Method $game CombatHUD DeSelectUnit 'Unit unit'
-Method $rewired Rewired.InputManager_Base Awake ''
-Method $firstpass Rewired.UI.ControlMapper.ControlMapper OnRestoreDefaultsConfirmed 'System.Int32 windowId'
 Method $game CombatHUD SetAircraft 'Aircraft aircraft'
 Method $game CombatHUD RemoveAircraft ''
 Method $game TargetListSelector Start ''
 Method $game TargetListSelector CheckExclusions 'Unit u' 'System.Boolean'
 Method $game TargetListSelector ResetFilters ''
 Method $game TargetListSelector_ToggleButton TargetListSelector_ToggleButton_OnThemeGroupChanged ''
-foreach ($item in @(@($game,'DynamicMap','onAllDeselected'),@($game,'CombatHUD','markers'),@($game,'CombatHUD','selectSound'),@($game,'CombatHUD','deselectSound'),@($game,'TargetListSelector_ToggleButton','context'),@($game,'TargetListSelector','resetButtonImage'),@($game,'TargetListSelector','resetButtonLabel'),@($rewired,'Rewired.Data.UserData','actions'),@($rewired,'Rewired.Data.UserData','actionCategoryMap'))) {
+foreach ($item in @(@($game,'DynamicMap','onAllDeselected'),@($game,'CombatHUD','selectSound'),@($game,'CombatHUD','deselectSound'),@($game,'TargetListSelector_ToggleButton','context'),@($game,'TargetListSelector','resetButtonImage'),@($game,'TargetListSelector','resetButtonLabel'))) {
     $f = $item[0].MainModule.GetType($item[1]).Fields | Where-Object Name -eq $item[2]
     if (!$f) { throw "Missing $($item[1]).$($item[2])" }
     Write-Output "Field OK: $($item[1]).$($item[2]): $($f.FieldType.FullName)"
-}
-foreach ($name in '_id','_name','_type','_descriptiveName','_categoryId','_userAssignable') {
-    if (!($rewired.MainModule.GetType('Rewired.InputAction').Fields | Where-Object Name -eq $name)) { throw "Missing InputAction.$name" }
-    Write-Output "Field OK: InputAction.$name"
 }
 $il = ($game.MainModule.GetType('DynamicMap').Methods | Where-Object Name -eq MapControls).Body.Instructions
 $mouse = @($il | Where-Object { $_.Operand -is [Mono.Cecil.MethodReference] -and $_.Operand.FullName -eq 'System.Boolean UnityEngine.Input::GetMouseButton(System.Int32)' }).Count

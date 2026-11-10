@@ -7,15 +7,13 @@ Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepI
 | Hotkeys | `PanButton` | `Middle` | `Left`, `Right` or `Middle`. Left conflicts with unmodified marquee ownership; right also triggers stock waypoints. Middle is the intended separation. |
 | Hotkeys | `RequireModifier` | `false` | Require the shortcut at the start of a box. Releasing it does not cancel an active box. KeyboardShortcut rejects extra held non-mouse keys, so default Alt does not arm with Shift/Ctrl or flight keys already held; choose a matching combination or press mode keys after starting. |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | BepInEx KeyboardShortcut. Used only with RequireModifier. Not the owner's multi-device binding type. |
-| Hotkeys | `DefaultBindings` | empty | Internal record of the three target actions whose defaults were handled. Removing an action name allows its default to be written again. Restore Defaults clears these names. |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift chooses an additive box. Does not disable native Shift-click behaviour. |
 | Behavior | `ControlRemovesFromSelection` | `true` | Ctrl chooses a removing box and takes precedence over Shift. |
 | Behavior | `SuppressModifierBindings` | `true` | Temporarily disables enabled bare-key mappings on ModifierKeys while the expanded map is open. It is not a general input reservation system. |
 | Behavior | `ModifierKeys` | `LeftShift, RightShift, LeftControl, RightControl` | Comma-separated Unity KeyCode names, parsed case-insensitively. Unknown names log a warning. The marquee shortcut's MainKey joins when RequireModifier is on; extra shortcut modifiers do not automatically join. |
 | Behavior | `BatchTargetListWhileFlying` | `true` | Allows a box to change flying targets. False suppresses its application, not the drag state or its input blocking. Click and target-key changes remain active. |
-| Behavior | `FollowFirstUnit` | `false` | Commander box follows the first collected unit when at least one unit was newly selected. |
-| Behavior | `EnableInMissionEditor` | `false` | Allows marquee and target keys in the editor. Does not coordinate the editor's own box or multi-selection store. Other click, pan and suppression patches still operate with this false. |
-| Behavior | `MaxTargets` | `128` | Range 1 to 128. Caps flying box additions against retained targets. Does not prune already retained targets to a newly lowered cap. Not used for commander boxes or target keys. |
+| Behavior | `EnableInMissionEditor` | `false` | Allows the marquee in the editor. Does not coordinate the editor's own box or multi-selection store. Other click, pan and suppression patches still operate with this false. |
+| Behavior | `MaxTargets` | `128` | Range 1 to 128. Caps flying box additions against retained targets. Does not prune already retained targets to a newly lowered cap. Not used for commander boxes. |
 | Behavior | `MapPanFix` | `true` | Uses raw pointer displacement and scale correction instead of native mouse axes and frame-time factor. The transpiler remains installed when false and returns native values. |
 | Behavior | `MapPanSpeed` | `1` | Range 0.1 to 5. Multiplier while MapPanFix is on; 1 aims for one screen pixel per pointer pixel. |
 | Behavior | `MapStick` | `false` | With MapPanFix, uses displacement from pan press as scrolling velocity. This is mouse stick mode, not controller stick support. |
@@ -31,6 +29,5 @@ Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepI
 
 NTL starts lit, meaning neutrals pass through unless another filter excludes them. Left click toggles it. Reset restores it lit. As a cloned native button outside the stock lists, its right click turns it on but does not isolate neutrals. Exclusion adds dimming and blocks selection; it does not hide the icon GameObject. Layout retains the inherited half-width button.
 
-The target actions use the game's Controls menu, not these settings. Select Target Only defaults to Backslash; Deselect Oldest Target to Delete; Deselect Target Looked At to Minus. Defaults are written only where the action is unbound and not already recorded, on enabled keyboard maps that bind Cancel. Rebinding or deliberately clearing an action is preserved by the record. The hard-coded action IDs and names are shared with upstream.
 
 Old configuration files can retain orphaned entries for removed features. The plugin no longer binds or reads them. No migration deletes those saved values or native saved input maps.

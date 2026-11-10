@@ -430,15 +430,6 @@ namespace MapMouseSelect
                 added++;
             }
 
-            if (Plugin.FollowFirstUnit.Value && added > 0)
-            {
-                var camera = SceneSingleton<CameraStateManager>.i;
-                if (camera != null)
-                {
-                    camera.SetFollowingUnit(units[0]);
-                }
-            }
-
             Report("commander", added, alreadySelected, 0);
         }
 
