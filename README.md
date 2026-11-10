@@ -8,7 +8,6 @@ WIP quality of life mod for Nuclear Option: drag a box on a map to select units 
 
 Many of those things have configurations if you have BepInEx config manager installed. I have not thoroughly checked but from a glance they seem alright and I got positive feedback of them already
 
-### Added
 
 - Marquee: drag a box on the map to select in bulk, in both map modes:
   - plain marquee replaces the selection (blue by default).
@@ -18,10 +17,8 @@ Many of those things have configurations if you have BepInEx config manager inst
   - `\` selects/keeps only the unit you are pointing at
   - `-` drops the unit you are pointing at
   - `Delete` drops your oldest target, hold it to keep only the newest
-- Wrecks: a destroyed but repairable building keeps its map icon, darkened, instead of vanishing. They stay unselectable (unless in commander mode where this does nothing) and they can't be targeted still.
 - Two buttons in the Target List pane:
   - `NTL` for toggling neutrals on the map;
-  - `DED` for repairable wrecks.
 - Optional joystick mode for the pan button: hold it, push the cursor away from where you pressed, and the map scrolls at a speed that grows with the push (`MapStick`, off by default, requires map pan fix to be enabled).
 - The cursor changes to move cursor while you pan the map.
 
@@ -61,7 +58,6 @@ Why each of these behaves the way it does, and what vanilla does in the same pla
 dotnet build src\MapMouseSelect\MapMouseSelect.csproj -p:NuclearOptionRoot="D:\path\to\Nuclear Option"
 ```
 
-The build resolves the game path from `-p:NuclearOptionRoot` first, then `Directory.Build.user.props`, then the `NUCLEAR_OPTION_ROOT` variable, and stops with an explanation rather than guessing. It copies the DLL into the game unless you pass `-p:DeployToPlugins=false`. Copy `Directory.Build.user.props.example` to get started. The rest, including the launch config and how to tell which build the game loaded, is in the [technical notes](docs/technical-notes.md#build-and-launch).
 
 ## Disclaimers
 
@@ -71,7 +67,6 @@ This mod is authored by an experienced software engineer, but by vibecoding as a
 
 ### Client-side mod and fair play considerations
 
-Most of this is a client mod, and I understand that any quality of life change can be read as a slight advantage online. I think a client mod is fair here, because it takes away friction where the friction did not look intended (and does not a lot of it), and fixes some bugs (and also reassigns the control schema by default). Nearly everything it does was already possible with a bit more clicking/alternate means: mass selection was spamming Enter on the map while moving the mouse, keeping only a new target was deselect all followed by a select (and you generally mass select your targets before a bombing run rather than in the middle of one, at least for me, so there's not much skill element reduction at play).
 
 I really hope such improvements will appear in vanilla. However, if there are stronger reservations against such, I am open to constructive discussion.
 

@@ -52,8 +52,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<Color> BoxOutlineColor { get; private set; }
         internal static ConfigEntry<Color> BoxOutlineColorAdditive { get; private set; }
         internal static ConfigEntry<Color> BoxOutlineColorRemove { get; private set; }
-        internal static ConfigEntry<bool> EnableDestroyedUnits { get; private set; }
-        internal static ConfigEntry<float> DestroyedBuildingTint { get; private set; }
         internal static ConfigEntry<bool> FilterNeutral { get; private set; }
 
         /// <summary>The mod actions whose default key has already been written, so a cleared key stays cleared.</summary>
@@ -151,15 +149,9 @@ namespace MapMouseSelect
             BoxOutlineColorRemove = Config.Bind("Visual", "BoxOutlineColorRemove", Hex("#FF5A5ACC"),
                 "Outline color for a deselecting marquee (Control held).");
 
-            EnableDestroyedUnits = Config.Bind("Destroyed", "Enabled", true,
-                "Keep destroyed buildings on the map as darkened wrecks, add the DED filter, and drop a dead unit "
-                + "from the target list when it dies.");
 
-            DestroyedBuildingTint = Config.Bind("Destroyed", "Tint", 0.45f,
-                new ConfigDescription(
-                    "How much of its usual colour a wrecked building's icon keeps, 1 leaving it unchanged. "
-                    + "Only used when Destroyed.Enabled is on.",
-                    new AcceptableValueRange<float>(0.1f, 1f)));
+
+
 
             FilterNeutral = Config.Bind("Target list", "FilterNeutral", true,
                 "Add a NTL button to the Target List pane, for units that are neither friendly nor hostile.");
@@ -254,8 +246,6 @@ namespace MapMouseSelect
                 new[] { typeof(PointerEventData) });
             var iconClickInfo = iconClickTarget != null ? PatchProcessor.GetPatchInfo(iconClickTarget) : null;
 
-            var wreckTarget = AccessTools.Method(typeof(UnitMapIcon), "UnitMapIcon_OnUnitDisabled");
-            var wreckInfo = wreckTarget != null ? PatchProcessor.GetPatchInfo(wreckTarget) : null;
             var exclusionsTarget = AccessTools.Method(
                 typeof(TargetListSelector), nameof(TargetListSelector.CheckExclusions));
             var exclusionsInfo =
@@ -267,7 +257,6 @@ namespace MapMouseSelect
             var setAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.SetAircraft)));
             var removeAircraftInfo = PatchInfo(AccessTools.Method(typeof(CombatHUD), nameof(CombatHUD.RemoveAircraft)));
             var updateColorInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.UpdateColor)));
-            var unitDestroyInfo = PatchInfo(AccessTools.Method(typeof(Unit), "OnDestroy"));
             var resetInfo = PatchInfo(AccessTools.Method(typeof(TargetListSelector), nameof(TargetListSelector.ResetFilters)));
             var selectIconInfo = PatchInfo(AccessTools.Method(typeof(MapIcon), nameof(MapIcon.SelectIcon)));
             var restoreDefaultsInfo = PatchInfo(AccessTools.Method(
@@ -283,7 +272,6 @@ namespace MapMouseSelect
                 + ", pan axis call sites=" + MapPanProportionPatch.AxisSites
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)
                 + " | icon click prefixes=" + (iconClickInfo != null ? iconClickInfo.Prefixes.Count : -1)
-                + " | wreck icon prefixes=" + (wreckInfo != null ? wreckInfo.Prefixes.Count : -1)
                 + " | target filter postfixes="
                 + (exclusionsInfo != null ? exclusionsInfo.Postfixes.Count : -1)
                 + " | deselect prefixes=" + deselectInfo
@@ -291,10 +279,8 @@ namespace MapMouseSelect
                 + ", removeAircraft postfixes=" + removeAircraftInfo
                 + ", updateColor postfixes=" + updateColorInfo
                 + ", selectIcon postfixes=" + selectIconInfo
-                + ", unit destroy postfixes=" + unitDestroyInfo
                 + ", reset postfixes=" + resetInfo
                 + ", restore defaults postfixes=" + restoreDefaultsInfo
-                + " | destroyedUnits=" + EnableDestroyedUnits.Value
                 + " | panButton=" + PanButton.Value
                 + ", requireModifier=" + RequireModifier.Value
                 + ", enableInMissionEditor=" + EnableInMissionEditor.Value

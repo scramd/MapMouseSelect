@@ -26,6 +26,4 @@ Every setting is in the file the mod writes, `BepInEx\config\com.kerbiter.mapmou
 | Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Outline color for an additive selection (Shift held) |
 | Visual | `BoxOutlineColorRemove` | `FF5A5ACC` | Outline color for a deselecting box (Ctrl held) |
 | Visual | `OverlaySortingOrder` | `32000` | Sorting order of this mod's overlay canvas |
-| Destroyed | `Enabled` | `true` | Keep destroyed buildings on the map as darkened wrecks, and add the `DED` filter |
-| Destroyed | `Tint` | `0.45` | How much of its usual colour a wrecked building's icon keeps |
 | Target list | `FilterNeutral` | `true` | Add the `NTL` button to the Target List filter pane |

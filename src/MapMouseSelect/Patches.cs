@@ -153,36 +153,10 @@ namespace MapMouseSelect
             {
                 icon.iconImage.raycastTarget = true;
 
-                var unit = icon.unit;
-                if (unit != null && unit is Building && unit.disabled)
-                {
-                    Plugin.Verbose(
-                        "Selected disabled " + unit.name + ", icon now " + icon.iconImage.color + ".");
-                }
             }
         }
     }
 
-    /// <summary>
-    /// Takes a unit out of the weapon target list when it dies. Vanilla's own cleanup runs through
-    /// CombatHUD.RemoveMarker into WeaponManager.RemoveTargetList, and skips it while the player's own aircraft is
-    /// disabled, leaving the unit in the list with nothing drawing it. That stayed invisible until this mod kept a
-    /// wreck's icon on the map. Unit.UnitDisabled is the one edge every unit passes through, Building's override
-    /// included, and a no-op when vanilla got there first.
-    /// </summary>
-    [HarmonyPatch(typeof(Unit), nameof(Unit.UnitDisabled))]
-    internal static class UnitUnitDisabledPatch
-    {
-        // The parameter keeps the game's name, nowDisabled: HarmonyX resolves postfix arguments by name.
-        [HarmonyPostfix]
-        private static void Postfix(Unit __instance, bool nowDisabled)
-        {
-            if (nowDisabled && Plugin.EnableDestroyedUnits.Value)
-            {
-                SelectionApplier.Forget(__instance);
-            }
-        }
-    }
 
 
     /// <summary>

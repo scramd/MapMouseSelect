@@ -17,7 +17,6 @@ namespace MapMouseSelect
         private const string ClonePrefix = "MapMouseSelect_";
 
         private static TargetListSelector_ToggleButton _neutral;
-        private static TargetListSelector_ToggleButton _wreck;
         private static FieldInfo _context;
         private static MethodInfo _themeChanged;
         private static Sprite _frame;
@@ -71,15 +70,8 @@ namespace MapMouseSelect
                 slot += each + split;
             }
 
-            // Wrecks start filtered out. An unlit filter is the gate every vanilla selection path uses, so a player
-            // asks for wrecks by lighting this button.
-            if (Plugin.EnableDestroyedUnits.Value && _wreck == null)
-            {
-                _wreck = Clone(template, toned, left, "DED", false, slot, each);
-            }
-
             Plugin.Verbose(
-                "Target List filters: " + Describe(_neutral) + ", " + Describe(_wreck)
+                "Target List filters: " + Describe(_neutral)
                 + ", laneStart=" + laneStart.ToString("0.#") + ", normal=" + templateRect.rect.width.ToString("0.#")
                 + ", gap=" + gap.ToString("0.#") + ", split=" + split.ToString("0.#")
                 + ", each=" + each.ToString("0.#")
@@ -322,13 +314,12 @@ namespace MapMouseSelect
         /// </summary>
         internal static void Reset(TargetListSelector pane)
         {
-            if (_neutral == null && _wreck == null)
+            if (_neutral == null)
             {
                 return;
             }
 
             Restore(_neutral, "NTL", true);
-            Restore(_wreck, "DED", false);
             GreyResetButton(pane);
         }
 
@@ -365,11 +356,6 @@ namespace MapMouseSelect
             if (unit == null)
             {
                 return false;
-            }
-
-            if (_wreck != null && !_wreck.status && DestroyedBuildings.IsWreck(unit))
-            {
-                return true;
             }
 
             return _neutral != null && !_neutral.status && IsNeutral(unit);

@@ -272,32 +272,6 @@ namespace MapMouseSelect
             return targets != null && unit != null && targets.Contains(unit);
         }
 
-        /// <summary>
-        /// Takes a unit out of the target list because it is gone, not because the player asked. Vanilla's own
-        /// cleanup skips that step while the player's own aircraft is disabled, which is the hole this covers, and a
-        /// no-op whenever vanilla got there first. One refresh, and silent.
-        /// </summary>
-        internal static void Forget(Unit unit)
-        {
-            if (unit == null)
-            {
-                return;
-            }
-
-            var aircraft = GetLiveAircraft();
-            var targets = TargetList(aircraft);
-            if (targets == null || !targets.Contains(unit))
-            {
-                return;
-            }
-
-            Pending.Clear();
-            Pending.Add(unit);
-            RemoveFromTargetList(aircraft, Pending, false);
-            Pending.Clear();
-
-            Plugin.Verbose("Dropped " + unit.name + " from the target list: it is gone.");
-        }
 
         /// <summary>The target list of the current weapon station, or null when nothing is flying.</summary>
         private static List<Unit> TargetList(Aircraft aircraft)
