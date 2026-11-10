@@ -12,7 +12,7 @@ The current code combines two input systems: one BepInEx KeyboardShortcut and ra
 | `UnitMapIconClickPatch` | Mouse versus Controller ClickSource, Shift and cursor-in-map. It does not implement Ctrl-click removal. |
 | `PanButtonCompat.GetMouseButton` | Configured Unity Left/Right/Middle held button; replaces the stock pan gate. |
 | `VanillaFixes.PanAxis`, `CursorStep` | Stock Rewired Pan View/Tilt View axis values, raw mouse position, frame time, drag threshold. |
-| `CameraJump.Tick` | Pan button down and up, pointer and drag threshold. A press and release without a drag jumps the camera; checks map rectangle and aircraft. Active only while a Jump Map mapping on the pan button is held off. |
+| `PanClick.ClickedThisFrame` | Pan button down and up, pointer and drag threshold. Reports a press and release without a drag, once per frame. Used by the waypoint order in `MapControls` and by `CameraJump.Tick`. |
 | `CameraJump.HoldJumpButtonOff` | Looks up native Jump Map; disables mouse mappings whose element name matches the pan button. Restores held-off mappings when map closes. |
 | `ModifierGuard`, `BindingBlocker` | Parses configured Unity modifier keys; reads the marquee shortcut's MainKey; disables bare-key Rewired elements on enabled keyboard maps while expanded. It does not disable declared modifier combinations. |
 | NTL cloned `TargetListSelector_ToggleButton` | Native pointer callbacks handle left toggle and right-click SetOnlyItem. Theme/layout and right-click semantics are coupled to the stock control. |

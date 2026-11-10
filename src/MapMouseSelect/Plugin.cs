@@ -51,9 +51,6 @@ namespace MapMouseSelect
         internal static ConfigEntry<float> MapPanSpeed { get; private set; }
 
 
-        /// <summary>Whether the wheel is kept from zooming the camera under the map, a menu or the F1 window.</summary>
-        internal static ConfigEntry<bool> CameraWheelFix { get; private set; }
-
         private Harmony _harmony;
 
         private void Awake()
@@ -67,9 +64,10 @@ namespace MapMouseSelect
             RequireModifier = Config.Bind("Hotkeys", "RequireModifier", false,
                 "Require MarqueeModifier to start a marquee. Off by default, so a plain left drag selects.");
 
-            PanButton = Config.Bind("Hotkeys", "PanButton", MapPanButton.Middle,
-                "Mouse button that drags to pan the map. The game hardcodes the left button, which collides "
-                + "with the marquee, and right is already the waypoint button.");
+            PanButton = Config.Bind("Hotkeys", "PanButton", MapPanButton.Right,
+                "Mouse button that drags to move the map. The game hardcodes the left button, which collides "
+                + "with the marquee. The button keeps its own click: a right click without a drag still sets a "
+                + "waypoint, a middle click without a drag still jumps the camera.");
 
             ShiftAddsToSelection = Config.Bind("Behavior", "ShiftAddsToSelection", true,
                 "Hold Shift while dragging to add to the current selection instead of replacing it.");
@@ -129,10 +127,6 @@ namespace MapMouseSelect
                     "How far the map moves per pixel the mouse moves while dragging it, used while MapPanFix is on. "
                     + "One keeps the map under the cursor.",
                     new AcceptableValueRange<float>(0.1f, 5f)));
-
-            CameraWheelFix = Config.Bind("Behavior", "CameraWheelFix", true,
-                "Stop the mouse wheel from zooming the camera while the map is open, while a menu or dialog shows "
-                + "the cursor, and while the ConfigurationManager window (F1) is open.");
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();
@@ -211,6 +205,7 @@ namespace MapMouseSelect
                 "Patches: MapControls prefixes=" + (info != null ? info.Prefixes.Count : -1)
                 + ", transpilers=" + (info != null ? info.Transpilers.Count : -1)
                 + ", pan call sites rewritten=" + DynamicMapMapControlsPatch.PanReplacements
+                + ", waypoint call sites rewritten=" + DynamicMapMapControlsPatch.OrderReplacements
                 + ", pan factor call sites=" + MapPanProportionPatch.CallSites
                 + ", pan axis call sites=" + MapPanProportionPatch.AxisSites
                 + " | Update prefixes=" + (updateInfo != null ? updateInfo.Prefixes.Count : -1)

@@ -15,8 +15,8 @@ The mod has one feature: selecting units on the map with a box. Everything else 
 
 | Part | Why it is needed |
 | --- | --- |
-| Map drag on the middle button | The stock game moves the map with a left drag. The box now uses the left drag. |
-| Camera jump on a middle click | The stock Jump Map action fires when the middle button goes down. With the map drag on that button, every drag would begin with a jump. The mod holds that one binding off while the map is open and jumps on a press and release without a drag. |
+| Map drag on the right button | The stock game moves the map with a left drag. The box now uses the left drag. The button is a setting; right is the default. |
+| The drag button keeps its click | The stock game acts on the right button (waypoint order) and the middle button (Jump Map) the moment the button goes down. With the map drag on that button, every drag would begin with an order or a jump. The mod waits for a press and release without a drag. |
 | Bare Shift and Ctrl bindings held off | Shift and Ctrl choose the kind of box. A stock binding on one of those keys alone would fire at the same time. |
 
 ## Repairs to the stock game
@@ -28,7 +28,6 @@ The mod has one feature: selecting units on the map with a box. Everything else 
 | No click at the end of a drag | A box that ends on an icon does not also click it. |
 | Target List rows follow the selection | Two stock paths clear the selection without telling the Target List. Its rows stayed. |
 | Map drag follows the mouse | The stock game scales a mouse drag by the frame time, so the map moves further at low frame rates. Moving the map is part of every selection now that it shares the mouse with the box. |
-| Camera wheel | The wheel zooms the map. The stock cockpit and flyby cameras also read it, so the camera zoomed behind the map, behind menus and behind the ConfigurationManager window. |
 
 ## Removed from the original
 
@@ -41,7 +40,8 @@ The mod has one feature: selecting units on the map with a box. Everything else 
 | Camera follows the first boxed unit | An optional camera reaction, off by default. |
 | "Stick" scrolling with the mouse | A second way to move the map, off by default. |
 | Move cursor while dragging the map | Cosmetic, and built on Windows-only calls. |
-| Double left click for the camera jump | Replaced by the middle click. |
+| Double left click for the camera jump | Not needed. The jump stays on its stock button. |
+| Camera wheel fix | The wheel zoomed the camera behind the map. Not about selection; it belongs in a mod of its own. |
 | Colour rerouting for map icons | The game does this itself since 0.34.6. The old patch no longer builds against the current game. |
 
 Removals are scope cuts. They do not say that the original features were poor.

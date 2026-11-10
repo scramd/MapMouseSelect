@@ -21,6 +21,9 @@ namespace MapMouseSelect
         {
             ModHost.Ensure();
             Marquee.Tick(__instance);
+
+            // Keeps the pan button's click-or-drag state current on every frame the map runs.
+            PanClick.ClickedThisFrame(__instance);
         }
     }
 
@@ -185,6 +188,9 @@ namespace MapMouseSelect
         /// <summary>Number of pan-gate call sites the transpiler rewrote. -1 means it never ran.</summary>
         internal static int PanReplacements { get; private set; } = -1;
 
+        /// <summary>Number of waypoint-order call sites the transpiler rewrote. -1 means it never ran.</summary>
+        internal static int OrderReplacements { get; private set; } = -1;
+
         /// <summary>Skipping vanilla controls while the marquee owns the mouse holds off the click-select and
         /// the left-drag map panning for the duration of the drag.</summary>
         [HarmonyPrefix]
@@ -192,15 +198,20 @@ namespace MapMouseSelect
         {
             return !Marquee.OwnsMouse;
         }
-        /// <summary>Moves map panning off the hardcoded left mouse button. Gameplay-independent: the pan gate
-        /// is the only plain Input.GetMouseButton call in MapControls, so exactly one site must match.</summary>
+        /// <summary>Moves map panning off the hardcoded left mouse button, and lets the waypoint order on the
+        /// right button tell a click from a drag. The pan gate is the only Input.GetMouseButton call in
+        /// MapControls and the waypoint order the only Input.GetMouseButtonDown call, so exactly one site of each
+        /// must match.</summary>
         [HarmonyTranspiler]
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var original = AccessTools.Method(typeof(Input), nameof(Input.GetMouseButton), new[] { typeof(int) });
             var replacement = AccessTools.Method(typeof(PanButtonCompat), nameof(PanButtonCompat.GetMouseButton));
+            var originalDown = AccessTools.Method(typeof(Input), nameof(Input.GetMouseButtonDown), new[] { typeof(int) });
+            var replacementDown = AccessTools.Method(typeof(PanButtonCompat), nameof(PanButtonCompat.GetMouseButtonDown));
 
             var patched = 0;
+            var orders = 0;
             var result = new List<CodeInstruction>();
 
             foreach (var instruction in instructions)
@@ -210,10 +221,23 @@ namespace MapMouseSelect
                     instruction.operand = replacement;
                     patched++;
                 }
+                else if (originalDown != null && replacementDown != null && instruction.Calls(originalDown))
+                {
+                    instruction.operand = replacementDown;
+                    orders++;
+                }
                 result.Add(instruction);
             }
 
             PanReplacements = patched;
+            OrderReplacements = orders;
+
+            if (orders != 1)
+            {
+                Plugin.Log.LogWarning(
+                    "Expected exactly one waypoint GetMouseButtonDown call in DynamicMap.MapControls but found "
+                    + orders + ". A map drag with the right button may also set a waypoint. The game may have changed.");
+            }
 
             if (patched != 1)
             {

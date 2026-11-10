@@ -4,7 +4,7 @@ Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepI
 
 | Section | Key | Default | Effect and limit |
 | --- | --- | --- | --- |
-| Hotkeys | `PanButton` | `Middle` | `Left`, `Right` or `Middle`. Left conflicts with unmodified marquee ownership; right also triggers stock waypoints. Middle is the intended separation. |
+| Hotkeys | `PanButton` | `Right` | `Left`, `Right` or `Middle`. Left conflicts with the box. With Right, the stock waypoint order waits for a click without a drag. With Middle, the stock camera jump does the same. A configuration file saved by the original mod keeps its `Middle`. |
 | Hotkeys | `RequireModifier` | `false` | Require the shortcut at the start of a box. Releasing it does not cancel an active box. KeyboardShortcut rejects extra held non-mouse keys, so default Alt does not arm with Shift/Ctrl or flight keys already held; choose a matching combination or press mode keys after starting. |
 | Hotkeys | `MarqueeModifier` | `LeftAlt` | BepInEx KeyboardShortcut. Used only with RequireModifier. Keyboard only. |
 | Behavior | `ShiftAddsToSelection` | `true` | Shift chooses an additive box. Does not disable native Shift-click behaviour. |
@@ -16,7 +16,6 @@ Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepI
 | Behavior | `MaxTargets` | `128` | Range 1 to 128. Caps flying box additions against retained targets. Does not prune already retained targets to a newly lowered cap. Not used for commander boxes. |
 | Behavior | `MapPanFix` | `true` | Uses raw pointer displacement and scale correction instead of native mouse axes and frame-time factor. The transpiler remains installed when false and returns native values. |
 | Behavior | `MapPanSpeed` | `1` | Range 0.1 to 5. Multiplier while MapPanFix is on; 1 aims for one screen pixel per pointer pixel. |
-| Behavior | `CameraWheelFix` | `true` | Stops the mouse wheel zooming the cockpit and flyby cameras while the map is expanded, while the cursor is visible, or while the ConfigurationManager window is open. The patch stays installed when false and passes the wheel through. |
 | Visual | `ShowSelectionBox` | `true` | Draws the outline; false still selects. |
 | Visual | `BoxOutlineColor` | `3CB4FFCC` | Replace outline. |
 | Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Add outline. |

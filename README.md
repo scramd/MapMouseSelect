@@ -19,9 +19,8 @@ All of these work on the expanded map.
 | Ctrl + left drag | Removes the units in the box from your targets. |
 | Left click on a unit | Makes it your only target. |
 | Shift + left click on a unit | Adds it. On a unit that is already a target, removes it. |
-| Middle drag | Moves the map. The place you grabbed stays under the cursor. |
-| Middle click | Without an aircraft: moves your camera to that place. |
-| Mouse wheel | Zooms the map only. The camera behind the map no longer zooms with it. |
+| Right drag | Moves the map. The place you grabbed stays under the cursor. |
+| Right click | As in the stock game: sends the selected friendly vehicles and ships to that place. |
 
 A box picks the same units a click could pick:
 
@@ -38,17 +37,15 @@ Without an aircraft the box selects units on the map in the same way a click doe
 
 The box needs the left mouse button, so a few stock controls move:
 
-- **Moving the map** goes from a left drag to a middle drag.
-- **Jumping the camera** stays on the middle button, but only on a click. A drag no longer jumps.
+- **Moving the map** goes from a left drag to a right drag. A right click without a drag still gives its order.
 - **Keys bound to Shift or Ctrl alone**, such as a throttle key, do nothing while the map is open. Shift and Ctrl choose the kind of box there. Key combinations such as Ctrl+Shift+E still work.
 - **A click replaces your targets.** In the stock game a click in flight adds a target. Hold Shift to add.
 
-The mod also repairs four things in the stock game that selection runs into:
+The mod also repairs three things in the stock game that selection runs into:
 
 - A unit that is already selected can be clicked again, so Shift + click can remove it.
 - The Target List no longer keeps rows for units that are no longer selected.
 - A map drag follows the mouse exactly. In the stock game the map moves further the lower your frame rate is.
-- The mouse wheel no longer zooms the camera while the map, a menu or the BepInEx settings window (F1) is open.
 
 ## Install
 
@@ -64,6 +61,7 @@ The mod writes `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. With the BepInE
 
 - The box needs a mouse. There is no controller control for it yet.
 - While you hold the left button on the map, map zoom and map movement from a keyboard or controller pause until you release.
+- The right button is also the game's Free Look control. Where Free Look is active, without an aircraft or with the virtual joystick, a right drag on the map also turns the camera behind it. Set `PanButton` to `Middle` to avoid that. A middle click then still jumps the camera, and a middle drag only moves the map.
 - In the mission editor the box is off by default. The editor has its own box selection.
 
 ## Where this comes from
@@ -73,9 +71,8 @@ This mod is a fork of **Map Mouse Select (& more)** by **Kerbiter** ([Metadorius
 The fork started on 2026-11-10 with these changes:
 
 - It builds for game version 0.34.6. The original no longer builds for the current game.
-- Features that are not about selecting on the map are gone: the frame rate limit for an unfocused game, the key to leave a parked aircraft, icons for destroyed buildings, the three extra target keys, the "stick" way to scroll the map, and the move cursor.
-- The camera jump is a middle click. The original used a double left click.
-- The camera wheel repair is rewritten in a smaller form.
+- Features that are not about selecting on the map are gone: the frame rate limit for an unfocused game, the key to leave a parked aircraft, icons for destroyed buildings, the three extra target keys, the "stick" way to scroll the map, the move cursor, and the camera wheel fix.
+- The map is dragged with the right button, and a right click keeps its stock order. The original used the middle button and moved the camera jump to a double left click.
 
 [What was kept, what was removed, and why](docs/scope.md).
 

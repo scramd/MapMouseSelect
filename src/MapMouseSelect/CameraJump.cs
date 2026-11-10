@@ -9,8 +9,8 @@ namespace MapMouseSelect
     /// Lets one mouse button both drag the map and jump the camera.
     ///
     /// Vanilla jumps the free camera to the cursor when the Jump Map action goes down. That action sits on the
-    /// middle button by default, the button this mod uses to drag the map, so every drag would start with a jump.
-    /// While the map is open the mod disables that one binding and answers the button itself: a press and release
+    /// middle button by default. When the map is dragged with that button, every drag would start with a jump, so
+    /// while the map is open the mod disables that one binding and answers the button itself: a press and release
     /// without a drag jumps, a drag only moves the map. A Jump Map binding on any other control is left alone.
     /// Only a player without an aircraft has the jump, as in vanilla.
     /// </summary>
@@ -21,9 +21,6 @@ namespace MapMouseSelect
         private static readonly List<ControllerMap> MouseMaps = new List<ControllerMap>();
         private static readonly List<ActionElementMap> HeldOff = new List<ActionElementMap>();
 
-        private static bool _pressed;
-        private static bool _dragged;
-        private static Vector2 _pressPosition;
         private static bool _reportedBindings;
 
         internal static void Tick()
@@ -34,42 +31,14 @@ namespace MapMouseSelect
             HoldJumpButtonOff(open);
 
             // The click stands in for the binding that was held off, so without one there is nothing to answer.
-            if (!open || HeldOff.Count == 0 || Plugin.PanButton == null)
-            {
-                _pressed = false;
-                return;
-            }
-
-            var button = (int)Plugin.PanButton.Value;
-
-            if (Input.GetMouseButtonDown(button))
-            {
-                _pressed = map.IsCursorInMapRectangle();
-                _dragged = false;
-                _pressPosition = Input.mousePosition;
-                return;
-            }
-
-            if (!_pressed)
+            var clicked = PanClick.ClickedThisFrame(map);
+            if (!clicked || HeldOff.Count == 0)
             {
                 return;
             }
-
-            // Remembered for the whole press, so a drag that returns to where it started is still a drag.
-            if (UnitSelection.DragThresholdPassed(_pressPosition))
-            {
-                _dragged = true;
-            }
-
-            if (!Input.GetMouseButtonUp(button))
-            {
-                return;
-            }
-
-            _pressed = false;
 
             Aircraft localAircraft;
-            if (_dragged || GameManager.GetLocalAircraft(out localAircraft))
+            if (GameManager.GetLocalAircraft(out localAircraft))
             {
                 return;
             }
