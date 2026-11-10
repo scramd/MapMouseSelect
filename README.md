@@ -1,79 +1,100 @@
 # Map Mouse Select
 
-Drag a box on Nuclear Option's expanded tactical map to select units together. A plain box replaces the selection. Shift adds units. Ctrl removes units. In flight, these operations change the current weapon station's target list. Without a live aircraft, they change the map selection.
+A client mod for Nuclear Option. Drag a box on the map to pick your targets.
 
-This fork focuses on selection. It still keeps some navigation and target-key features for the owner to decide on. The controls below describe the code, not verified play on the current game. The plugin builds against the supplied 0.34.6 assemblies. It has not been run in that game version.
+![Dragging a box over a group of units on the map](docs/media/marquee.gif)
+
+In the stock game you click units on the map one by one. With this mod you hold the left mouse button, drag a box over them, and every unit inside becomes a target for your current weapon.
+
+This is a fork of [Map Mouse Select (& more)](https://github.com/Metadorius/MapMouseSelect) by Kerbiter. It keeps the selection features and leaves out the rest. See [Where this comes from](#where-this-comes-from).
 
 ## Controls
 
-| Control | Action |
+All of these work on the expanded map.
+
+| Control | What it does |
 | --- | --- |
-| Left drag on the expanded map | Replace the selection with units inside the box |
-| Shift + left drag | Add boxed units |
-| Ctrl + left drag | Remove boxed units; Ctrl wins over Shift |
-| Left click a unit icon | Select it; in flight, keep only that target |
-| Shift + left click a selected unit | Deselect it, including its weapon target entry |
-| Middle drag | Pan the map |
-| Double left click | Jump the commander camera to the cursor; not while you have an aircraft |
+| Left drag | The units in the box become your targets. Your earlier targets are dropped. |
+| Shift + left drag | Adds the units in the box to your targets. |
+| Ctrl + left drag | Removes the units in the box from your targets. |
+| Left click on a unit | Makes it your only target. |
+| Shift + left click on a unit | Adds it. On a unit that is already a target, removes it. |
+| Middle drag | Moves the map. The place you grabbed stays under the cursor. |
+| Middle click | Without an aircraft: moves your camera to that place. |
+| Mouse wheel | Zooms the map only. The camera behind the map no longer zooms with it. |
 
-The box needs a mouse.
+A box picks the same units a click could pick:
 
-A replacing box containing no eligible units clears the selection. An empty additive or removing box does nothing. A click on empty map space does not clear it. The box respects the Target List filters and inactive map icons. It excludes your own aircraft. For boxes and ordinary clicks in flight, a new target also needs a HUD marker. Airbases are not box-selected. In commander view, stock right click can order selected friendly commandable units, but only when the first selected icon is friendly and commandable. A mixed box may therefore accept no order. A replacing commander box also clears existing waypoints.
+- It follows the filter buttons of the Target List. Units that a filter hides are not picked.
+- It skips your own aircraft and airbases.
+- A weapon takes at most 128 targets.
+- A plain box with no units in it clears your targets.
 
-`NTL`, an extra Target List filter, excludes neutral units when unlit. It starts lit. Stock faction filters only cover friendly and enemy units. The filter dims excluded icons and affects both map selection and HUD target designation. It does not remove those icons from the map. When the map has no viewing faction, the native Spectator mode makes NTL ineffective.
+The mod adds one filter button to the Target List: **NTL**. Switch it off to keep neutral units out of your selection. The stock buttons can only filter friendly and enemy units.
 
-## Install and configure
+Without an aircraft the box selects units on the map in the same way a click does. With friendly vehicles or ships selected, a right click on the map sends them there, as in the stock game.
 
-Use BepInEx 5 x64 in the game directory. Build this fork, then place its `MapMouseSelect.dll` in `BepInEx/plugins/MapMouseSelect/`. Do not install it alongside the original: they share a plugin GUID and input action names. An upstream release does not contain the changes in this fork.
+## What changes compared with the stock game
 
-The plugin writes `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Edit it with the game closed, or use BepInEx ConfigurationManager (F1) if installed. ConfigurationManager is optional. Restart after changing whether to create NTL. [All settings](docs/configuration.md).
+The box needs the left mouse button, so a few stock controls move:
 
-Compared with stock controls, left drag selects and middle drag pans. A plain mouse click in flight replaces targets instead of adding. Selected unit icons remain clickable. Empty-list deselection and clear-all events are repaired so map selection and Target List rows can stay in step. Bare Shift and Ctrl bindings are disabled while the expanded map is open, by default. Declared key combinations and other device bindings remain active. Pan movement follows cursor displacement by default; an optional mouse stick mode scrolls instead.
+- **Moving the map** goes from a left drag to a middle drag.
+- **Jumping the camera** stays on the middle button, but only on a click. A drag no longer jumps.
+- **Keys bound to Shift or Ctrl alone**, such as a throttle key, do nothing while the map is open. Shift and Ctrl choose the kind of box there. Key combinations such as Ctrl+Shift+E still work.
+- **A click replaces your targets.** In the stock game a click in flight adds a target. Hold Shift to add.
+
+The mod also repairs four things in the stock game that selection runs into:
+
+- A unit that is already selected can be clicked again, so Shift + click can remove it.
+- The Target List no longer keeps rows for units that are no longer selected.
+- A map drag follows the mouse exactly. In the stock game the map moves further the lower your frame rate is.
+- The mouse wheel no longer zooms the camera while the map, a menu or the BepInEx settings window (F1) is open.
+
+## Install
+
+There is no release yet. This fork is in development. To try it, [build it](#build) and put `MapMouseSelect.dll` into `Nuclear Option/BepInEx/plugins/MapMouseSelect/`. You need BepInEx 5 (x64).
+
+Do not install it together with the original mod. Both use the same plugin ID.
+
+## Settings
+
+The mod writes `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. With the BepInEx ConfigurationManager installed you can change the settings in the game with F1. You can change the box colours and the map-drag button, and switch several of the repairs off. [All settings](docs/configuration.md).
 
 ## Limits
 
-- From a pending left press through a box drag, the plugin skips the entire stock map-control method. Zoom, Move Map axes, native Select/Jump Map, waypoints, map follow, edge clamp and view-indicator placement pause too. This also pauses NuclearMapPan's controller movement.
-- A press is gated by the map rectangle, not the top UI hit. If a pane overlaps that rectangle, dragging it may also arm a box and change selection. Actual prefab overlap needs a game check.
-- Restoring pointer hits on selected icons also lets the native Select action pick one again. In flight it can do nothing instead of taking the next eligible icon.
-- If the map stops updating during a drag, static gesture state and the persistent outline can remain until another map updates. There is no independent teardown cancellation.
-- With RequireModifier on, the default Alt shortcut does not arm while an extra non-mouse key is held. Press Shift/Ctrl after starting the box, or configure a shortcut that includes the desired keys.
-- The release click guard checks distance from the press at release. A drag that returns to its starting icon can still produce a second click.
-- Input has no complete focus/menu cancellation policy. Modifier and camera-jump suppression temporarily change Rewired bindings. Avoid treating this as an isolated input layer.
-- The editor option gates only boxes. Pan relocation, click patches, modifier suppression and camera jump remain active in the editor. Shift-click can change map selection without updating editor multi-selection; enabling boxes does not coordinate the systems.
-- The move cursor uses Windows APIs. Other platforms should turn `Visual.PanCursor` off; cross-platform cursor behaviour is not established.
-- An upstream airbase-selection report has no confirmed cause or current-game reproduction here. The colour API fix does not prove that report resolved.
-- Static inspection finds no direct patch conflict with NuclearMinimap, NuclearMapMarkings or NuclearMapTrails. This does not establish runtime compatibility. See the [coupling study](docs/coupling.md).
+- The box needs a mouse. There is no controller control for it yet.
+- While you hold the left button on the map, map zoom and map movement from a keyboard or controller pause until you release.
+- In the mission editor the box is off by default. The editor has its own box selection.
 
-## Lineage and scope
+## Where this comes from
 
-This is a fork of **Map Mouse Select (& more)** by **Kerbiter (Metadorius)**, [Metadorius/MapMouseSelect](https://github.com/Metadorius/MapMouseSelect). The fork starts from upstream commit [`6e08c30fd6d5315d6ce84650c2f91956e2cb7ab7`](https://github.com/Metadorius/MapMouseSelect/commit/6e08c30fd6d5315d6ce84650c2f91956e2cb7ab7). Its history and copyright remain here. This modified version is maintained in `scramd/MapMouseSelect`; the selection-scope and compatibility changes are dated **2026-11-10**.
+This mod is a fork of **Map Mouse Select (& more)** by **Kerbiter** ([Metadorius/MapMouseSelect](https://github.com/Metadorius/MapMouseSelect)), from upstream commit [`6e08c30`](https://github.com/Metadorius/MapMouseSelect/commit/6e08c30fd6d5315d6ce84650c2f91956e2cb7ab7). The box selection, its drawing, the click behaviour, the map-drag changes, the neutral filter and the stock repairs are Kerbiter's work. The Git history keeps every upstream commit.
 
-The marquee, overlay, click changes, target batching, map navigation changes and neutral filter come from Kerbiter's mod. This fork removes the unfocused frame-rate cap, safe aircraft exit, destroyed-building icons and DED filter, camera-wheel masking, unrelated radar icon/HUD-marker guards, the three target keys with their Controls menu entries, and the option that made the camera follow the first boxed unit. They do not supply map selection. It also removes the obsolete colour rerouting now handled by the game's virtual colour update. [Feature decisions and borderline items](docs/scope.md).
+The fork started on 2026-11-10 with these changes:
 
-The original code was written with heavy AI assistance. AI assistance also contributed to this fork's edits and documentation; a build and static review do not establish in-game behaviour.
+- It builds for game version 0.34.6. The original no longer builds for the current game.
+- Features that are not about selecting on the map are gone: the frame rate limit for an unfocused game, the key to leave a parked aircraft, icons for destroyed buildings, the three extra target keys, the "stick" way to scroll the map, and the move cursor.
+- The camera jump is a middle click. The original used a double left click.
+- The camera wheel repair is rewritten in a smaller form.
 
-The plugin GUID, displayed name, version `0.3.0`, `meta.json` (including its upstream game value `0.34.1`) and licence are deliberately unchanged. They are owner decisions before distribution, not a claim that upstream's package is this fork.
+[What was kept, what was removed, and why](docs/scope.md).
+
+The original code was written with heavy AI assistance, and so are the changes in this fork.
 
 ## Build
 
-Install a .NET SDK with net472 build support. Supply your own legally obtained client game and BepInEx assemblies. Do not ship those assemblies.
+You need a .NET SDK and your own copy of the game with BepInEx 5.
 
 ```powershell
 dotnet build src/MapMouseSelect/MapMouseSelect.csproj -c Release -p:NuclearOptionRoot="D:/Games/Nuclear Option" -p:DeployToPlugins=false
 ```
 
-For separate reference folders:
+The result is `src/MapMouseSelect/bin/Release/MapMouseSelect.dll`. Without `-p:DeployToPlugins=false` the build also copies the DLL into the game's plugin folder.
 
-```powershell
-dotnet build src/MapMouseSelect/MapMouseSelect.csproj -c Release -p:NuclearOptionRoot="X:/none" -p:ManagedDir="D:/references/managed" -p:BepInExCore="D:/references/bepinex-core" -p:DeployToPlugins=false
-```
-
-`NuclearOptionRoot` can also come from `Directory.Build.user.props` (copy the example) or `NUCLEAR_OPTION_ROOT`. Explicit command-line reference paths override the default folders. Output is `src/MapMouseSelect/bin/Release/MapMouseSelect.dll`. Always use `DeployToPlugins=false` for inspection or packaging: the project otherwise copies into the game. The inherited VS Code launch task can also deploy and launch; do not use it for a build-only check.
-
-[Developer guide](docs/architecture.md), [game-update checks](docs/updating.md), [next input step](docs/input-next.md), [review decisions](docs/review-log.md).
+For developers: [how it works](docs/architecture.md), [how it is tied to the game code](docs/coupling.md), [checks after a game update](docs/updating.md), [input notes for the next step](docs/input-next.md).
 
 ## Licence
 
-GPL-3.0. See [LICENSE](LICENSE). Copyright (C) 2026 Metadorius. Keep that notice and the GPL terms when redistributing. Provide corresponding source as required by the licence.
+GPL-3.0. See [LICENSE](LICENSE). Copyright (C) 2026 Metadorius. Changes in this fork are under the same licence.
 
 This project is an unofficial community modification and is not affiliated with, sponsored by, or endorsed by Shockfront Studios Pty Ltd. Original Nuclear Option assets, vehicle designs, audio, and code are Copyright (c) 2026 Shockfront Studios Pty Ltd. All rights reserved. Nuclear Option and Shockfront Studios are trademarks or registered trademarks of Shockfront Studios Pty Ltd. Original mod content and all other trademarks belong to their respective owners.
