@@ -17,6 +17,9 @@ Method $game MapIcon 'UnityEngine.EventSystems.IPointerClickHandler.OnPointerCli
 Method $game MapIcon SelectIcon ''
 Method $game UnitMapIcon ClickIcon 'MapIcon/ClickSource clickSource'
 Method $game CombatHUD DeSelectUnit 'Unit unit'
+Method $game CameraCockpitState UpdateState 'CameraStateManager cam'
+Method $game CameraFreeState UpdateState 'CameraStateManager cam'
+Method $game CameraControlledState UpdateState 'CameraStateManager cam'
 Method $game CombatHUD SetAircraft 'Aircraft aircraft'
 Method $game CombatHUD RemoveAircraft ''
 Method $game TargetListSelector Start ''
@@ -38,4 +41,11 @@ for ($i = 0; $i -lt $il.Count; $i++) {
     if ($i -ge 3 -and $il[$i].Operand -is [Mono.Cecil.MethodReference] -and $il[$i].Operand.FullName -eq 'System.Single UnityEngine.Mathf::Min(System.Single,System.Single)' -and $il[$i-1].OpCode.Name -eq 'ldc.r4' -and [math]::Abs($il[$i-1].Operand - 0.03) -lt 0.000001 -and $il[$i-2].Operand.FullName -eq 'System.Single UnityEngine.Time::get_unscaledDeltaTime()' -and $il[$i-3].Operand -eq 150) { $factors++ }
 }
 if ($mouse -ne 1 -or $leftGate -ne 1 -or $rightDown -ne 1 -or $axes -ne 2 -or $factors -ne 1) { throw "IL mismatch: mouse=$mouse leftGate=$leftGate rightDown=$rightDown axes=$axes factors=$factors" }
+foreach ($pair in @(@('CameraCockpitState','UpdateState'),@('CameraFreeState','UpdateState'),@('CameraControlledState','UpdateState'),@('CameraSelectionState','MoveCamera'))) {
+    $cm = @($game.MainModule.GetType($pair[0]).Methods | Where-Object Name -eq $pair[1]); if ($cm.Count -ne 1) { throw "Expected unique $($pair[0]).$($pair[1])" }
+    $cil = $cm[0].Body.Instructions; $look = 0
+    for ($i = 0; $i -lt $cil.Count - 1; $i++) { if ($cil[$i].OpCode.Name -eq 'ldstr' -and $cil[$i].Operand -eq 'Free Look' -and $cil[$i+1].Operand.FullName -eq 'System.Boolean Rewired.Player::GetButton(System.String)') { $look++ } }
+    if ($look -ne 1) { throw "IL mismatch: $($pair[0]).$($pair[1]) Free Look reads=$look" }
+    Write-Output "IL pattern OK: one Free Look read in $($pair[0]).$($pair[1])"
+}
 Write-Output 'IL patterns OK: one pan gate, one right-button waypoint read, two mouse axes, one pan factor. This does not run Harmony or the game.'

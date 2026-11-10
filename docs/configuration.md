@@ -16,6 +16,7 @@ Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepI
 | Behavior | `MaxTargets` | `128` | Range 1 to 128. Caps flying box additions against retained targets. Does not prune already retained targets to a newly lowered cap. Not used for commander boxes. |
 | Behavior | `MapPanFix` | `true` | Uses raw pointer displacement and scale correction instead of native mouse axes and frame-time factor. The transpiler remains installed when false and returns native values. |
 | Behavior | `MapPanSpeed` | `1` | Range 0.1 to 5. Multiplier while MapPanFix is on; 1 aims for one screen pixel per pointer pixel. |
+| Behavior | `SuppressFreeLookWhileDragging` | `true` | While the map is expanded and the map-drag button is held, the cockpit (virtual joystick), free, controlled and aircraft-selection cameras do not see Free Look. Free Look on another control is not affected. |
 | Visual | `ShowSelectionBox` | `true` | Draws the outline; false still selects. |
 | Visual | `BoxOutlineColor` | `3CB4FFCC` | Replace outline. |
 | Visual | `BoxOutlineColorAdditive` | `7CE38BCC` | Add outline. |

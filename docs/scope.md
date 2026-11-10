@@ -17,6 +17,7 @@ The mod has one feature: selecting units on the map with a box. Everything else 
 | --- | --- |
 | Map drag on the right button | The stock game moves the map with a left drag. The box now uses the left drag. The button is a setting; right is the default. |
 | The drag button keeps its click | The stock game acts on the right button (waypoint order) and the middle button (Jump Map) the moment the button goes down. With the map drag on that button, every drag would begin with an order or a jump. The mod waits for a press and release without a drag. |
+| Free Look ignored during a map drag | The game's Free Look sits on the right button and turns the camera, also behind the open map. While the map is open and the drag button is held, the mod answers the camera's Free Look read with "not held". |
 | Bare Shift and Ctrl bindings held off | Shift and Ctrl choose the kind of box. A stock binding on one of those keys alone would fire at the same time. |
 
 ## Repairs to the stock game

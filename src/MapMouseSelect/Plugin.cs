@@ -51,6 +51,9 @@ namespace MapMouseSelect
         internal static ConfigEntry<float> MapPanSpeed { get; private set; }
 
 
+        /// <summary>Whether Free Look is ignored while the map is dragged with the button it shares.</summary>
+        internal static ConfigEntry<bool> SuppressFreeLookWhileDragging { get; private set; }
+
         private Harmony _harmony;
 
         private void Awake()
@@ -127,6 +130,10 @@ namespace MapMouseSelect
                     "How far the map moves per pixel the mouse moves while dragging it, used while MapPanFix is on. "
                     + "One keeps the map under the cursor.",
                     new AcceptableValueRange<float>(0.1f, 5f)));
+
+            SuppressFreeLookWhileDragging = Config.Bind("Behavior", "SuppressFreeLookWhileDragging", true,
+                "While the map is open and the map-drag button is held, ignore the game's Free Look, which sits on "
+                + "the right mouse button by default and would turn the camera behind the map during a drag.");
 
             _harmony = new Harmony(PluginGuid);
             ApplyPatches();

@@ -61,7 +61,7 @@ The mod writes `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. With the BepInE
 
 - The box needs a mouse. There is no controller control for it yet.
 - While you hold the left button on the map, map zoom and map movement from a keyboard or controller pause until you release.
-- The right button is also the game's Free Look control. Where Free Look is active, without an aircraft or with the virtual joystick, a right drag on the map also turns the camera behind it. Set `PanButton` to `Middle` to avoid that. A middle click then still jumps the camera, and a middle drag only moves the map.
+- The right button is also the game's Free Look control. While you hold it on the open map, the mod ignores Free Look, so a map drag does not turn the camera behind the map.
 - In the mission editor the box is off by default. The editor has its own box selection.
 
 ## Where this comes from
