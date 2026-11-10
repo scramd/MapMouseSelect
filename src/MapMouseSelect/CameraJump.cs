@@ -6,26 +6,24 @@ using UnityEngine;
 namespace MapMouseSelect
 {
     /// <summary>
-    /// Moves the map's camera jump from the middle mouse button to a double left click.
+    /// Lets one mouse button both drag the map and jump the camera.
     ///
-    /// Vanilla jumps the commander's camera to the cursor when the Jump Map action goes down, and that action
-    /// sits on the middle button by default, which this mod took for panning. While the map is open that binding
-    /// is disabled, so Rewired reports nothing from the button and the jump is answered here. Only commander
-    /// view has the jump. The drag threshold reports the presses by comparing its current cursor against the
-    /// previous press position.
+    /// Vanilla jumps the free camera to the cursor when the Jump Map action goes down. That action sits on the
+    /// middle button by default, the button this mod uses to drag the map, so every drag would start with a jump.
+    /// While the map is open the mod disables that one binding and answers the button itself: a press and release
+    /// without a drag jumps, a drag only moves the map. A Jump Map binding on any other control is left alone.
+    /// Only a player without an aircraft has the jump, as in vanilla.
     /// </summary>
     internal static class CameraJump
     {
-        /// <summary>uGUI's own window for counting a press as another click of a double click.</summary>
-        private const float DoubleClickWindow = 0.3f;
-
         private const string ActionName = "Jump Map";
 
         private static readonly List<ControllerMap> MouseMaps = new List<ControllerMap>();
         private static readonly List<ActionElementMap> HeldOff = new List<ActionElementMap>();
 
-        private static float _previousPress = -1f;
-        private static Vector2 _previousPressPosition;
+        private static bool _pressed;
+        private static bool _dragged;
+        private static Vector2 _pressPosition;
         private static bool _reportedBindings;
 
         internal static void Tick()
@@ -35,41 +33,46 @@ namespace MapMouseSelect
 
             HoldJumpButtonOff(open);
 
-            if (!open)
+            // The click stands in for the binding that was held off, so without one there is nothing to answer.
+            if (!open || HeldOff.Count == 0 || Plugin.PanButton == null)
             {
-                _previousPress = -1f;
+                _pressed = false;
                 return;
             }
+
+            var button = (int)Plugin.PanButton.Value;
+
+            if (Input.GetMouseButtonDown(button))
+            {
+                _pressed = map.IsCursorInMapRectangle();
+                _dragged = false;
+                _pressPosition = Input.mousePosition;
+                return;
+            }
+
+            if (!_pressed)
+            {
+                return;
+            }
+
+            // Remembered for the whole press, so a drag that returns to where it started is still a drag.
+            if (UnitSelection.DragThresholdPassed(_pressPosition))
+            {
+                _dragged = true;
+            }
+
+            if (!Input.GetMouseButtonUp(button))
+            {
+                return;
+            }
+
+            _pressed = false;
 
             Aircraft localAircraft;
-            if (GameManager.GetLocalAircraft(out localAircraft))
-            {
-                _previousPress = -1f;
-                return;
-            }
-
-            if (!Input.GetMouseButtonDown(0) || !map.IsCursorInMapRectangle())
+            if (_dragged || GameManager.GetLocalAircraft(out localAircraft))
             {
                 return;
             }
-
-            var now = Time.unscaledTime;
-            var position = (Vector2)Input.mousePosition;
-
-            var second = _previousPress >= 0f
-                && now - _previousPress <= DoubleClickWindow
-                && !UnitSelection.DragThresholdPassed(_previousPressPosition);
-
-            _previousPress = now;
-            _previousPressPosition = position;
-
-            if (!second)
-            {
-                return;
-            }
-
-            // A third press should start a new pair rather than jump again.
-            _previousPress = -1f;
 
             GlobalPosition target;
             if (!map.TryGetCursorCoordinates(out target))
@@ -79,7 +82,7 @@ namespace MapMouseSelect
 
             if (VanillaCalls.JumpCameraTo(map, target))
             {
-                Plugin.Verbose("Double click: jumped the camera to the cursor.");
+                Plugin.Verbose("Pan button click: jumped the camera to the cursor.");
             }
         }
 
