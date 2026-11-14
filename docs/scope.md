@@ -47,6 +47,6 @@ The mod has one feature: selecting units on the map with a box. Everything else 
 
 Removals are scope cuts. They do not say that the original features were poor.
 
-## Unchanged for now
+## Name and ID
 
-The plugin ID `com.kerbiter.mapmouseselect`, the name, the version number 0.3.0 and `meta.json` are still the original's. They change before the first release of this fork.
+Since 0.4.0 (2026-11-14) the fork is Nuclear Box Select, plugin ID `com.scramd.nuclearboxselect`, DLL and plugin folder `NuclearBoxSelect`. It refuses to load next to `com.kerbiter.mapmouseselect` (the original and this fork up to 0.3.0), because both patch the same code, and takes over the old settings file once. The source folder, project file and namespace keep the original name.

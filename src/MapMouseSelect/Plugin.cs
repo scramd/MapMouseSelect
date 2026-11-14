@@ -10,13 +10,17 @@ using UnityEngine.EventSystems;
 namespace MapMouseSelect
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+    [BepInIncompatibility(LegacyGuid)]
     public sealed class Plugin : BaseUnityPlugin
     {
-        public const string PluginGuid = "com.kerbiter.mapmouseselect";
-        public const string PluginName = "Map Mouse Select";
+        public const string PluginGuid = "com.scramd.nuclearboxselect";
+        public const string PluginName = "Nuclear Box Select";
+
+        /// <summary>Kerbiter's Map Mouse Select, and this fork up to 0.3.0. Both patch the same code, so only one may load.</summary>
+        internal const string LegacyGuid = "com.kerbiter.mapmouseselect";
 
         /// <summary>Lives in three places: this constant, &lt;Version&gt; in the csproj, and version in meta.json.</summary>
-        public const string PluginVersion = "0.3.0";
+        public const string PluginVersion = "0.4.0";
 
         /// <summary>Draw order for the mod's overlay canvas, above the map UI.</summary>
         internal const int DefaultOverlaySortingOrder = 32000;
@@ -56,9 +60,31 @@ namespace MapMouseSelect
 
         private Harmony _harmony;
 
+        /// <summary>
+        /// The ID changed in 0.4.0, and BepInEx names the settings file after the ID. Without its own
+        /// settings file yet, the mod takes over the old one once (copied, the old file stays).
+        /// </summary>
+        private void ImportLegacyConfig()
+        {
+            string legacy = System.IO.Path.Combine(Paths.ConfigPath, LegacyGuid + ".cfg");
+            if (System.IO.File.Exists(Config.ConfigFilePath) || !System.IO.File.Exists(legacy))
+                return;
+            try
+            {
+                System.IO.File.Copy(legacy, Config.ConfigFilePath);
+                Config.Reload();
+                Log.LogInfo("Took over the settings from " + LegacyGuid + ".cfg.");
+            }
+            catch (Exception e)
+            {
+                Log.LogWarning("Could not take over the settings from " + LegacyGuid + ".cfg: " + e.Message);
+            }
+        }
+
         private void Awake()
         {
             Log = Logger;
+            ImportLegacyConfig();
 
             MarqueeModifier = Config.Bind("Hotkeys", "MarqueeModifier",
                 new KeyboardShortcut(KeyCode.LeftAlt),

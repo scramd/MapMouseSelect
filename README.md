@@ -1,4 +1,4 @@
-# Map Mouse Select
+# Nuclear Box Select
 
 A client mod for Nuclear Option. Drag a box on the map to pick your targets.
 
@@ -49,13 +49,13 @@ The mod also repairs three things in the stock game that selection runs into:
 
 ## Install
 
-There is no release yet. This fork is in development. To try it, [build it](#build) and put `MapMouseSelect.dll` into `Nuclear Option/BepInEx/plugins/MapMouseSelect/`. You need BepInEx 5 (x64).
+There is no release yet. This fork is in development. To try it, [build it](#build) and put `NuclearBoxSelect.dll` into `Nuclear Option/BepInEx/plugins/NuclearBoxSelect/`. You need BepInEx 5 (x64).
 
-Do not install it together with the original mod. Both use the same plugin ID.
+Remove the original mod and builds of this fork before 0.4.0 (`com.kerbiter.mapmouseselect`, folder `MapMouseSelect`). While one of them is installed, this mod does not load.
 
 ## Settings
 
-The mod writes `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. With the BepInEx ConfigurationManager installed you can change the settings in the game with F1. You can change the box colours and the map-drag button, and switch several of the repairs off. [All settings](docs/configuration.md).
+The mod writes `BepInEx/config/com.scramd.nuclearboxselect.cfg`. The first time, it takes over your settings from `com.kerbiter.mapmouseselect.cfg`, if that file exists. With the BepInEx ConfigurationManager installed you can change the settings in the game with F1. You can change the box colours and the map-drag button, and switch several of the repairs off. [All settings](docs/configuration.md).
 
 ## Limits
 
@@ -73,6 +73,7 @@ The fork started on 2026-11-10 with these changes:
 - It builds for game version 0.34.6. The original no longer builds for the current game.
 - Features that are not about selecting on the map are gone: the frame rate limit for an unfocused game, the key to leave a parked aircraft, icons for destroyed buildings, the three extra target keys, the "stick" way to scroll the map, the move cursor, and the camera wheel fix.
 - The map is dragged with the right button, and a right click keeps its stock order. The original used the middle button and moved the camera jump to a double left click.
+- Since 0.4.0 it has its own name and plugin ID (`com.scramd.nuclearboxselect`), so it can sit in the mod registry beside the original.
 
 [What was kept, what was removed, and why](docs/scope.md).
 
@@ -86,7 +87,7 @@ You need a .NET SDK and your own copy of the game with BepInEx 5.
 dotnet build src/MapMouseSelect/MapMouseSelect.csproj -c Release -p:NuclearOptionRoot="D:/Games/Nuclear Option" -p:DeployToPlugins=false
 ```
 
-The result is `src/MapMouseSelect/bin/Release/MapMouseSelect.dll`. Without `-p:DeployToPlugins=false` the build also copies the DLL into the game's plugin folder.
+The result is `src/MapMouseSelect/bin/Release/NuclearBoxSelect.dll`. Without `-p:DeployToPlugins=false` the build also copies the DLL into the game's plugin folder. The source folder and namespace keep the original name, so the fork stays easy to compare with upstream.
 
 For developers: [how it works](docs/architecture.md), [how it is tied to the game code](docs/coupling.md), [checks after a game update](docs/updating.md), [input notes for the next step](docs/input-next.md).
 

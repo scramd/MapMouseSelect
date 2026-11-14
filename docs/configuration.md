@@ -1,6 +1,6 @@
 # Configuration reference
 
-Settings live in `BepInEx/config/com.kerbiter.mapmouseselect.cfg`. Optional BepInEx ConfigurationManager exposes them in F1. Colours are RGBA values.
+Settings live in `BepInEx/config/com.scramd.nuclearboxselect.cfg` (taken over once from `com.kerbiter.mapmouseselect.cfg`). Optional BepInEx ConfigurationManager exposes them in F1. Colours are RGBA values.
 
 | Section | Key | Default | Effect and limit |
 | --- | --- | --- | --- |

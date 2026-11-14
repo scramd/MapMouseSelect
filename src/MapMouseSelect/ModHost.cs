@@ -10,7 +10,7 @@ namespace MapMouseSelect
     /// </summary>
     internal sealed class ModHost : MonoBehaviour
     {
-        private const string HostName = "MapMouseSelect.Host";
+        private const string HostName = "NuclearBoxSelect.Host";
 
         private static ModHost _instance;
         private static bool _survivalReported;

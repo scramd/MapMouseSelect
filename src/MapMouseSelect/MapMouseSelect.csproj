@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>MapMouseSelect</AssemblyName>
+    <AssemblyName>NuclearBoxSelect</AssemblyName>
     <RootNamespace>MapMouseSelect</RootNamespace>
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <DebugType>portable</DebugType>
     <WarningsAsErrors>false</WarningsAsErrors>
     <!-- Copy the built plugin into the game by default. Set false for CI / packaging builds. -->
@@ -89,8 +89,8 @@
   </ItemGroup>
 
   <Target Name="DeployToPlugins" AfterTargets="Build" Condition="'$(DeployToPlugins)' == 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginsDir)\MapMouseSelect" />
-    <Message Importance="high" Text="Deployed $(TargetFileName) -> $(PluginsDir)\MapMouseSelect" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginsDir)\NuclearBoxSelect" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -> $(PluginsDir)\NuclearBoxSelect" />
   </Target>
 
 </Project>

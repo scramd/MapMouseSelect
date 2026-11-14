@@ -1,15 +1,17 @@
 {
-    "id": "com.kerbiter.mapmouseselect",
+    "id": "com.scramd.nuclearboxselect",
     "artifact": {
-        "fileName": "com.kerbiter.mapmouseselect_v0.3.0.zip",
-        "version": "0.3.0",
+        "fileName": "NuclearBoxSelect.zip",
+        "version": "0.4.0",
         "category": "Release",
         "type": "plugin",
-        "gameVersion": "0.34.1",
+        "gameVersion": "0.34.6",
         "downloadUrl": null,
         "hash": null,
         "extends": null,
         "dependencies": [],
-        "incompatibilities": []
+        "incompatibilities": [
+            { "id": "com.kerbiter.mapmouseselect" }
+        ]
     }
 }
